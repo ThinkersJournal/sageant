@@ -41,6 +41,8 @@ pub enum Error {
     BadState(&'static str),
     /// A required field is empty; names the field.
     Invalid(&'static str),
+    /// A stored record failed verification; says which part.
+    Corrupt(&'static str),
 }
 
 impl fmt::Display for Error {
@@ -64,6 +66,7 @@ impl fmt::Display for Error {
             Self::Forgotten => f.write_str("forgotten"),
             Self::BadState(why) => write!(f, "bad state: {why}"),
             Self::Invalid(field) => write!(f, "empty {field}"),
+            Self::Corrupt(why) => write!(f, "corrupt record: {why}"),
         }
     }
 }

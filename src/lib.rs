@@ -15,6 +15,7 @@ mod model;
 #[cfg(feature = "nfc")]
 mod nfc;
 mod reader;
+mod record;
 mod retrieve;
 mod screen;
 mod sha256;

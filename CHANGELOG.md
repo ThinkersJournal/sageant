@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Row 4: stored records (CONTRACT D17). `Chunk::encode`/`decode` and `Link::encode`/`decode`: a canonical, versioned, zero-dependency byte format (header line, then `name byte_len` fields in one fixed order), owned by the core so a backend never builds a `Chunk` by hand. Decoding verifies the content hash, that the text is one the store accepts (ASCII, or NFC with the `nfc` feature), the id of a first version, and that the record is exactly canonical; anything else is the new `Error::Corrupt(why)`. `ChunkId::parse` (64 lowercase hex or `Invalid("id")`). The format is pinned by a golden-bytes test. No behaviour change to the in-memory store.
+
 ## 0.1.1
 
 - Row 4 starts. The repository is now a cargo workspace (root `sageant` plus `crates/`, CONTRACT s1), one version for every crate, minimum Rust version raised from 1.88 to 1.94 (persistant 0.18 needs it; standing rule). CI runs clippy, test and doc with `--workspace`. New crate `sageant-lexical` (`publish = false` for now): `tokenize`, `term_counts`, the `TextIndex` trait (owned returns so a kv backend can hold postings, CONTRACT D17), `MemoryIndex`, `ln_ratio_micro` (integer-only natural log) and `LexicalRetriever` (BM25, k1 1.2, b 0.75, integer arithmetic only, scores in thousandths; the reader decides visibility so a stale posting never surfaces a forgotten or archived chunk). Integer scores agree with a float reference to 2 thousandths on the test corpus. The core crate is unchanged. Not yet: `sageant-persistant`, `sageant-mcp`, `sageant-cli`.

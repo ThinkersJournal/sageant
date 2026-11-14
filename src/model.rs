@@ -56,6 +56,22 @@ impl ChunkId {
         Self(sha256_hex(&material))
     }
 
+    /// Read an id from its hex text.
+    ///
+    /// # Errors
+    /// `Invalid("id")` unless it is exactly 64 lowercase hex characters.
+    pub fn parse(text: &str) -> Result<Self, crate::Error> {
+        if text.len() == 64
+            && text
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        {
+            Ok(Self(text.to_owned()))
+        } else {
+            Err(crate::Error::Invalid("id"))
+        }
+    }
+
     /// The id as hex text.
     #[must_use]
     pub fn as_str(&self) -> &str {
