@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.12
+
+- Row 3 exit: recorded mutation run (`docs/MUTATION.md`). `cargo-mutants` over the in-memory store and traits: 313 mutants; first run 19 missed, after `tests/mutation_kills.rs` (10 tests) 3 missed, all equivalent (`^` to `|` in SHA-256 `ch` and `maj`), 1 timeout (padding loop). No source change.
+
 ## 0.0.11
 
 - core slice 10 (ROADMAP row 3, in progress): maintenance interfaces (CONTRACT D12). `Maintainer::plan(&dyn Reader) -> Plan` (reads only; `Plan` is data: `Step`s of a `Change` {Archive, Link, Supersede} with a typed `Why` {Duplicate, Expired, Consolidated, Custom}) and `Maintainer::apply` (default method: each step through a `&mut dyn Writer` under an `Actor`, the `Why` label as the audit reason; a failed step is reported in `Applied::failed` and does not stop the rest); `ExpireMaintainer` (reference: archive active chunks created before a time); `Promoter` (a retriever with no write power) and `Demoter` (writes a derived chunk, never edits the original; takes the item by reference plus the writer). No model calls: summarising and embedding are the caller's. `Writer::note` and `Action::Note` record the reason of a link or supersede step as an audit entry of its own. Not yet: the recorded mutation run, row 4.
