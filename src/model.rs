@@ -33,12 +33,14 @@ pub enum Confidence {
     Contradicted,
 }
 
-/// Lifecycle state (CONTRACT D8). Only `Active` exists in this slice.
+/// Lifecycle state of a stored chunk (CONTRACT D8). A forgotten chunk is not stored, so it has no status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Status {
     /// Retrievable.
     Active,
+    /// Kept, but out of retrieval.
+    Archived,
 }
 
 /// Stable identity of a chunk lineage: 64 lowercase hex characters derived from collection and first content.

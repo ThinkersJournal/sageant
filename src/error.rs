@@ -35,6 +35,10 @@ pub enum Error {
     LinkCycle,
     /// This exact link (source, kind, target) already exists.
     DuplicateLink,
+    /// The chunk was forgotten; only its tombstone remains.
+    Forgotten,
+    /// The operation does not apply to the chunk's current state.
+    BadState(&'static str),
     /// A required field is empty; names the field.
     Invalid(&'static str),
 }
@@ -57,6 +61,8 @@ impl fmt::Display for Error {
             }
             Self::LinkCycle => f.write_str("link would form a cycle"),
             Self::DuplicateLink => f.write_str("link already exists"),
+            Self::Forgotten => f.write_str("forgotten"),
+            Self::BadState(why) => write!(f, "bad state: {why}"),
             Self::Invalid(field) => write!(f, "empty {field}"),
         }
     }

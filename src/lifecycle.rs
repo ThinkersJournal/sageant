@@ -1,0 +1,148 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+//! Deletion and audit types (CONTRACT D8, D18).
+//!
+//! The promise is "unretrievable", never "erased": PersistAnt cannot yet prove removed bytes are gone
+//! (persistant ROADMAP row 38). There is deliberately no `Erased` variant.
+
+use crate::model::{ChunkId, Timestamp};
+
+/// What `forget` guarantees. Only `Unretrievable` exists until a backend can prove erasure.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Removed {
+    /// No API of the store returns the content any more. Storage underneath may retain bytes.
+    Unretrievable,
+}
+
+/// The minimal record `forget` leaves: no content, no source, no content hash.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Tombstone {
+    pub(crate) id: ChunkId,
+    pub(crate) collection: String,
+    pub(crate) versions_removed: u32,
+    pub(crate) at: Timestamp,
+    pub(crate) actor: String,
+    pub(crate) reason: String,
+    pub(crate) keyed_hash: Option<String>,
+}
+
+impl Tombstone {
+    /// The forgotten lineage.
+    #[must_use]
+    pub fn id(&self) -> &ChunkId {
+        &self.id
+    }
+    /// Its collection.
+    #[must_use]
+    pub fn collection(&self) -> &str {
+        &self.collection
+    }
+    /// How many versions were removed.
+    #[must_use]
+    pub fn versions_removed(&self) -> u32 {
+        self.versions_removed
+    }
+    /// When (caller's time).
+    #[must_use]
+    pub fn at(&self) -> Timestamp {
+        self.at
+    }
+    /// Who asked.
+    #[must_use]
+    pub fn actor(&self) -> &str {
+        &self.actor
+    }
+    /// Why, in the caller's words.
+    #[must_use]
+    pub fn reason(&self) -> &str {
+        &self.reason
+    }
+    /// A caller-supplied keyed hash, so an ingester can be told not to re-add the text.
+    #[must_use]
+    pub fn keyed_hash(&self) -> Option<&str> {
+        self.keyed_hash.as_deref()
+    }
+}
+
+/// Whether a link's target still exists.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LinkTarget {
+    /// The target is stored.
+    Present,
+    /// The target was forgotten or purged; the link says so instead of dangling.
+    Removed,
+}
+
+/// Proof that a person took the action. Needed to `purge`. A CLI constructs it after a typed confirmation or a host
+/// prompt; the MCP server never does (CONTRACT D13).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PersonAuthority(String);
+
+impl PersonAuthority {
+    /// Record that a person authorised this, described in `how` (for the audit log; never content).
+    #[must_use]
+    pub fn from_person_action(how: &str) -> Self {
+        Self(how.to_owned())
+    }
+    pub(crate) fn how(&self) -> &str {
+        &self.0
+    }
+}
+
+/// What an audit entry records.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Action {
+    /// A chunk was stored.
+    Put,
+    /// A new version was stored.
+    Supersede,
+    /// A link was made.
+    Link,
+    /// A chunk was archived.
+    Archive,
+    /// A chunk was forgotten.
+    Forget,
+    /// A chunk was purged.
+    Purge,
+    /// A write was refused by the secret screen; the reason is `secret:<class>`.
+    Refused,
+}
+
+/// One audit entry. Never holds content (the text, the source text or the content hash).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuditEvent {
+    pub(crate) at: Timestamp,
+    pub(crate) action: Action,
+    pub(crate) id: Option<ChunkId>,
+    pub(crate) actor: String,
+    pub(crate) reason: String,
+}
+
+impl AuditEvent {
+    /// When (caller's time).
+    #[must_use]
+    pub fn at(&self) -> Timestamp {
+        self.at
+    }
+    /// What happened.
+    #[must_use]
+    pub fn action(&self) -> Action {
+        self.action
+    }
+    /// The lineage concerned, if any.
+    #[must_use]
+    pub fn id(&self) -> Option<&ChunkId> {
+        self.id.as_ref()
+    }
+    /// Who did it (for a purge, how the person authorised it).
+    #[must_use]
+    pub fn actor(&self) -> &str {
+        &self.actor
+    }
+    /// Why, or the link kind, or the refusal class.
+    #[must_use]
+    pub fn reason(&self) -> &str {
+        &self.reason
+    }
+}

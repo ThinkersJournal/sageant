@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::Error;
+use crate::lifecycle::{Action, AuditEvent, LinkTarget, PersonAuthority, Removed, Tombstone};
 use crate::model::{
     Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
 };
@@ -15,6 +16,9 @@ pub struct MemoryStore {
     lineages: BTreeMap<ChunkId, Vec<Chunk>>,
     links: BTreeMap<ChunkId, Vec<Link>>,
     caps: BTreeMap<String, usize>,
+    tombstones: BTreeMap<ChunkId, Tombstone>,
+    review: BTreeSet<ChunkId>,
+    audit: Vec<AuditEvent>,
 }
 
 /// Core validates only what it can verify: ASCII is NFC; anything else is refused until the `nfc` helper exists (D4).
@@ -43,14 +47,175 @@ impl MemoryStore {
         self.screen = Some(screen);
     }
 
-    fn run_screen(&self, texts: &[&str]) -> Result<(), Error> {
+    fn run_screen(&mut self, texts: &[&str], at: Timestamp) -> Result<(), Error> {
+        let mut hit = None;
         if let Some(screen) = &self.screen {
-            for text in texts {
-                if let Some(class) = screen.screen(text) {
-                    return Err(Error::SecretRefused { class });
-                }
+            hit = texts.iter().find_map(|t| screen.screen(t));
+        }
+        if let Some(class) = hit {
+            self.record(at, Action::Refused, None, "", &format!("secret:{class}"));
+            return Err(Error::SecretRefused { class });
+        }
+        Ok(())
+    }
+
+    fn record(
+        &mut self,
+        at: Timestamp,
+        action: Action,
+        id: Option<&ChunkId>,
+        actor: &str,
+        reason: &str,
+    ) {
+        self.audit.push(AuditEvent {
+            at,
+            action,
+            id: id.cloned(),
+            actor: actor.to_owned(),
+            reason: reason.to_owned(),
+        });
+    }
+
+    /// The lineage, or `Forgotten` / `NotFound` saying why it is not there.
+    fn lineage(&self, id: &ChunkId) -> Result<&Vec<Chunk>, Error> {
+        match self.lineages.get(id) {
+            Some(v) => Ok(v),
+            None if self.tombstones.contains_key(id) => Err(Error::Forgotten),
+            None => Err(Error::NotFound),
+        }
+    }
+
+    /// The audit log, oldest first. It never holds content.
+    #[must_use]
+    pub fn audit(&self) -> &[AuditEvent] {
+        &self.audit
+    }
+
+    /// The tombstone of a forgotten lineage, if it is currently forgotten.
+    #[must_use]
+    pub fn tombstone(&self, id: &ChunkId) -> Option<&Tombstone> {
+        self.tombstones.get(id)
+    }
+
+    /// Whether a link's target is still stored.
+    #[must_use]
+    pub fn link_target(&self, link: &Link) -> LinkTarget {
+        if self.lineages.contains_key(&link.to) {
+            LinkTarget::Present
+        } else {
+            LinkTarget::Removed
+        }
+    }
+
+    /// Whether a chunk derived from something later forgotten or purged is flagged for review.
+    ///
+    /// # Errors
+    /// `NotFound` or `Forgotten`.
+    pub fn needs_review(&self, id: &ChunkId) -> Result<bool, Error> {
+        self.lineage(id)?;
+        Ok(self.review.contains(id))
+    }
+
+    /// Every string the store holds, for tests that prove content is gone. Not for production use.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn dump_all_text(&self) -> String {
+        format!(
+            "{:?}{:?}{:?}{:?}{:?}",
+            self.lineages, self.links, self.tombstones, self.review, self.audit
+        )
+    }
+
+    /// Mark a chunk archived: kept, out of retrieval. New versions stay archived.
+    ///
+    /// # Errors
+    /// `NotFound`, `Forgotten`, or `BadState` if already archived.
+    pub fn archive(
+        &mut self,
+        id: &ChunkId,
+        actor: &str,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        if self
+            .lineage(id)?
+            .last()
+            .is_some_and(|c| c.status == Status::Archived)
+        {
+            return Err(Error::BadState("already archived"));
+        }
+        if let Some(v) = self.lineages.get_mut(id) {
+            for c in v {
+                c.status = Status::Archived;
             }
         }
+        self.record(at, Action::Archive, Some(id), actor, reason);
+        Ok(())
+    }
+
+    /// Remove a chunk's content (every version), its source, its hash and its outgoing links, leaving a minimal
+    /// tombstone. Links pointing at it stay and read as removed; chunks derived from it are flagged for review.
+    ///
+    /// # Errors
+    /// `NotFound`, or `Forgotten` if it is already forgotten.
+    pub fn forget(
+        &mut self,
+        id: &ChunkId,
+        actor: &str,
+        reason: &str,
+        keyed_hash: Option<&str>,
+        at: Timestamp,
+    ) -> Result<Removed, Error> {
+        let removed = self.lineage(id)?;
+        let tombstone = Tombstone {
+            id: id.clone(),
+            collection: removed
+                .first()
+                .map(|c| c.collection.clone())
+                .unwrap_or_default(),
+            versions_removed: u32::try_from(removed.len()).unwrap_or(u32::MAX),
+            at,
+            actor: actor.to_owned(),
+            reason: reason.to_owned(),
+            keyed_hash: keyed_hash.map(str::to_owned),
+        };
+        self.lineages.remove(id);
+        self.links.remove(id);
+        self.flag_derived_from(id);
+        self.tombstones.insert(id.clone(), tombstone);
+        self.record(at, Action::Forget, Some(id), actor, reason);
+        Ok(Removed::Unretrievable)
+    }
+
+    fn flag_derived_from(&mut self, id: &ChunkId) {
+        let derived: Vec<ChunkId> = self
+            .links
+            .values()
+            .flatten()
+            .filter(|l| l.kind == LinkKind::DerivedFrom && &l.to == id)
+            .map(|l| l.from.clone())
+            .collect();
+        self.review.extend(derived);
+    }
+
+    /// Remove everything about a chunk, including its tombstone. Needs a [`PersonAuthority`].
+    ///
+    /// # Errors
+    /// `NotFound` if there is neither a chunk nor a tombstone.
+    pub fn purge(
+        &mut self,
+        id: &ChunkId,
+        authority: &PersonAuthority,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        if !self.lineages.contains_key(id) && !self.tombstones.contains_key(id) {
+            return Err(Error::NotFound);
+        }
+        self.lineages.remove(id);
+        self.links.remove(id);
+        self.flag_derived_from(id);
+        self.tombstones.remove(id);
+        self.record(at, Action::Purge, Some(id), authority.how(), "");
         Ok(())
     }
 
@@ -100,7 +265,7 @@ impl MemoryStore {
         }
         check_text(&new.content)?;
         self.check_cap(&new.collection, &new.content)?;
-        self.run_screen(&[&new.content, &new.source])?;
+        self.run_screen(&[&new.content, &new.source], at)?;
         let content_hash = sha256_hex(new.content.as_bytes());
         let id = ChunkId::derive(&new.collection, &content_hash);
         if let Some(existing) = self.lineages.get(&id) {
@@ -122,7 +287,11 @@ impl MemoryStore {
             status: Status::Active,
             created_at: at,
         };
+        // The audit log names the origin class, never the free-text source (which may hold a URL or a name).
+        let actor = format!("{:?}", chunk.origin);
         self.lineages.insert(id.clone(), vec![chunk]);
+        self.tombstones.remove(&id);
+        self.record(at, Action::Put, Some(&id), &actor, "");
         Ok(ChunkRef { id, version: 1 })
     }
 
@@ -139,78 +308,70 @@ impl MemoryStore {
         at: Timestamp,
     ) -> Result<ChunkRef, Error> {
         check_text(content)?;
-        let current = self
-            .lineages
-            .get(id)
-            .and_then(|v| v.last())
-            .ok_or(Error::NotFound)?;
-        self.check_cap(&current.collection, content)?;
-        self.run_screen(&[content, source])?;
-        let content_hash = sha256_hex(content.as_bytes());
-        if content_hash == current.content_hash {
+        let current = self.lineage(id)?.last().ok_or(Error::NotFound)?;
+        let collection = current.collection.clone();
+        let kind = current.kind.clone();
+        let version = current.version + 1;
+        let status = current.status;
+        let same_text = current.content_hash == sha256_hex(content.as_bytes());
+        let current_version = current.version;
+        self.check_cap(&collection, content)?;
+        self.run_screen(&[content, source], at)?;
+        if same_text {
             return Err(Error::Conflict {
-                expected: current.version,
-                found: current.version,
+                expected: current_version,
+                found: current_version,
             });
         }
         let next = Chunk {
             id: id.clone(),
-            version: current.version + 1,
-            collection: current.collection.clone(),
-            kind: current.kind.clone(),
+            version,
+            collection,
+            kind,
             content: content.to_owned(),
-            content_hash,
+            content_hash: sha256_hex(content.as_bytes()),
             origin,
             source: source.to_owned(),
             confidence: Confidence::Unconfirmed,
-            status: Status::Active,
+            status, // a new version of an archived chunk stays archived
             created_at: at,
         };
-        let version = next.version;
         if let Some(v) = self.lineages.get_mut(id) {
             v.push(next);
         }
+        self.record(at, Action::Supersede, Some(id), &format!("{origin:?}"), "");
         Ok(ChunkRef {
             id: id.clone(),
             version,
         })
     }
 
-    /// The current (latest) version.
+    /// The current (latest) version, archived or not.
     ///
     /// # Errors
-    /// `NotFound`.
+    /// `NotFound`, or `Forgotten` if only a tombstone remains.
     pub fn get(&self, id: &ChunkId) -> Result<&Chunk, Error> {
-        self.lineages
-            .get(id)
-            .and_then(|v| v.last())
-            .ok_or(Error::NotFound)
+        self.lineage(id)?.last().ok_or(Error::NotFound)
     }
 
     /// A specific version, from 1.
     ///
     /// # Errors
-    /// `NotFound` for an unknown id or version.
+    /// `NotFound` for an unknown id or version; `Forgotten`.
     pub fn get_version(&self, id: &ChunkId, version: u32) -> Result<&Chunk, Error> {
         let index = usize::try_from(version)
             .ok()
             .and_then(|v| v.checked_sub(1))
             .ok_or(Error::NotFound)?;
-        self.lineages
-            .get(id)
-            .and_then(|v| v.get(index))
-            .ok_or(Error::NotFound)
+        self.lineage(id)?.get(index).ok_or(Error::NotFound)
     }
 
     /// Every version, oldest first.
     ///
     /// # Errors
-    /// `NotFound`.
+    /// `NotFound`, or `Forgotten`.
     pub fn history(&self, id: &ChunkId) -> Result<&[Chunk], Error> {
-        self.lineages
-            .get(id)
-            .map(Vec::as_slice)
-            .ok_or(Error::NotFound)
+        self.lineage(id).map(Vec::as_slice)
     }
 
     /// Link `from` to `to`, attached to `from`'s current version.
@@ -247,6 +408,7 @@ impl MemoryStore {
             created_at: at,
         });
         list.sort_by(|a, b| (a.kind, &a.to).cmp(&(b.kind, &b.to)));
+        self.record(at, Action::Link, Some(from), "", &format!("{kind:?}"));
         Ok(())
     }
 
@@ -307,10 +469,13 @@ impl MemoryStore {
         let me = self.get(id)?;
         let mut corroborated = false;
         for link in self.links.get(id).into_iter().flatten() {
+            // Evidence that was forgotten or purged counts for nothing, either way.
+            let Ok(other) = self.get(&link.to) else {
+                continue;
+            };
             match link.kind {
                 LinkKind::ContradictedBy => return Ok(Confidence::Contradicted),
                 LinkKind::CorroboratedBy => {
-                    let other = self.get(&link.to)?;
                     corroborated |= other.origin != me.origin && other.source != me.source;
                 }
                 _ => {}
