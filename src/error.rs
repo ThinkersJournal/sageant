@@ -31,6 +31,10 @@ pub enum Error {
         /// Class of the match, such as `registered-secret`.
         class: &'static str,
     },
+    /// The link would point a chunk at itself, or close a cycle in `part-of` or `derived-from`.
+    LinkCycle,
+    /// This exact link (source, kind, target) already exists.
+    DuplicateLink,
     /// A required field is empty; names the field.
     Invalid(&'static str),
 }
@@ -51,6 +55,8 @@ impl fmt::Display for Error {
             Self::SecretRefused { class } => {
                 write!(f, "refused: text matched a secret screen ({class})")
             }
+            Self::LinkCycle => f.write_str("link would form a cycle"),
+            Self::DuplicateLink => f.write_str("link already exists"),
             Self::Invalid(field) => write!(f, "empty {field}"),
         }
     }

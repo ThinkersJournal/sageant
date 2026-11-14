@@ -2,7 +2,9 @@
 use std::collections::BTreeMap;
 
 use crate::Error;
-use crate::model::{Chunk, ChunkId, ChunkRef, Confidence, NewChunk, Origin, Status, Timestamp};
+use crate::model::{
+    Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
+};
 use crate::screen::SecretScreen;
 use crate::sha256::sha256_hex;
 
@@ -11,6 +13,7 @@ use crate::sha256::sha256_hex;
 pub struct MemoryStore {
     screen: Option<Box<dyn SecretScreen>>,
     lineages: BTreeMap<ChunkId, Vec<Chunk>>,
+    links: BTreeMap<ChunkId, Vec<Link>>,
     caps: BTreeMap<String, usize>,
 }
 
@@ -208,5 +211,115 @@ impl MemoryStore {
             .get(id)
             .map(Vec::as_slice)
             .ok_or(Error::NotFound)
+    }
+
+    /// Link `from` to `to`, attached to `from`'s current version.
+    ///
+    /// # Errors
+    /// `NotFound` if either lineage is unknown; `LinkCycle` for a self-link or a cycle in `part-of` or
+    /// `derived-from`; `DuplicateLink` for the same (source, kind, target). A refused link changes nothing.
+    pub fn link(
+        &mut self,
+        from: &ChunkId,
+        kind: LinkKind,
+        to: &ChunkId,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        let from_version = self.get(from)?.version;
+        self.get(to)?;
+        if from == to {
+            return Err(Error::LinkCycle);
+        }
+        let out = self.links.get(from).map_or(&[][..], Vec::as_slice);
+        if out.iter().any(|l| l.kind == kind && &l.to == to) {
+            return Err(Error::DuplicateLink);
+        }
+        if matches!(kind, LinkKind::PartOf | LinkKind::DerivedFrom) && self.reaches(to, from, kind)
+        {
+            return Err(Error::LinkCycle);
+        }
+        let list = self.links.entry(from.clone()).or_default();
+        list.push(Link {
+            from: from.clone(),
+            from_version,
+            kind,
+            to: to.clone(),
+            created_at: at,
+        });
+        list.sort_by(|a, b| (a.kind, &a.to).cmp(&(b.kind, &b.to)));
+        Ok(())
+    }
+
+    /// Whether `goal` can be reached from `start` along edges of `kind`.
+    fn reaches(&self, start: &ChunkId, goal: &ChunkId, kind: LinkKind) -> bool {
+        let mut seen: Vec<&ChunkId> = Vec::new();
+        let mut stack = vec![start];
+        while let Some(node) = stack.pop() {
+            if node == goal {
+                return true;
+            }
+            if seen.contains(&node) {
+                continue;
+            }
+            seen.push(node);
+            if let Some(out) = self.links.get(node) {
+                stack.extend(out.iter().filter(|l| l.kind == kind).map(|l| &l.to));
+            }
+        }
+        false
+    }
+
+    /// Links made from `id`, ordered by (kind, target id).
+    ///
+    /// # Errors
+    /// `NotFound`.
+    pub fn links_from(&self, id: &ChunkId) -> Result<Vec<&Link>, Error> {
+        self.get(id)?;
+        Ok(self
+            .links
+            .get(id)
+            .map_or_else(Vec::new, |v| v.iter().collect()))
+    }
+
+    /// Links pointing at `id`, ordered by (kind, source id).
+    ///
+    /// # Errors
+    /// `NotFound`.
+    pub fn links_to(&self, id: &ChunkId) -> Result<Vec<&Link>, Error> {
+        self.get(id)?;
+        let mut found: Vec<&Link> = self
+            .links
+            .values()
+            .flatten()
+            .filter(|l| &l.to == id)
+            .collect();
+        found.sort_by(|a, b| (a.kind, &a.from).cmp(&(b.kind, &b.from)));
+        Ok(found)
+    }
+
+    /// The current confidence of `id`, derived from its links (CONTRACT D6): `Contradicted` if anything
+    /// contradicts it; else `Corroborated` if some corroborating chunk has a different origin class *and* a
+    /// different source; else `Unconfirmed`.
+    ///
+    /// # Errors
+    /// `NotFound`.
+    pub fn confidence(&self, id: &ChunkId) -> Result<Confidence, Error> {
+        let me = self.get(id)?;
+        let mut corroborated = false;
+        for link in self.links.get(id).into_iter().flatten() {
+            match link.kind {
+                LinkKind::ContradictedBy => return Ok(Confidence::Contradicted),
+                LinkKind::CorroboratedBy => {
+                    let other = self.get(&link.to)?;
+                    corroborated |= other.origin != me.origin && other.source != me.source;
+                }
+                _ => {}
+            }
+        }
+        Ok(if corroborated {
+            Confidence::Corroborated
+        } else {
+            Confidence::Unconfirmed
+        })
     }
 }

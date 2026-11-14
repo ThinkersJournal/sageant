@@ -15,7 +15,9 @@ mod sha256;
 mod store;
 
 pub use error::Error;
-pub use model::{Chunk, ChunkId, ChunkRef, Confidence, NewChunk, Origin, Status, Timestamp};
+pub use model::{
+    Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
+};
 #[cfg(feature = "redactant")]
 pub use screen::RegisteredSecrets;
 pub use screen::SecretScreen;

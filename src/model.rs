@@ -151,7 +151,8 @@ impl Chunk {
     pub fn source(&self) -> &str {
         &self.source
     }
-    /// Confidence state.
+    /// Confidence when this version was written (always `Unconfirmed`); the current state, which links can
+    /// change, is `MemoryStore::confidence`.
     #[must_use]
     pub fn confidence(&self) -> Confidence {
         self.confidence
@@ -162,6 +163,62 @@ impl Chunk {
         self.status
     }
     /// When this version was written (caller's time).
+    #[must_use]
+    pub fn created_at(&self) -> Timestamp {
+        self.created_at
+    }
+}
+
+/// The type of a link between chunks (CONTRACT D7). Declaration order is the listing order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum LinkKind {
+    /// The source is a child of the target (a section of a document). Cycles are refused.
+    PartOf,
+    /// The source was derived from the target (a summary of it). Cycles are refused.
+    DerivedFrom,
+    /// The source cites the target.
+    Cites,
+    /// A loose relation; may be mutual.
+    Related,
+    /// The target is independent evidence for the source (different origin class and source).
+    CorroboratedBy,
+    /// The target is evidence against the source.
+    ContradictedBy,
+}
+
+/// A directed, append-only link, attached to the source version that was current when it was made.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Link {
+    pub(crate) from: ChunkId,
+    pub(crate) from_version: u32,
+    pub(crate) kind: LinkKind,
+    pub(crate) to: ChunkId,
+    pub(crate) created_at: Timestamp,
+}
+
+impl Link {
+    /// Source lineage.
+    #[must_use]
+    pub fn from(&self) -> &ChunkId {
+        &self.from
+    }
+    /// The source version this link belongs to.
+    #[must_use]
+    pub fn from_version(&self) -> u32 {
+        self.from_version
+    }
+    /// Link type.
+    #[must_use]
+    pub fn kind(&self) -> LinkKind {
+        self.kind
+    }
+    /// Target lineage.
+    #[must_use]
+    pub fn to(&self) -> &ChunkId {
+        &self.to
+    }
+    /// When the link was made (caller's time).
     #[must_use]
     pub fn created_at(&self) -> Timestamp {
         self.created_at
