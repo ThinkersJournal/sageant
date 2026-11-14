@@ -16,7 +16,9 @@ mod sha256;
 mod store;
 
 pub use error::Error;
-pub use lifecycle::{Action, AuditEvent, LinkTarget, PersonAuthority, Removed, Tombstone};
+pub use lifecycle::{
+    Action, AuditEvent, LinkTarget, PersonAuthority, Removed, SecretOverride, Tombstone,
+};
 pub use model::{
     Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
 };
