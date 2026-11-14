@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.0.7
+## 0.0.8
+
+- core slice 7 (ROADMAP row 3, in progress): the `Writer` trait (put, supersede, link, set_status, forget, purge) implemented by `MemoryStore`, object-safe; one `Actor` (role, agent, both non-empty) on every write, audited as `role/agent`; `Action::Unarchive` and `MemoryStore::unarchive`. `purge` through the trait still needs a `PersonAuthority` and is attributed to it. The per-write secrets override stays an explicit separate call, not on the trait. Inherent store methods are unchanged. Not yet: nfc feature, retrievers, maintainer.\n\n## 0.0.7
 
 - core slice 6 (ROADMAP row 3, in progress): the `Reader` trait (get, get_version, history, links_from, links_to, confidence, `list`) implemented by `MemoryStore`, object-safe so a retriever can take `&dyn Reader`; `Filter` (collection, kind, origin, status, derived confidence, created from/until, `include_archived`, `include_superseded`, `limit`), ordered by `(ChunkId` ascending, version descending). No tag filter (the model has no tags); confidence is an exact match, not a minimum. Not yet: `Writer` and `Actor`, nfc feature, retrievers.
 
