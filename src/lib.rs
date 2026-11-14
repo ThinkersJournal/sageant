@@ -10,6 +10,7 @@
 
 mod error;
 mod lifecycle;
+mod maintain;
 mod model;
 #[cfg(feature = "nfc")]
 mod nfc;
@@ -23,6 +24,9 @@ mod writer;
 pub use error::Error;
 pub use lifecycle::{
     Action, Actor, AuditEvent, LinkTarget, PersonAuthority, Removed, SecretOverride, Tombstone,
+};
+pub use maintain::{
+    Applied, Change, Demoter, ExpireMaintainer, Maintainer, Plan, Promoter, Step, Why,
 };
 pub use model::{
     Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,

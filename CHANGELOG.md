@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.11
+
+- core slice 10 (ROADMAP row 3, in progress): maintenance interfaces (CONTRACT D12). `Maintainer::plan(&dyn Reader) -> Plan` (reads only; `Plan` is data: `Step`s of a `Change` {Archive, Link, Supersede} with a typed `Why` {Duplicate, Expired, Consolidated, Custom}) and `Maintainer::apply` (default method: each step through a `&mut dyn Writer` under an `Actor`, the `Why` label as the audit reason; a failed step is reported in `Applied::failed` and does not stop the rest); `ExpireMaintainer` (reference: archive active chunks created before a time); `Promoter` (a retriever with no write power) and `Demoter` (writes a derived chunk, never edits the original; takes the item by reference plus the writer). No model calls: summarising and embedding are the caller's. `Writer::note` and `Action::Note` record the reason of a link or supersede step as an audit entry of its own. Not yet: the recorded mutation run, row 4.
+
 ## 0.0.10
 
 - core slice 9 (ROADMAP row 3, in progress): retrieval types. `Retriever` (takes `&dyn Reader` and a `Query`: text, `Filter`, limit, opaque context), `Hit` (chunk ref, optional integer score, typed `Reason`: Lexical, Recency, LinkNeighbour, Custom), `order_hits` (score desc, unscored last, then id asc, version desc: the stated rule until SortAnt), `Fuser` and `DefaultFuser` (score desc then input order; a duplicate chunk version keeps its best score and reason). No tag reason (no tags in the model). No concrete retriever yet: the lexical one is row 4. Also `docs/LICENCES.md`: third-party licence record. Not yet: maintainer, Promoter/Demoter, mutation run.

@@ -713,6 +713,19 @@ impl Writer for MemoryStore {
             Status::Active => Self::unarchive(s, id, "", reason, at),
         })
     }
+    fn note(
+        &mut self,
+        id: &ChunkId,
+        actor: &Actor,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        self.acting_as(actor, |s| {
+            s.lineage(id)?;
+            s.record(at, Action::Note, Some(id), "", reason);
+            Ok(())
+        })
+    }
     fn forget(
         &mut self,
         id: &ChunkId,
