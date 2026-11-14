@@ -10,3 +10,7 @@ readme = "README.md"
 publish = false
 
 [dependencies]
+redactant = { version = "0.1.2", optional = true }
+
+[features]
+redactant = ["dep:redactant"]

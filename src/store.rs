@@ -3,11 +3,13 @@ use std::collections::BTreeMap;
 
 use crate::Error;
 use crate::model::{Chunk, ChunkId, ChunkRef, Confidence, NewChunk, Origin, Status, Timestamp};
+use crate::screen::SecretScreen;
 use crate::sha256::sha256_hex;
 
 /// The in-memory reference store. Ordered maps only, so no hash order can reach any output (CONTRACT D16).
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct MemoryStore {
+    screen: Option<Box<dyn SecretScreen>>,
     lineages: BTreeMap<ChunkId, Vec<Chunk>>,
     caps: BTreeMap<String, usize>,
 }
@@ -23,7 +25,32 @@ fn check_text(content: &str) -> Result<(), Error> {
     }
 }
 
+impl core::fmt::Debug for MemoryStore {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("MemoryStore")
+            .field("versions", &self.len())
+            .field("screened", &self.screen.is_some())
+            .finish()
+    }
+}
+
 impl MemoryStore {
+    /// Set the secret screen run on the content and source of every write. Applies to later writes.
+    pub fn set_screen(&mut self, screen: Box<dyn SecretScreen>) {
+        self.screen = Some(screen);
+    }
+
+    fn run_screen(&self, texts: &[&str]) -> Result<(), Error> {
+        if let Some(screen) = &self.screen {
+            for text in texts {
+                if let Some(class) = screen.screen(text) {
+                    return Err(Error::SecretRefused { class });
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// An empty store.
     #[must_use]
     pub fn new() -> Self {
@@ -70,6 +97,7 @@ impl MemoryStore {
         }
         check_text(&new.content)?;
         self.check_cap(&new.collection, &new.content)?;
+        self.run_screen(&[&new.content, &new.source])?;
         let content_hash = sha256_hex(new.content.as_bytes());
         let id = ChunkId::derive(&new.collection, &content_hash);
         if let Some(existing) = self.lineages.get(&id) {
@@ -114,6 +142,7 @@ impl MemoryStore {
             .and_then(|v| v.last())
             .ok_or(Error::NotFound)?;
         self.check_cap(&current.collection, content)?;
+        self.run_screen(&[content, source])?;
         let content_hash = sha256_hex(content.as_bytes());
         if content_hash == current.content_hash {
             return Err(Error::Conflict {

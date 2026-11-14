@@ -26,6 +26,11 @@ pub enum Error {
         /// The version found in the store.
         found: u32,
     },
+    /// The text matched a secret screen. Carries the match class only, never the text or its position.
+    SecretRefused {
+        /// Class of the match, such as `registered-secret`.
+        class: &'static str,
+    },
     /// A required field is empty; names the field.
     Invalid(&'static str),
 }
@@ -42,6 +47,9 @@ impl fmt::Display for Error {
             Self::NotFound => f.write_str("not found"),
             Self::Conflict { expected, found } => {
                 write!(f, "conflict: expected version {expected}, found {found}")
+            }
+            Self::SecretRefused { class } => {
+                write!(f, "refused: text matched a secret screen ({class})")
             }
             Self::Invalid(field) => write!(f, "empty {field}"),
         }
