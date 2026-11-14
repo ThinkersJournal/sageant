@@ -23,8 +23,8 @@ It sits above PersistAnt (storage). Status: stub crate, no API.
 | # | Row | Status |
 |---|-----|--------|
 | 0 | ROADMAP, HANDOFF, version 0.0.1, CHANGELOG | in PR |
-| 1 | Read-only inventory of `weavatrix-memory` (MIT) and `areev-store` (MIT OR Apache-2.0); fork-vs-fresh recommendation | next |
-| 2 | Contract note, options first: data model, retriever trait, promoter/demoter/maintainer traits, MCP tool surface, errors, determinism, PersistAnt mapping. PM reads before any code | blocked on 1 |
+| 1 | Read-only inventory of `weavatrix-memory` (MIT) and `areev-store` (MIT OR Apache-2.0); fork-vs-fresh recommendation | in PR (recommendation: fresh) |
+| 2 | Contract note, options first: data model, retriever trait, promoter/demoter/maintainer traits, MCP tool surface, errors, determinism, PersistAnt mapping. PM reads before any code | next, after the PM reads row 1 |
 | 3 | Core plus in-memory reference store; value-asserting tests, mutation checks, no `unsafe`, zero required dependencies | blocked on 2 |
 | 4 | PersistAnt-backed store, lexical retriever, MCP tool server, CLI; ease gate for a stranger | blocked on 3 |
 | 5 | Patent sweep before any release | blocked on 4 |
