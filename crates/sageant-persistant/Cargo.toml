@@ -1,0 +1,16 @@
+[package]
+name = "sageant-persistant"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "A durable sageant store on PersistAnt key-value backends."
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+sageant = { path = "../..", version = "0.1.3" }
+persistant = { version = "~0.18", features = ["registry-sqlite"] }
+
+[dev-dependencies]
+tempfile = "3"

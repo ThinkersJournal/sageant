@@ -10,7 +10,6 @@ use crate::model::{
 };
 use crate::reader::{Filter, Reader};
 use crate::screen::SecretScreen;
-use crate::sha256::sha256_hex;
 use crate::writer::Writer;
 
 /// The in-memory reference store. Ordered maps only, so no hash order can reach any output (CONTRACT D16).
@@ -333,27 +332,14 @@ impl MemoryStore {
         check_text(&new.content)?;
         self.check_cap(&new.collection, &new.content)?;
         let overridden = self.run_screen(&[&new.content, &new.source], allow, at)?;
-        let content_hash = sha256_hex(new.content.as_bytes());
-        let id = ChunkId::derive(&new.collection, &content_hash);
+        let chunk = Chunk::first_version(new, at)?;
+        let id = chunk.id.clone();
         if let Some(existing) = self.lineages.get(&id) {
             return Err(Error::Conflict {
                 expected: 0,
                 found: u32::try_from(existing.len()).unwrap_or(u32::MAX),
             });
         }
-        let chunk = Chunk {
-            id: id.clone(),
-            version: 1,
-            collection: new.collection,
-            kind: new.kind,
-            content: new.content,
-            content_hash,
-            origin: new.origin,
-            source: new.source,
-            confidence: Confidence::Unconfirmed,
-            status: Status::Active,
-            created_at: at,
-        };
         // The audit log names the origin class, never the free-text source (which may hold a URL or a name).
         let actor = format!("{:?}", chunk.origin);
         self.lineages.insert(id.clone(), vec![chunk]);
@@ -404,34 +390,11 @@ impl MemoryStore {
         at: Timestamp,
     ) -> Result<ChunkRef, Error> {
         check_text(content)?;
-        let current = self.lineage(id)?.last().ok_or(Error::NotFound)?;
-        let collection = current.collection.clone();
-        let kind = current.kind.clone();
-        let version = current.version + 1;
-        let status = current.status;
-        let same_text = current.content_hash == sha256_hex(content.as_bytes());
-        let current_version = current.version;
-        self.check_cap(&collection, content)?;
+        let current = self.lineage(id)?.last().ok_or(Error::NotFound)?.clone();
+        self.check_cap(&current.collection, content)?;
         let overridden = self.run_screen(&[content, source], allow, at)?;
-        if same_text {
-            return Err(Error::Conflict {
-                expected: current_version,
-                found: current_version,
-            });
-        }
-        let next = Chunk {
-            id: id.clone(),
-            version,
-            collection,
-            kind,
-            content: content.to_owned(),
-            content_hash: sha256_hex(content.as_bytes()),
-            origin,
-            source: source.to_owned(),
-            confidence: Confidence::Unconfirmed,
-            status, // a new version of an archived chunk stays archived
-            created_at: at,
-        };
+        let next = current.next_version(content, origin, source, at)?;
+        let version = next.version;
         if let Some(v) = self.lineages.get_mut(id) {
             v.push(next);
         }
