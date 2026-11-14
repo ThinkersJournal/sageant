@@ -103,6 +103,8 @@ pub enum Action {
     Archive,
     /// An archived chunk was made active again.
     Unarchive,
+    /// A reason recorded for an earlier write (for example why a maintenance step ran); the reason is the text.
+    Note,
     /// A chunk was forgotten.
     Forget,
     /// A chunk was purged.

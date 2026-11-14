@@ -51,6 +51,17 @@ pub trait Writer {
         reason: &str,
         at: Timestamp,
     ) -> Result<(), Error>;
+    /// Record why a write happened, as an audit entry of its own. Changes no chunk.
+    ///
+    /// # Errors
+    /// `NotFound`, `Forgotten`; `Invalid("actor")`.
+    fn note(
+        &mut self,
+        id: &ChunkId,
+        actor: &Actor,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error>;
     /// Remove a lineage's content, leaving a tombstone.
     ///
     /// # Errors
