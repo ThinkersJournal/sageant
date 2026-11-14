@@ -104,32 +104,36 @@ impl Filter {
 }
 
 /// Read-only access to a store. A retriever receives a `&dyn Reader` and nothing that can write.
+///
+/// Every read returns an owned value (CONTRACT D11, 0.1.0): a backend that keeps its data in storage cannot lend
+/// references into it, and a trait must not force the whole store into memory. `MemoryStore` also keeps its borrowing
+/// inherent methods; on a concrete `MemoryStore` those are the ones called.
 pub trait Reader {
     /// The current version. See `MemoryStore::get`.
     ///
     /// # Errors
     /// `NotFound`, or `Forgotten`.
-    fn get(&self, id: &ChunkId) -> Result<&Chunk, Error>;
+    fn get(&self, id: &ChunkId) -> Result<Chunk, Error>;
     /// A specific version, from 1.
     ///
     /// # Errors
     /// `NotFound`, or `Forgotten`.
-    fn get_version(&self, id: &ChunkId, version: u32) -> Result<&Chunk, Error>;
+    fn get_version(&self, id: &ChunkId, version: u32) -> Result<Chunk, Error>;
     /// Every version, oldest first.
     ///
     /// # Errors
     /// `NotFound`, or `Forgotten`.
-    fn history(&self, id: &ChunkId) -> Result<&[Chunk], Error>;
+    fn history(&self, id: &ChunkId) -> Result<Vec<Chunk>, Error>;
     /// Links made from `id`.
     ///
     /// # Errors
     /// `NotFound`, or `Forgotten`.
-    fn links_from(&self, id: &ChunkId) -> Result<Vec<&Link>, Error>;
+    fn links_from(&self, id: &ChunkId) -> Result<Vec<Link>, Error>;
     /// Links pointing at `id`.
     ///
     /// # Errors
     /// `NotFound`, or `Forgotten`.
-    fn links_to(&self, id: &ChunkId) -> Result<Vec<&Link>, Error>;
+    fn links_to(&self, id: &ChunkId) -> Result<Vec<Link>, Error>;
     /// The derived confidence of `id`.
     ///
     /// # Errors

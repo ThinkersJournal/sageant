@@ -145,3 +145,23 @@ fn forgotten_chunks_are_never_listed() {
     s.forget(&a, "alice", "r", None, Timestamp(80)).unwrap();
     assert!(!ids(&s.list(&Filter::new().include_archived().include_superseded())).contains(&&a));
 }
+
+#[test]
+fn reader_returns_owned_values_so_a_backend_need_not_lend_them() {
+    // CONTRACT D11 (0.1.0): a kv-backed store cannot lend a reference into storage, so every read is owned.
+    let (mut s, [a, b, ..]) = fixture();
+    s.link(&a, LinkKind::Cites, &b, Timestamp(5)).unwrap();
+    let r: &dyn Reader = &s;
+    let chunk: sageant::Chunk = r.get(&a).unwrap();
+    let version: sageant::Chunk = r.get_version(&a, 1).unwrap();
+    let history: Vec<sageant::Chunk> = r.history(&a).unwrap();
+    let from: Vec<sageant::Link> = r.links_from(&a).unwrap();
+    let to: Vec<sageant::Link> = r.links_to(&b).unwrap();
+    assert_eq!(chunk.content(), "alpha");
+    assert_eq!(version.content(), chunk.content());
+    assert_eq!(history.len(), 1);
+    assert_eq!((from.len(), to.len()), (1, 1));
+    // The owned values outlive the store.
+    drop(s);
+    assert_eq!(chunk.content(), "alpha");
+}
