@@ -105,10 +105,17 @@ dependencies = [
 
 [[package]]
 name = "sageant"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "redactant",
  "unicode-normalization",
+]
+
+[[package]]
+name = "sageant-lexical"
+version = "0.1.1"
+dependencies = [
+ "sageant",
 ]
 
 [[package]]

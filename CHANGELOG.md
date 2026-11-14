@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Row 4 starts. The repository is now a cargo workspace (root `sageant` plus `crates/`, CONTRACT s1), one version for every crate, minimum Rust version raised from 1.88 to 1.94 (persistant 0.18 needs it; standing rule). CI runs clippy, test and doc with `--workspace`. New crate `sageant-lexical` (`publish = false` for now): `tokenize`, `term_counts`, the `TextIndex` trait (owned returns so a kv backend can hold postings, CONTRACT D17), `MemoryIndex`, `ln_ratio_micro` (integer-only natural log) and `LexicalRetriever` (BM25, k1 1.2, b 0.75, integer arithmetic only, scores in thousandths; the reader decides visibility so a stale posting never surfaces a forgotten or archived chunk). Integer scores agree with a float reference to 2 thousandths on the test corpus. The core crate is unchanged. Not yet: `sageant-persistant`, `sageant-mcp`, `sageant-cli`.
+
 ## 0.1.0
 
 - **Breaking.** `Reader::get`, `get_version`, `history`, `links_from` and `links_to` return owned values (`Chunk`, `Vec<Chunk>`, `Vec<Link>`) instead of references (PM ruling 2026-11-14, `row4-reader-shape`): a backend that keeps its data in storage cannot lend references, and the store trait must not force a whole store into memory. `MemoryStore`'s own inherent methods still borrow, so code on a concrete `MemoryStore` is unchanged; only code written against `&dyn Reader` or `impl Reader` changes. `ROADMAP.md` statuses for rows 2 to 4 brought up to date.
