@@ -28,7 +28,7 @@ pub struct MemoryStore {
 }
 
 /// ASCII is NFC. Anything else is refused unless the `nfc` feature can verify it (CONTRACT D4).
-fn check_text(content: &str) -> Result<(), Error> {
+pub(crate) fn check_text(content: &str) -> Result<(), Error> {
     if content.is_empty() {
         return Err(Error::Invalid("content"));
     }
