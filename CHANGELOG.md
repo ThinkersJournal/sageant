@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.7
+
+- core slice 6 (ROADMAP row 3, in progress): the `Reader` trait (get, get_version, history, links_from, links_to, confidence, `list`) implemented by `MemoryStore`, object-safe so a retriever can take `&dyn Reader`; `Filter` (collection, kind, origin, status, derived confidence, created from/until, `include_archived`, `include_superseded`, `limit`), ordered by `(ChunkId` ascending, version descending). No tag filter (the model has no tags); confidence is an exact match, not a minimum. Not yet: `Writer` and `Actor`, nfc feature, retrievers.
+
 ## 0.0.6
 
 - core slice 5 (ROADMAP row 3, in progress): audited per-write secrets override. `SecretOverride::allow_class(class, by)` with `put_overriding` and `supersede_overriding`: covers one write and only the class the screen flagged; the audit log gets `Action::Overridden` (`secret-override:<class>`, actor = who allowed it, never the text); an override naming nobody is `Invalid`. Plain `put` and `supersede` are unchanged. Not yet: Reader/Writer traits, nfc feature, retrievers.

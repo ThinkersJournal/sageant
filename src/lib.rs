@@ -11,6 +11,7 @@
 mod error;
 mod lifecycle;
 mod model;
+mod reader;
 mod screen;
 mod sha256;
 mod store;
@@ -22,6 +23,7 @@ pub use lifecycle::{
 pub use model::{
     Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
 };
+pub use reader::{Filter, Reader};
 #[cfg(feature = "redactant")]
 pub use screen::RegisteredSecrets;
 pub use screen::SecretScreen;
