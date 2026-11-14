@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.9
+
+- core slice 8 (ROADMAP row 3, in progress): feature `nfc` (adds the optional `unicode-normalization` 0.1.26 dependency; the core stays zero-dependency without it). With it, `put` and `supersede` accept non-ASCII text that is already NFC and refuse the rest with `NotNormalised{at}` (the first byte that differs from the NFC form); `normalise_nfc` and `is_nfc` are the helpers. Without it nothing changes: only ASCII is accepted. Not yet: retrievers, maintainer.
+
 ## 0.0.8
 
 - core slice 7 (ROADMAP row 3, in progress): the `Writer` trait (put, supersede, link, set_status, forget, purge) implemented by `MemoryStore`, object-safe; one `Actor` (role, agent, both non-empty) on every write, audited as `role/agent`; `Action::Unarchive` and `MemoryStore::unarchive`. `purge` through the trait still needs a `PersonAuthority` and is attributed to it. The per-write secrets override stays an explicit separate call, not on the trait. Inherent store methods are unchanged. Not yet: nfc feature, retrievers, maintainer.\n\n## 0.0.7
