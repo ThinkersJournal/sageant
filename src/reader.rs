@@ -89,7 +89,17 @@ impl Filter {
         self
     }
 
-    pub(crate) fn matches(&self, c: &Chunk, confidence: Confidence) -> bool {
+    /// The confidence this filter asks for, if any. A store that cannot derive confidence yet refuses such a filter.
+    #[must_use]
+    pub fn confidence_filter(&self) -> Option<Confidence> {
+        self.confidence
+    }
+
+    /// Whether this filter's per-version rules (everything except `include_superseded` and `limit`, which are about
+    /// the list, not one version) accept `c`, whose derived confidence is `confidence`. Every store applies the same
+    /// rule through this method, so listings agree.
+    #[must_use]
+    pub fn matches(&self, c: &Chunk, confidence: Confidence) -> bool {
         self.collection.as_deref().is_none_or(|v| v == c.collection)
             && self.kind.as_deref().is_none_or(|v| v == c.kind)
             && self.origin.is_none_or(|v| v == c.origin)
@@ -141,4 +151,17 @@ pub trait Reader {
     fn confidence(&self, id: &ChunkId) -> Result<Confidence, Error>;
     /// The chunks matching `filter`, in `(ChunkId` ascending, version descending`)` order.
     fn list(&self, filter: &Filter) -> Vec<ChunkRef>;
+}
+
+impl Filter {
+    /// Whether superseded (older) versions are listed too.
+    #[must_use]
+    pub fn includes_superseded(&self) -> bool {
+        self.include_superseded
+    }
+    /// The most results to return, if limited.
+    #[must_use]
+    pub fn limit_value(&self) -> Option<usize> {
+        self.limit
+    }
 }

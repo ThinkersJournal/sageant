@@ -43,6 +43,8 @@ pub enum Error {
     Invalid(&'static str),
     /// A stored record failed verification; says which part.
     Corrupt(&'static str),
+    /// A storage backend failed; the backend's own message (never chunk content).
+    Backend(String),
 }
 
 impl fmt::Display for Error {
@@ -67,6 +69,7 @@ impl fmt::Display for Error {
             Self::BadState(why) => write!(f, "bad state: {why}"),
             Self::Invalid(field) => write!(f, "empty {field}"),
             Self::Corrupt(why) => write!(f, "corrupt record: {why}"),
+            Self::Backend(msg) => write!(f, "storage backend: {msg}"),
         }
     }
 }

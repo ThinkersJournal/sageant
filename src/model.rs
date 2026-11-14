@@ -129,6 +129,70 @@ pub struct Chunk {
 }
 
 impl Chunk {
+    /// Build version 1 of a new lineage from `new`: validate it, hash it and derive its id, exactly as
+    /// `MemoryStore::put` does (a store adds its own caps, screen and duplicate checks around this).
+    ///
+    /// # Errors
+    /// `Invalid("collection")`, `Invalid("kind")`, `Invalid("content")` or `NotNormalised`.
+    pub fn first_version(new: NewChunk, at: Timestamp) -> Result<Self, crate::Error> {
+        if new.collection.is_empty() {
+            return Err(crate::Error::Invalid("collection"));
+        }
+        if new.kind.is_empty() {
+            return Err(crate::Error::Invalid("kind"));
+        }
+        crate::store::check_text(&new.content)?;
+        let content_hash = sha256_hex(new.content.as_bytes());
+        Ok(Self {
+            id: ChunkId::derive(&new.collection, &content_hash),
+            version: 1,
+            collection: new.collection,
+            kind: new.kind,
+            content: new.content,
+            content_hash,
+            origin: new.origin,
+            source: new.source,
+            confidence: Confidence::Unconfirmed,
+            status: Status::Active,
+            created_at: at,
+        })
+    }
+
+    /// Build the version after this one, as `MemoryStore::supersede` does. It keeps the lineage id, collection,
+    /// kind and status (a new version of an archived chunk stays archived).
+    ///
+    /// # Errors
+    /// `Invalid("content")`, `NotNormalised`, or `Conflict` when the text is unchanged.
+    pub fn next_version(
+        &self,
+        content: &str,
+        origin: Origin,
+        source: &str,
+        at: Timestamp,
+    ) -> Result<Self, crate::Error> {
+        crate::store::check_text(content)?;
+        let content_hash = sha256_hex(content.as_bytes());
+        if content_hash == self.content_hash {
+            return Err(crate::Error::Conflict {
+                expected: self.version,
+                found: self.version,
+            });
+        }
+        Ok(Self {
+            id: self.id.clone(),
+            version: self.version + 1,
+            collection: self.collection.clone(),
+            kind: self.kind.clone(),
+            content: content.to_owned(),
+            content_hash,
+            origin,
+            source: source.to_owned(),
+            confidence: Confidence::Unconfirmed,
+            status: self.status,
+            created_at: at,
+        })
+    }
+
     /// Lineage id.
     #[must_use]
     pub fn id(&self) -> &ChunkId {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Row 4: new crate `sageant-persistant` (first slice: chunks). `PersistStore::open(backend_id, endpoint)` over a PersistAnt ~0.18 key-value backend (feature `registry-sqlite`; SQLite is the embedded default). It needs `kv.get`, `kv.put`, `kv.delete`, `kv.ordered_scan_values` and the four `kv.batch_atomic.*` leaves with durability `Process`, and PersistAnt refuses a backend lacking any, by name, at open (in 0.18 that is `memory` and `fs`: their batch atomicity has no recorded test). `put`, `supersede`, `supersede_expecting` (optimistic concurrency: `Conflict{expected, found}`), `get`, `get_version`, `history` and `list` (same order and filters as `Reader::list`; a differential test compares it with `MemoryStore`). Each write is one atomic batch with a `Require` on the prior state; every read verifies the stored record. Not yet in the crate: links, confidence, archive, forget, purge, audit, caps and the secret screen, the `Reader`/`Writer` impls (a confidence filter is refused until links exist), the kv text index.
+- Core, needed by the crate: `Chunk::first_version` and `Chunk::next_version` build and validate versions exactly as `MemoryStore` does (which now uses them); `Error::Backend(String)`; `Filter::matches`, `confidence_filter`, `includes_superseded` and `limit_value` are public so every store applies the same listing rules.
+
 ## 0.1.2
 
 - Row 4: stored records (CONTRACT D17). `Chunk::encode`/`decode` and `Link::encode`/`decode`: a canonical, versioned, zero-dependency byte format (header line, then `name byte_len` fields in one fixed order), owned by the core so a backend never builds a `Chunk` by hand. Decoding verifies the content hash, that the text is one the store accepts (ASCII, or NFC with the `nfc` feature), the id of a first version, and that the record is exactly canonical; anything else is the new `Error::Corrupt(why)`. `ChunkId::parse` (64 lowercase hex or `Invalid("id")`). The format is pinned by a golden-bytes test. No behaviour change to the in-memory store.
