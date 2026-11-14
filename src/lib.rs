@@ -11,6 +11,8 @@
 mod error;
 mod lifecycle;
 mod model;
+#[cfg(feature = "nfc")]
+mod nfc;
 mod reader;
 mod screen;
 mod sha256;
@@ -24,6 +26,8 @@ pub use lifecycle::{
 pub use model::{
     Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
 };
+#[cfg(feature = "nfc")]
+pub use nfc::{is_nfc, normalise_nfc};
 pub use reader::{Filter, Reader};
 #[cfg(feature = "redactant")]
 pub use screen::RegisteredSecrets;

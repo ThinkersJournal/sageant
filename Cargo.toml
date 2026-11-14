@@ -1,6 +1,6 @@
 [package]
 name = "sageant"
-version = "0.0.8"
+version = "0.0.9"
 edition = "2024"
 rust-version = "1.88"
 description = "Planned. The crate name is reserved; there is no API yet."
@@ -11,6 +11,8 @@ publish = false
 
 [dependencies]
 redactant = { version = "0.1.2", optional = true }
+unicode-normalization = { version = "0.1.26", optional = true, default-features = false }
 
 [features]
 redactant = ["dep:redactant"]
+nfc = ["dep:unicode-normalization"]

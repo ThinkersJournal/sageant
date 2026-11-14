@@ -154,6 +154,7 @@ fn get_of_unknown_id_is_not_found() {
 }
 
 #[test]
+#[cfg(not(feature = "nfc"))]
 fn non_ascii_text_is_refused_until_the_nfc_helper_exists() {
     // The core can verify only ASCII as normalised (CONTRACT D4); anything else is refused, not trusted.
     let mut s = MemoryStore::new();
@@ -193,6 +194,7 @@ fn empty_names_and_empty_content_are_refused() {
 #[test]
 fn refused_write_changes_nothing() {
     let mut s = MemoryStore::new();
-    let _ = s.put(new("notes", "caf\u{e9}"), Timestamp(1));
+    // Decomposed (not NFC) text is refused with or without the `nfc` feature.
+    assert!(s.put(new("notes", "cafe\u{301}"), Timestamp(1)).is_err());
     assert_eq!(s.len(), 0);
 }

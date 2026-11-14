@@ -27,15 +27,28 @@ pub struct MemoryStore {
     acting: Option<String>,
 }
 
-/// Core validates only what it can verify: ASCII is NFC; anything else is refused until the `nfc` helper exists (D4).
+/// ASCII is NFC. Anything else is refused unless the `nfc` feature can verify it (CONTRACT D4).
 fn check_text(content: &str) -> Result<(), Error> {
     if content.is_empty() {
         return Err(Error::Invalid("content"));
     }
-    match content.bytes().position(|b| !b.is_ascii()) {
-        Some(at) => Err(Error::NotNormalised { at }),
-        None => Ok(()),
+    let Some(first_non_ascii) = content.bytes().position(|b| !b.is_ascii()) else {
+        return Ok(());
+    };
+    #[cfg(feature = "nfc")]
+    {
+        let _ = first_non_ascii;
+        if crate::nfc::is_nfc(content) {
+            return Ok(());
+        }
+        Err(Error::NotNormalised {
+            at: crate::nfc::first_difference(content),
+        })
     }
+    #[cfg(not(feature = "nfc"))]
+    Err(Error::NotNormalised {
+        at: first_non_ascii,
+    })
 }
 
 impl core::fmt::Debug for MemoryStore {
