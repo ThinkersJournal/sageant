@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.10
+
+- core slice 9 (ROADMAP row 3, in progress): retrieval types. `Retriever` (takes `&dyn Reader` and a `Query`: text, `Filter`, limit, opaque context), `Hit` (chunk ref, optional integer score, typed `Reason`: Lexical, Recency, LinkNeighbour, Custom), `order_hits` (score desc, unscored last, then id asc, version desc: the stated rule until SortAnt), `Fuser` and `DefaultFuser` (score desc then input order; a duplicate chunk version keeps its best score and reason). No tag reason (no tags in the model). No concrete retriever yet: the lexical one is row 4. Also `docs/LICENCES.md`: third-party licence record. Not yet: maintainer, Promoter/Demoter, mutation run.
+
 ## 0.0.9
 
 - core slice 8 (ROADMAP row 3, in progress): feature `nfc` (adds the optional `unicode-normalization` 0.1.26 dependency; the core stays zero-dependency without it). With it, `put` and `supersede` accept non-ASCII text that is already NFC and refuse the rest with `NotNormalised{at}` (the first byte that differs from the NFC form); `normalise_nfc` and `is_nfc` are the helpers. Without it nothing changes: only ASCII is accepted. Not yet: retrievers, maintainer.

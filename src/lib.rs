@@ -14,6 +14,7 @@ mod model;
 #[cfg(feature = "nfc")]
 mod nfc;
 mod reader;
+mod retrieve;
 mod screen;
 mod sha256;
 mod store;
@@ -29,6 +30,7 @@ pub use model::{
 #[cfg(feature = "nfc")]
 pub use nfc::{is_nfc, normalise_nfc};
 pub use reader::{Filter, Reader};
+pub use retrieve::{DefaultFuser, Fuser, Hit, Query, Reason, Retriever, order_hits};
 #[cfg(feature = "redactant")]
 pub use screen::RegisteredSecrets;
 pub use screen::SecretScreen;
