@@ -162,13 +162,19 @@ index, embedding or audit entry (scan every record the store holds, positive con
 before `forget`); determinism across insertion order; cycle refusal; envelope round-trip (D14); no panic on arbitrary
 input. No `unsafe`, no `#[ignore]`.
 
-## 8. Questions for the PM
+## 8. Questions for the PM: answered (PM, 2026-11-14)
 
-1. D4: accept a feature-gated NFC helper, and `NotNormalised` as the core's answer to non-NFC input?
-2. D9: does RedactAnt already own secret screening? If so SageAnt takes its trait instead of defining one.
-3. D12: plan-then-apply for maintenance, as recommended?
-4. D17: proceed on kv-postings lexical search (PersistAnt has no text index)?
-5. D13: confirm `purge` is never an MCP tool.
-6. D18: accept "unretrievable, not erased" as the `forget` promise until PersistAnt has a tested secure-delete
-   capability, and may I ask the PersistAnt lane for it? CireSnave's decision (10c) said forget removes content; this
-   is a gap between that wording and what the storage layer can prove.
+1. D4: YES. Feature-gated NFC helper; `NotNormalised` is the core's answer to non-NFC input.
+2. D9: RedactAnt owns secret screening. SageAnt takes the trait RedactAnt exposes; if none, RedactAnt provides one. SageAnt does
+   not define its own. Asked of the redactant lane 2026-11-14; until it answers, `put` takes a caller-supplied screen hook
+   whose type is replaced by RedactAnt's.
+3. D12: YES, plan-then-apply.
+4. D17: YES. kv-postings lexical search as an interim behind a trait (`TextIndex`); a text-index capability is a ROADMAP request to
+   the PersistAnt lane (PersistAnt picks backends, no arbitrary limits).
+5. D13: CONFIRMED. `purge` is never an MCP tool.
+6. D18: YES. The promise is "unretrievable, not erased" until PersistAnt has a tested secure-delete; requested of the PersistAnt
+   lane with the criterion that reading back the freed bytes shows the content absent. **Claims must be earned: the word
+   "erased" is not written anywhere (docs, tombstone, `Removed` variants) before that test passes.** The wording gap
+   against CireSnave's decision 10c goes to him in the PM's digest.
+
+Next: row 3, code, red-first.
