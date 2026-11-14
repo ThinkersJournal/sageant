@@ -101,6 +101,8 @@ pub enum Action {
     Link,
     /// A chunk was archived.
     Archive,
+    /// An archived chunk was made active again.
+    Unarchive,
     /// A chunk was forgotten.
     Forget,
     /// A chunk was purged.
@@ -173,5 +175,40 @@ impl AuditEvent {
     #[must_use]
     pub fn reason(&self) -> &str {
         &self.reason
+    }
+}
+
+/// Who is writing, in the caller's terms: a role and an agent. One type for every write through
+/// [`Writer`](crate::Writer) (CONTRACT D11); the audit log names it as `role/agent`. Both parts must be non-empty.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Actor {
+    role: String,
+    agent: String,
+}
+
+impl Actor {
+    /// An actor with a role (for example `curator`) and an agent name.
+    #[must_use]
+    pub fn new(role: &str, agent: &str) -> Self {
+        Self {
+            role: role.to_owned(),
+            agent: agent.to_owned(),
+        }
+    }
+    /// The role.
+    #[must_use]
+    pub fn role(&self) -> &str {
+        &self.role
+    }
+    /// The agent.
+    #[must_use]
+    pub fn agent(&self) -> &str {
+        &self.agent
+    }
+    pub(crate) fn is_valid(&self) -> bool {
+        !self.role.is_empty() && !self.agent.is_empty()
+    }
+    pub(crate) fn label(&self) -> String {
+        format!("{}/{}", self.role, self.agent)
     }
 }

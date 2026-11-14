@@ -15,10 +15,11 @@ mod reader;
 mod screen;
 mod sha256;
 mod store;
+mod writer;
 
 pub use error::Error;
 pub use lifecycle::{
-    Action, AuditEvent, LinkTarget, PersonAuthority, Removed, SecretOverride, Tombstone,
+    Action, Actor, AuditEvent, LinkTarget, PersonAuthority, Removed, SecretOverride, Tombstone,
 };
 pub use model::{
     Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
@@ -29,3 +30,4 @@ pub use screen::RegisteredSecrets;
 pub use screen::SecretScreen;
 pub use sha256::sha256_hex;
 pub use store::MemoryStore;
+pub use writer::Writer;

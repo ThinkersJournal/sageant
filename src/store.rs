@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::Error;
 use crate::lifecycle::{
-    Action, AuditEvent, LinkTarget, PersonAuthority, Removed, SecretOverride, Tombstone,
+    Action, Actor, AuditEvent, LinkTarget, PersonAuthority, Removed, SecretOverride, Tombstone,
 };
 use crate::model::{
     Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
@@ -11,6 +11,7 @@ use crate::model::{
 use crate::reader::{Filter, Reader};
 use crate::screen::SecretScreen;
 use crate::sha256::sha256_hex;
+use crate::writer::Writer;
 
 /// The in-memory reference store. Ordered maps only, so no hash order can reach any output (CONTRACT D16).
 #[derive(Default)]
@@ -22,6 +23,8 @@ pub struct MemoryStore {
     tombstones: BTreeMap<ChunkId, Tombstone>,
     review: BTreeSet<ChunkId>,
     audit: Vec<AuditEvent>,
+    /// Set while a `Writer` call runs: names the actor on every entry that call appends.
+    acting: Option<String>,
 }
 
 /// Core validates only what it can verify: ASCII is NFC; anything else is refused until the `nfc` helper exists (D4).
@@ -87,7 +90,7 @@ impl MemoryStore {
             at,
             action,
             id: id.cloned(),
-            actor: actor.to_owned(),
+            actor: self.acting.clone().unwrap_or_else(|| actor.to_owned()),
             reason: reason.to_owned(),
         });
     }
@@ -610,5 +613,109 @@ impl Reader for MemoryStore {
             out.truncate(n);
         }
         out
+    }
+}
+
+impl MemoryStore {
+    /// Make an archived chunk active again (every version).
+    ///
+    /// # Errors
+    /// `NotFound`, `Forgotten`, or `BadState` if already active.
+    pub fn unarchive(
+        &mut self,
+        id: &ChunkId,
+        actor: &str,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        if self
+            .lineage(id)?
+            .last()
+            .is_some_and(|c| c.status == Status::Active)
+        {
+            return Err(Error::BadState("already active"));
+        }
+        if let Some(v) = self.lineages.get_mut(id) {
+            for c in v {
+                c.status = Status::Active;
+            }
+        }
+        self.record(at, Action::Unarchive, Some(id), actor, reason);
+        Ok(())
+    }
+
+    /// Run `f` with every audit entry it appends attributed to `actor`.
+    fn acting_as<T>(
+        &mut self,
+        actor: &Actor,
+        f: impl FnOnce(&mut Self) -> Result<T, Error>,
+    ) -> Result<T, Error> {
+        if !actor.is_valid() {
+            return Err(Error::Invalid("actor"));
+        }
+        self.acting = Some(actor.label());
+        let out = f(self);
+        self.acting = None;
+        out
+    }
+}
+
+impl Writer for MemoryStore {
+    fn put(&mut self, new: NewChunk, actor: &Actor, at: Timestamp) -> Result<ChunkRef, Error> {
+        self.acting_as(actor, |s| Self::put(s, new, at))
+    }
+    fn supersede(
+        &mut self,
+        id: &ChunkId,
+        content: &str,
+        origin: Origin,
+        source: &str,
+        actor: &Actor,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
+        self.acting_as(actor, |s| {
+            Self::supersede(s, id, content, origin, source, at)
+        })
+    }
+    fn link(
+        &mut self,
+        from: &ChunkId,
+        kind: LinkKind,
+        to: &ChunkId,
+        actor: &Actor,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        self.acting_as(actor, |s| Self::link(s, from, kind, to, at))
+    }
+    fn set_status(
+        &mut self,
+        id: &ChunkId,
+        status: Status,
+        actor: &Actor,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        self.acting_as(actor, |s| match status {
+            Status::Archived => Self::archive(s, id, "", reason, at),
+            Status::Active => Self::unarchive(s, id, "", reason, at),
+        })
+    }
+    fn forget(
+        &mut self,
+        id: &ChunkId,
+        actor: &Actor,
+        reason: &str,
+        keyed_hash: Option<&str>,
+        at: Timestamp,
+    ) -> Result<Removed, Error> {
+        self.acting_as(actor, |s| Self::forget(s, id, "", reason, keyed_hash, at))
+    }
+    fn purge(
+        &mut self,
+        id: &ChunkId,
+        authority: &PersonAuthority,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        Self::purge(self, id, authority, at)
     }
 }
