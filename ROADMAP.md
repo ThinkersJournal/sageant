@@ -24,9 +24,9 @@ It sits above PersistAnt (storage). Status: stub crate, no API.
 |---|-----|--------|
 | 0 | ROADMAP, HANDOFF, version 0.0.1, CHANGELOG | done (#1) |
 | 1 | Read-only inventory of `weavatrix-memory` (MIT) and `areev-store` (MIT OR Apache-2.0); fork-vs-fresh recommendation | done (#2; recommendation: fresh) |
-| 2 | Contract note, options first: data model, retriever trait, promoter/demoter/maintainer traits, MCP tool surface, errors, determinism, PersistAnt mapping. PM reads before any code | in PR (draft; PM reads before any code) |
-| 3 | Core plus in-memory reference store; value-asserting tests, mutation checks, no `unsafe`, zero required dependencies | blocked on 2 |
-| 4 | PersistAnt-backed store, lexical retriever, MCP tool server, CLI; ease gate for a stranger | blocked on 3 |
+| 2 | Contract note, options first: data model, retriever trait, promoter/demoter/maintainer traits, MCP tool surface, errors, determinism, PersistAnt mapping. PM reads before any code | done (#3; PM answered 6 questions) |
+| 3 | Core plus in-memory reference store; value-asserting tests, mutation checks, no `unsafe`, zero required dependencies | done (#4 to #12; mutation run in `docs/MUTATION.md`) |
+| 4 | PersistAnt-backed store, lexical retriever, MCP tool server, CLI; ease gate for a stranger | in progress (0.1.0: `Reader` returns owned values; next: workspace, `sageant-lexical`, `sageant-persistant`, `sageant-mcp`, `sageant-cli`) |
 | 5 | Patent sweep before any release | blocked on 4 |
 
 ## Constraints

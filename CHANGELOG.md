@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0
+
+- **Breaking.** `Reader::get`, `get_version`, `history`, `links_from` and `links_to` return owned values (`Chunk`, `Vec<Chunk>`, `Vec<Link>`) instead of references (PM ruling 2026-11-14, `row4-reader-shape`): a backend that keeps its data in storage cannot lend references, and the store trait must not force a whole store into memory. `MemoryStore`'s own inherent methods still borrow, so code on a concrete `MemoryStore` is unchanged; only code written against `&dyn Reader` or `impl Reader` changes. `ROADMAP.md` statuses for rows 2 to 4 brought up to date.
+
 ## 0.0.12
 
 - Row 3 exit: recorded mutation run (`docs/MUTATION.md`). `cargo-mutants` over the in-memory store and traits: 313 mutants; first run 19 missed, after `tests/mutation_kills.rs` (10 tests) 3 missed, all equivalent (`^` to `|` in SHA-256 `ch` and `maj`), 1 timeout (padding loop). No source change.
