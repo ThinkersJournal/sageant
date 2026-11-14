@@ -2,7 +2,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::Error;
-use crate::lifecycle::{Action, AuditEvent, LinkTarget, PersonAuthority, Removed, Tombstone};
+use crate::lifecycle::{
+    Action, AuditEvent, LinkTarget, PersonAuthority, Removed, SecretOverride, Tombstone,
+};
 use crate::model::{
     Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
 };
@@ -47,16 +49,29 @@ impl MemoryStore {
         self.screen = Some(screen);
     }
 
-    fn run_screen(&mut self, texts: &[&str], at: Timestamp) -> Result<(), Error> {
+    /// Screen `texts`. `Ok(Some(class))` means the screen flagged `class` and `allow` covers it: the caller records
+    /// the override once the write has happened.
+    fn run_screen(
+        &mut self,
+        texts: &[&str],
+        allow: Option<&SecretOverride>,
+        at: Timestamp,
+    ) -> Result<Option<&'static str>, Error> {
+        if allow.is_some_and(|a| a.by().is_empty()) {
+            return Err(Error::Invalid("override"));
+        }
         let mut hit = None;
         if let Some(screen) = &self.screen {
             hit = texts.iter().find_map(|t| screen.screen(t));
         }
-        if let Some(class) = hit {
-            self.record(at, Action::Refused, None, "", &format!("secret:{class}"));
-            return Err(Error::SecretRefused { class });
+        match hit {
+            None => Ok(None),
+            Some(class) if allow.is_some_and(|a| a.class() == class) => Ok(Some(class)),
+            Some(class) => {
+                self.record(at, Action::Refused, None, "", &format!("secret:{class}"));
+                Err(Error::SecretRefused { class })
+            }
         }
-        Ok(())
     }
 
     fn record(
@@ -74,6 +89,19 @@ impl MemoryStore {
             actor: actor.to_owned(),
             reason: reason.to_owned(),
         });
+    }
+
+    fn record_override(
+        &mut self,
+        class: Option<&'static str>,
+        allow: Option<&SecretOverride>,
+        id: &ChunkId,
+        at: Timestamp,
+    ) {
+        if let (Some(class), Some(allow)) = (class, allow) {
+            let reason = format!("secret-override:{class}");
+            self.record(at, Action::Overridden, Some(id), allow.by(), &reason);
+        }
     }
 
     /// The lineage, or `Forgotten` / `NotFound` saying why it is not there.
@@ -257,6 +285,28 @@ impl MemoryStore {
     /// # Errors
     /// `Invalid`, `NotNormalised`, `TooLarge`, or `Conflict` when the same text already exists in the collection.
     pub fn put(&mut self, new: NewChunk, at: Timestamp) -> Result<ChunkRef, Error> {
+        self.put_inner(new, None, at)
+    }
+
+    /// [`put`](Self::put), allowing text the screen flags as the class `allow` names. Audited.
+    ///
+    /// # Errors
+    /// As `put`; `Invalid("override")` if `allow` names nobody; `SecretRefused` if the flagged class differs.
+    pub fn put_overriding(
+        &mut self,
+        new: NewChunk,
+        allow: &SecretOverride,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
+        self.put_inner(new, Some(allow), at)
+    }
+
+    fn put_inner(
+        &mut self,
+        new: NewChunk,
+        allow: Option<&SecretOverride>,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
         if new.collection.is_empty() {
             return Err(Error::Invalid("collection"));
         }
@@ -265,7 +315,7 @@ impl MemoryStore {
         }
         check_text(&new.content)?;
         self.check_cap(&new.collection, &new.content)?;
-        self.run_screen(&[&new.content, &new.source], at)?;
+        let overridden = self.run_screen(&[&new.content, &new.source], allow, at)?;
         let content_hash = sha256_hex(new.content.as_bytes());
         let id = ChunkId::derive(&new.collection, &content_hash);
         if let Some(existing) = self.lineages.get(&id) {
@@ -292,6 +342,7 @@ impl MemoryStore {
         self.lineages.insert(id.clone(), vec![chunk]);
         self.tombstones.remove(&id);
         self.record(at, Action::Put, Some(&id), &actor, "");
+        self.record_override(overridden, allow, &id, at);
         Ok(ChunkRef { id, version: 1 })
     }
 
@@ -307,6 +358,34 @@ impl MemoryStore {
         source: &str,
         at: Timestamp,
     ) -> Result<ChunkRef, Error> {
+        self.supersede_inner(id, content, origin, source, None, at)
+    }
+
+    /// [`supersede`](Self::supersede), allowing text the screen flags as the class `allow` names. Audited.
+    ///
+    /// # Errors
+    /// As `supersede`; `Invalid("override")` if `allow` names nobody; `SecretRefused` if the class differs.
+    pub fn supersede_overriding(
+        &mut self,
+        id: &ChunkId,
+        content: &str,
+        origin: Origin,
+        source: &str,
+        allow: &SecretOverride,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
+        self.supersede_inner(id, content, origin, source, Some(allow), at)
+    }
+
+    fn supersede_inner(
+        &mut self,
+        id: &ChunkId,
+        content: &str,
+        origin: Origin,
+        source: &str,
+        allow: Option<&SecretOverride>,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
         check_text(content)?;
         let current = self.lineage(id)?.last().ok_or(Error::NotFound)?;
         let collection = current.collection.clone();
@@ -316,7 +395,7 @@ impl MemoryStore {
         let same_text = current.content_hash == sha256_hex(content.as_bytes());
         let current_version = current.version;
         self.check_cap(&collection, content)?;
-        self.run_screen(&[content, source], at)?;
+        let overridden = self.run_screen(&[content, source], allow, at)?;
         if same_text {
             return Err(Error::Conflict {
                 expected: current_version,
@@ -340,6 +419,7 @@ impl MemoryStore {
             v.push(next);
         }
         self.record(at, Action::Supersede, Some(id), &format!("{origin:?}"), "");
+        self.record_override(overridden, allow, id, at);
         Ok(ChunkRef {
             id: id.clone(),
             version,

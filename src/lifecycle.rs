@@ -107,6 +107,35 @@ pub enum Action {
     Purge,
     /// A write was refused by the secret screen; the reason is `secret:<class>`.
     Refused,
+    /// A write the secret screen flagged was allowed by a caller-held [`SecretOverride`]; the reason is
+    /// `secret-override:<class>` and the actor is who allowed it. Never holds the text.
+    Overridden,
+}
+
+/// A caller-held, per-write permission to store text the secret screen flagged as one class. It covers exactly one
+/// write and only that class; the store audits every use and never logs the text (CONTRACT D9). The MCP server
+/// never builds one.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SecretOverride {
+    class: String,
+    by: String,
+}
+
+impl SecretOverride {
+    /// Allow one write whose text the screen flags as `class`. `by` says who allowed it, for the audit log.
+    #[must_use]
+    pub fn allow_class(class: &str, by: &str) -> Self {
+        Self {
+            class: class.to_owned(),
+            by: by.to_owned(),
+        }
+    }
+    pub(crate) fn class(&self) -> &str {
+        &self.class
+    }
+    pub(crate) fn by(&self) -> &str {
+        &self.by
+    }
 }
 
 /// One audit entry. Never holds content (the text, the source text or the content hash).

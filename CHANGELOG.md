@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.6
+
+- core slice 5 (ROADMAP row 3, in progress): audited per-write secrets override. `SecretOverride::allow_class(class, by)` with `put_overriding` and `supersede_overriding`: covers one write and only the class the screen flagged; the audit log gets `Action::Overridden` (`secret-override:<class>`, actor = who allowed it, never the text); an override naming nobody is `Invalid`. Plain `put` and `supersede` are unchanged. Not yet: Reader/Writer traits, nfc feature, retrievers.
+
 ## 0.0.5
 
 - core slice 4 (ROADMAP row 3, in progress): `archive`, `forget` (content, source, hash and outgoing links removed; minimal `Tombstone`; returns `Removed::Unretrievable`, there is no "erased" until PersistAnt row 38 passes), `purge` (needs `PersonAuthority`; also removes the tombstone), `Error::Forgotten`, links to removed targets read `LinkTarget::Removed`, derived chunks flagged `needs_review`, removed evidence ignored by `confidence`, and a content-free audit log (`audit()`; secret refusals are logged as `Refused` with the class only). Not yet: per-put secrets override, retrievers, Reader/Writer traits, nfc feature.
