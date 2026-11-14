@@ -8,6 +8,7 @@ use crate::lifecycle::{
 use crate::model::{
     Chunk, ChunkId, ChunkRef, Confidence, Link, LinkKind, NewChunk, Origin, Status, Timestamp,
 };
+use crate::reader::{Filter, Reader};
 use crate::screen::SecretScreen;
 use crate::sha256::sha256_hex;
 
@@ -566,5 +567,48 @@ impl MemoryStore {
         } else {
             Confidence::Unconfirmed
         })
+    }
+}
+
+impl Reader for MemoryStore {
+    fn get(&self, id: &ChunkId) -> Result<&Chunk, Error> {
+        Self::get(self, id)
+    }
+    fn get_version(&self, id: &ChunkId, version: u32) -> Result<&Chunk, Error> {
+        Self::get_version(self, id, version)
+    }
+    fn history(&self, id: &ChunkId) -> Result<&[Chunk], Error> {
+        Self::history(self, id)
+    }
+    fn links_from(&self, id: &ChunkId) -> Result<Vec<&Link>, Error> {
+        Self::links_from(self, id)
+    }
+    fn links_to(&self, id: &ChunkId) -> Result<Vec<&Link>, Error> {
+        Self::links_to(self, id)
+    }
+    fn confidence(&self, id: &ChunkId) -> Result<Confidence, Error> {
+        Self::confidence(self, id)
+    }
+    fn list(&self, filter: &Filter) -> Vec<ChunkRef> {
+        let mut out = Vec::new();
+        for (id, versions) in &self.lineages {
+            let confidence = Self::confidence(self, id).unwrap_or(Confidence::Unconfirmed);
+            let newest_first = versions.iter().rev();
+            for (i, c) in newest_first.enumerate() {
+                if i > 0 && !filter.include_superseded {
+                    break;
+                }
+                if filter.matches(c, confidence) {
+                    out.push(ChunkRef {
+                        id: id.clone(),
+                        version: c.version,
+                    });
+                }
+            }
+        }
+        if let Some(n) = filter.limit {
+            out.truncate(n);
+        }
+        out
     }
 }
