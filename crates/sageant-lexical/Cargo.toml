@@ -1,0 +1,12 @@
+[package]
+name = "sageant-lexical"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Lexical retrieval for sageant: a TextIndex trait, an in-memory index and integer-only BM25."
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+sageant = { path = "../..", version = "0.1.1" }
