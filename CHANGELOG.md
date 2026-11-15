@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+- Row 4: `sageant-persistant` slice 3 finished, caps, the secret screen and the `Writer` impl. `PersistStore` gets `set_byte_cap` (`TooLarge`), `set_screen` (the screen must be `Send + Sync`; a refusal is audited by class only and stores nothing), `put_overriding` and `supersede_overriding` (an override names the class and a person; audited as `Overridden`), and implements `Writer`, attributing every audit entry of a call to the caller's `role/agent` label exactly as `MemoryStore` does. A differential test drives both stores through the same `Writer` sequence (put, supersede, link, archive and unarchive, note, forget, purge, invalid actor) and compares results and audit logs. One precedence difference remains: a supersede of an unknown id with non-NFC text reports `NotFound` where `MemoryStore` reports `NotNormalised`.
+- Core: `SecretOverride::class/by`, `Actor::is_valid/label` are public so another store can attribute and audit the same way.
+- Still to come: the kv text index, `sageant-mcp`, `sageant-cli`, then the recorded mutation run.
+
 ## 0.2.1
 
 - Row 4: `sageant-persistant` slice 3, the audit log and the removal lifecycle. Every `PersistStore` write now appends a content-free entry to the audit log in the same atomic batch (`a/<seq>`, sequence held in `m/aseq`; a lost race for the sequence number is retried), with the same actors and reasons as `MemoryStore`; a refused write appends nothing. New: `audit`, `archive`, `unarchive` (every version, a new version of an archived chunk stays archived), `note`, `forget` (every version, source, hash and outgoing links removed in one batch, minimal tombstone left, links pointing at it stay and read as removed, chunks derived from it flagged for review), `purge` (also removes the tombstone), `tombstone`, `needs_review`, `link_target`. Reads of a forgotten chunk say `Forgotten`, not `NotFound`; putting the same text again ends the tombstone. A differential test compares both stores on listings, tombstones, review flags, link targets, confidence, every refusal and the audit log; a dump of every stored key proves a forgotten chunk's content is gone. Forget makes a chunk unretrievable; it does not claim the backend's old pages are erased.

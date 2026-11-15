@@ -17,6 +17,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use persistant::blocking::registry::{KvHandle, open_named};
@@ -26,9 +27,9 @@ use persistant::capability::provider::ProviderNeeds;
 use persistant::kv::{BatchOp, KvError};
 use persistant::registry::Endpoint;
 use sageant::{
-    Action, AuditEvent, Chunk, ChunkId, ChunkRef, Confidence, Error, Filter, Link, LinkKind,
-    LinkTarget, NewChunk, Origin, PersonAuthority, Removed, Status, Timestamp, Tombstone,
-    closes_cycle, derive_confidence,
+    Action, Actor, AuditEvent, Chunk, ChunkId, ChunkRef, Confidence, Error, Filter, Link, LinkKind,
+    LinkTarget, NewChunk, Origin, PersonAuthority, Removed, SecretOverride, SecretScreen, Status,
+    Timestamp, Tombstone, Writer, closes_cycle, derive_confidence,
 };
 
 const SCAN_PAGE: usize = 256;
@@ -78,12 +79,17 @@ fn reverse_key(from: &ChunkId, kind: LinkKind, to: &ChunkId) -> String {
 /// A sageant store kept in a PersistAnt key-value backend.
 pub struct PersistStore {
     kv: KvHandle,
+    screen: Option<Box<dyn SecretScreen + Send + Sync>>,
+    caps: BTreeMap<String, usize>,
+    /// Set while a `Writer` call runs: names the actor on every audit entry that call appends.
+    acting: Option<String>,
 }
 
 impl std::fmt::Debug for PersistStore {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PersistStore")
             .field("backend", &self.kv.id())
+            .field("screened", &self.screen.is_some())
             .finish()
     }
 }
@@ -114,7 +120,12 @@ impl PersistStore {
         let ids = ids.map_err(|e| backend(&e))?;
         let needs = ProviderNeeds::new(ids, Durability::Process);
         let kv = open_named(backend_id, endpoint, &needs).map_err(|e| backend(&e))?;
-        Ok(Self { kv })
+        Ok(Self {
+            kv,
+            screen: None,
+            caps: BTreeMap::new(),
+            acting: None,
+        })
     }
 
     fn read(&self, key: &str) -> Result<Option<Vec<u8>>, Error> {
@@ -180,6 +191,81 @@ impl PersistStore {
         }
     }
 
+    /// The actor an audit entry names: the `Writer` caller if one is acting, else `default`.
+    fn who(&self, default: &str) -> String {
+        self.acting.clone().unwrap_or_else(|| default.to_owned())
+    }
+
+    /// Set the secret screen run on the content and source of every write. Applies to later writes.
+    pub fn set_screen(&mut self, screen: Box<dyn SecretScreen + Send + Sync>) {
+        self.screen = Some(screen);
+    }
+
+    /// Cap the content size of `collection` in bytes. Applies to later writes.
+    pub fn set_byte_cap(&mut self, collection: &str, bytes: usize) {
+        self.caps.insert(collection.to_owned(), bytes);
+    }
+
+    fn check_cap(&self, collection: &str, content: &str) -> Result<(), Error> {
+        match self.caps.get(collection) {
+            Some(&cap) if content.len() > cap => Err(Error::TooLarge {
+                measured: content.len(),
+                cap,
+            }),
+            _ => Ok(()),
+        }
+    }
+
+    /// Screen `texts`. `Ok(Some(class))` means the screen flagged `class` and `allow` covers it: the caller records
+    /// the override once the write has happened. A refusal is audited (the class only) before it is returned.
+    fn run_screen(
+        &self,
+        texts: &[&str],
+        allow: Option<&SecretOverride>,
+        at: Timestamp,
+    ) -> Result<Option<&'static str>, Error> {
+        if allow.is_some_and(|a| a.by().is_empty()) {
+            return Err(Error::Invalid("override"));
+        }
+        let hit = self
+            .screen
+            .as_ref()
+            .and_then(|screen| texts.iter().find_map(|t| screen.screen(t)));
+        match hit {
+            None => Ok(None),
+            Some(class) if allow.is_some_and(|a| a.class() == class) => Ok(Some(class)),
+            Some(class) => {
+                let event = AuditEvent::new(
+                    at,
+                    Action::Refused,
+                    None,
+                    &self.who(""),
+                    &format!("secret:{class}"),
+                );
+                self.apply(&[], &[event])?;
+                Err(Error::SecretRefused { class })
+            }
+        }
+    }
+
+    /// The audit entry for an allowed secret, if the screen flagged one.
+    fn override_event(
+        &self,
+        class: Option<&'static str>,
+        allow: Option<&SecretOverride>,
+        id: &ChunkId,
+        at: Timestamp,
+    ) -> Option<AuditEvent> {
+        let (class, allow) = class.zip(allow)?;
+        Some(AuditEvent::new(
+            at,
+            Action::Overridden,
+            Some(id.clone()),
+            &self.who(allow.by()),
+            &format!("secret-override:{class}"),
+        ))
+    }
+
     fn head(&self, id: &ChunkId) -> Result<Option<u32>, Error> {
         match self.read(&head_key(id))? {
             None => Ok(None),
@@ -205,16 +291,43 @@ impl PersistStore {
     /// # Errors
     /// `Invalid`, `NotNormalised`, `Conflict` when the same text already exists in the collection, or `Backend`.
     pub fn put(&self, new: NewChunk, at: Timestamp) -> Result<ChunkRef, Error> {
+        self.put_inner(new, None, at)
+    }
+
+    /// [`put`](Self::put), allowing text the screen flags as the class `allow` names. Audited.
+    ///
+    /// # Errors
+    /// As `put`; `Invalid("override")` if `allow` names nobody; `SecretRefused` if the flagged class differs.
+    pub fn put_overriding(
+        &self,
+        new: NewChunk,
+        allow: &SecretOverride,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
+        self.put_inner(new, Some(allow), at)
+    }
+
+    fn put_inner(
+        &self,
+        new: NewChunk,
+        allow: Option<&SecretOverride>,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
         let chunk = Chunk::first_version(new, at)?;
+        self.check_cap(chunk.collection(), chunk.content())?;
+        let overridden = self.run_screen(&[chunk.content(), chunk.source()], allow, at)?;
         let id = chunk.id().clone();
         // The audit log names the origin class, never the free-text source (which may hold a URL or a name).
         let event = AuditEvent::new(
             at,
             Action::Put,
             Some(id.clone()),
-            &format!("{:?}", chunk.origin()),
+            &self.who(&format!("{:?}", chunk.origin())),
             "",
         );
+        let events: Vec<AuditEvent> = std::iter::once(event)
+            .chain(self.override_event(overridden, allow, &id, at))
+            .collect();
         let applied = self.apply(
             &[
                 BatchOp::Require {
@@ -236,7 +349,7 @@ impl PersistStore {
                     key: tombstone_key(&id),
                 },
             ],
-            &[event],
+            &events,
         )?;
         if applied {
             Ok(ChunkRef { id, version: 1 })
@@ -279,21 +392,56 @@ impl PersistStore {
         source: &str,
         at: Timestamp,
     ) -> Result<ChunkRef, Error> {
+        self.supersede_inner(id, expected, content, origin, source, None, at)
+    }
+
+    /// [`supersede`](Self::supersede), allowing text the screen flags as the class `allow` names. Audited.
+    ///
+    /// # Errors
+    /// As `supersede`; `Invalid("override")` if `allow` names nobody; `SecretRefused` if the class differs.
+    pub fn supersede_overriding(
+        &self,
+        id: &ChunkId,
+        content: &str,
+        origin: Origin,
+        source: &str,
+        allow: &SecretOverride,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
+        let current = self.head(id)?.ok_or_else(|| self.missing(id))?;
+        self.supersede_inner(id, current, content, origin, source, Some(allow), at)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn supersede_inner(
+        &self,
+        id: &ChunkId,
+        expected: u32,
+        content: &str,
+        origin: Origin,
+        source: &str,
+        allow: Option<&SecretOverride>,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
         let found = self.head(id)?.ok_or_else(|| self.missing(id))?;
         if found != expected {
             return Err(Error::Conflict { expected, found });
         }
-        let next = self
-            .load(id, expected)?
-            .next_version(content, origin, source, at)?;
+        let current = self.load(id, expected)?;
+        self.check_cap(current.collection(), content)?;
+        let overridden = self.run_screen(&[content, source], allow, at)?;
+        let next = current.next_version(content, origin, source, at)?;
         let version = next.version();
         let event = AuditEvent::new(
             at,
             Action::Supersede,
             Some(id.clone()),
-            &format!("{origin:?}"),
+            &self.who(&format!("{origin:?}")),
             "",
         );
+        let events: Vec<AuditEvent> = std::iter::once(event)
+            .chain(self.override_event(overridden, allow, id, at))
+            .collect();
         let applied = self.apply(
             &[
                 BatchOp::Require {
@@ -311,7 +459,7 @@ impl PersistStore {
                     ttl: NO_TTL,
                 },
             ],
-            &[event],
+            &events,
         )?;
         if applied {
             Ok(ChunkRef {
@@ -473,7 +621,7 @@ impl PersistStore {
             at,
             Action::Link,
             Some(from.clone()),
-            "",
+            &self.who(""),
             &format!("{kind:?}"),
         );
         let applied = self.apply(
@@ -626,7 +774,7 @@ impl PersistStore {
                 ttl: NO_TTL,
             });
         }
-        let event = AuditEvent::new(at, action, Some(id.clone()), actor, reason);
+        let event = AuditEvent::new(at, action, Some(id.clone()), &self.who(actor), reason);
         if self.apply(&ops, &[event])? {
             Ok(())
         } else {
@@ -649,7 +797,7 @@ impl PersistStore {
         at: Timestamp,
     ) -> Result<(), Error> {
         self.head(id)?.ok_or_else(|| self.missing(id))?;
-        let event = AuditEvent::new(at, Action::Note, Some(id.clone()), actor, reason);
+        let event = AuditEvent::new(at, Action::Note, Some(id.clone()), &self.who(actor), reason);
         self.apply(&[], &[event])?;
         Ok(())
     }
@@ -720,7 +868,13 @@ impl PersistStore {
             value: tombstone.encode(),
             ttl: NO_TTL,
         });
-        let event = AuditEvent::new(at, Action::Forget, Some(id.clone()), actor, reason);
+        let event = AuditEvent::new(
+            at,
+            Action::Forget,
+            Some(id.clone()),
+            &self.who(actor),
+            reason,
+        );
         if self.apply(&ops, &[event])? {
             Ok(Removed::Unretrievable)
         } else {
@@ -870,5 +1024,91 @@ impl sageant::Reader for PersistStore {
     }
     fn list(&self, filter: &Filter) -> Result<Vec<ChunkRef>, Error> {
         Self::list(self, filter)
+    }
+}
+
+impl PersistStore {
+    /// Run `f` with every audit entry it appends attributed to `actor`.
+    fn acting_as<T>(
+        &mut self,
+        actor: &Actor,
+        f: impl FnOnce(&Self) -> Result<T, Error>,
+    ) -> Result<T, Error> {
+        if !actor.is_valid() {
+            return Err(Error::Invalid("actor"));
+        }
+        self.acting = Some(actor.label());
+        let out = f(self);
+        self.acting = None;
+        out
+    }
+}
+
+impl Writer for PersistStore {
+    fn put(&mut self, new: NewChunk, actor: &Actor, at: Timestamp) -> Result<ChunkRef, Error> {
+        self.acting_as(actor, |s| Self::put(s, new, at))
+    }
+    fn supersede(
+        &mut self,
+        id: &ChunkId,
+        content: &str,
+        origin: Origin,
+        source: &str,
+        actor: &Actor,
+        at: Timestamp,
+    ) -> Result<ChunkRef, Error> {
+        self.acting_as(actor, |s| {
+            Self::supersede(s, id, content, origin, source, at)
+        })
+    }
+    fn link(
+        &mut self,
+        from: &ChunkId,
+        kind: LinkKind,
+        to: &ChunkId,
+        actor: &Actor,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        self.acting_as(actor, |s| Self::link(s, from, kind, to, at))
+    }
+    fn set_status(
+        &mut self,
+        id: &ChunkId,
+        status: Status,
+        actor: &Actor,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        self.acting_as(actor, |s| match status {
+            Status::Archived => Self::archive(s, id, "", reason, at),
+            _ => Self::unarchive(s, id, "", reason, at),
+        })
+    }
+    fn note(
+        &mut self,
+        id: &ChunkId,
+        actor: &Actor,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        self.acting_as(actor, |s| Self::note(s, id, "", reason, at))
+    }
+    fn forget(
+        &mut self,
+        id: &ChunkId,
+        actor: &Actor,
+        reason: &str,
+        keyed_hash: Option<&str>,
+        at: Timestamp,
+    ) -> Result<Removed, Error> {
+        self.acting_as(actor, |s| Self::forget(s, id, "", reason, keyed_hash, at))
+    }
+    fn purge(
+        &mut self,
+        id: &ChunkId,
+        authority: &PersonAuthority,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        Self::purge(self, id, authority, at)
     }
 }
