@@ -6,11 +6,13 @@ rust-version.workspace = true
 description = "A durable sageant store on PersistAnt key-value backends."
 license.workspace = true
 repository.workspace = true
-publish = false
+readme = "README.md"
+keywords = ["knowledge-base", "persistence", "sqlite", "key-value", "ai-agents"]
+categories = ["database-implementations"]
 
 [dependencies]
-sageant = { path = "../..", version = "0.3.6" }
-sageant-lexical = { path = "../sageant-lexical", version = "0.3.6" }
+sageant = { path = "../..", version = "0.3.7" }
+sageant-lexical = { path = "../sageant-lexical", version = "0.3.7" }
 persistant = { version = "~0.18", features = ["registry-sqlite"] }
 
 [dev-dependencies]

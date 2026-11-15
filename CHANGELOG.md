@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.7
+
+- First release to crates.io (the five names were reserved at 0.0.0): `sageant`, `sageant-lexical`, `sageant-persistant`, `sageant-mcp`, `sageant-cli`. `publish = false` is removed. Packaging: the root package excludes the lane's working files (`HANDOFF.md`, `ROADMAP.md`, `deny.toml`, `.github`); every crate now ships `LICENSE-APACHE`, `LICENSE-MIT` and its own `README.md`, and has `readme`, `keywords`, `categories`, `repository` and an accurate `description` (the root crate's still said "Planned"). The README says `cargo install sageant-cli`. No code changed.
+
 ## 0.3.6
 
 - Row 5: the patent sweep (`docs/PATENT-SWEEP.md`) over 0.3.x at 31bd649: 14 ideas, 10 queries, 19 hits whose claims were read; 18 clear as read, 1 design-around (US20230063214A1, the earlier ruling: no owner notification on the put path), none needs review. AI-assisted, not legal advice. No code changed.

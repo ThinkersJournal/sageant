@@ -6,13 +6,12 @@ from, finds it again with search, and lets you hide it (archive), make it unretr
 
 ## Status
 
-Pre-1.0 and not yet published to crates.io: the crate names are reserved, and for now you install from a checkout.
-The API is unstable (a breaking change moves the second version number).
+Pre-1.0: the API is unstable (a breaking change moves the second version number).
 
 ## Install and first run
 
 ```
-cargo install --path crates/sageant-cli
+cargo install sageant-cli
 ```
 
 That puts a `sageant` program on your path. There is no setup step; the first command creates the store.
