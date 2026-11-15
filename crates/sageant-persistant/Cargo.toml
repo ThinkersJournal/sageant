@@ -9,8 +9,8 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-sageant = { path = "../..", version = "0.3.3" }
-sageant-lexical = { path = "../sageant-lexical", version = "0.3.3" }
+sageant = { path = "../..", version = "0.3.4" }
+sageant-lexical = { path = "../sageant-lexical", version = "0.3.4" }
 persistant = { version = "~0.18", features = ["registry-sqlite"] }
 
 [dev-dependencies]
