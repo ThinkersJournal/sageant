@@ -11,8 +11,8 @@ keywords = ["knowledge-base", "persistence", "sqlite", "key-value", "ai-agents"]
 categories = ["database-implementations"]
 
 [dependencies]
-sageant = { path = "../..", version = "0.3.9" }
-sageant-lexical = { path = "../sageant-lexical", version = "0.3.9" }
+sageant = { path = "../..", version = "0.3.10" }
+sageant-lexical = { path = "../sageant-lexical", version = "0.3.10" }
 persistant = { version = "~0.18", features = ["registry-sqlite"] }
 
 [dev-dependencies]

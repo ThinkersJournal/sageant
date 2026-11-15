@@ -71,6 +71,28 @@ fn audit_key(seq: u64) -> String {
     format!("a/{seq:020}")
 }
 
+/// Per-chunk link generation: `n/<id>` counts the links ever added from or to the chunk. A writer that read links
+/// (a cycle check, a forget) requires the counters it read to be unchanged when it commits, so a link that lands in
+/// between makes it retry on fresh state instead of acting on stale reads.
+fn gen_key(id: &ChunkId) -> String {
+    format!("n/{}", id.as_str())
+}
+
+/// The counter after one more link; an absent counter is 0.
+fn bumped(seen: Option<&Vec<u8>>) -> Result<Vec<u8>, Error> {
+    let n: u64 = match seen {
+        None => 0,
+        Some(bytes) => std::str::from_utf8(bytes)
+            .ok()
+            .and_then(|t| t.parse().ok())
+            .ok_or(Error::Corrupt("link generation"))?,
+    };
+    Ok((n + 1).to_string().into_bytes())
+}
+
+/// Tries at a write whose only failed precondition was another writer's change to a link generation.
+const GEN_RETRIES: usize = 16;
+
 /// The next audit sequence number is held here; the entries themselves are `a/<seq>`.
 const AUDIT_COUNTER: &str = "m/aseq";
 /// Tries at a write whose only failed precondition was another writer's audit entry.
@@ -596,8 +618,9 @@ impl PersistStore {
     /// `NotFound` if either lineage is unknown; `LinkCycle` for a self-link or a cycle in `part-of` or
     /// `derived-from`; `DuplicateLink` for the same (source, kind, target), including when another writer added it
     /// first; `Conflict` if `from` got a new version while the link was being made; `Backend`. A refused link
-    /// changes nothing. The cycle check reads the existing links and is not atomic with the write: two writers
-    /// adding opposite `part-of` links at the same moment could both pass it.
+    /// changes nothing. The cycle check is atomic with the write: every chunk it reads has a link generation that must be
+    /// unchanged at commit, so two writers adding opposite `part-of` links at the same moment cannot both win (the
+    /// loser reads again and is refused).
     pub fn link(
         &self,
         from: &ChunkId,
@@ -605,37 +628,75 @@ impl PersistStore {
         to: &ChunkId,
         at: Timestamp,
     ) -> Result<(), Error> {
-        let from_version = self.get(from)?.version();
-        self.get(to)?;
-        if from == to {
-            return Err(Error::LinkCycle);
-        }
-        let forward = link_key(from, kind, to);
-        if self.read(&forward)?.is_some() {
-            return Err(Error::DuplicateLink);
-        }
-        if matches!(kind, LinkKind::PartOf | LinkKind::DerivedFrom) {
-            let mut next = |node: &ChunkId| -> Result<Vec<ChunkId>, Error> {
-                Ok(self
-                    .scan_links(&format!("l/{}/{}/", node.as_str(), kind.name()))?
-                    .into_iter()
-                    .map(|l| l.to().clone())
-                    .collect())
-            };
-            if closes_cycle(to, from, &mut next)? {
+        self.link_inner(from, kind, to, at, None)
+    }
+
+    /// [`link`](Self::link), running `hook` once after the checks and before the commit, to make a race
+    /// deterministic in a test. Not for production use.
+    #[doc(hidden)]
+    pub fn link_with_hook_for_test(
+        &self,
+        from: &ChunkId,
+        kind: LinkKind,
+        to: &ChunkId,
+        at: Timestamp,
+        hook: &dyn Fn(),
+    ) -> Result<(), Error> {
+        self.link_inner(from, kind, to, at, Some(hook))
+    }
+
+    fn link_inner(
+        &self,
+        from: &ChunkId,
+        kind: LinkKind,
+        to: &ChunkId,
+        at: Timestamp,
+        hook: Option<&dyn Fn()>,
+    ) -> Result<(), Error> {
+        for attempt in 0..GEN_RETRIES {
+            let from_version = self.get(from)?.version();
+            let to_version = self.get(to)?.version();
+            if from == to {
                 return Err(Error::LinkCycle);
             }
-        }
-        let link = Link::new(from.clone(), from_version, kind, to.clone(), at);
-        let event = AuditEvent::new(
-            at,
-            Action::Link,
-            Some(from.clone()),
-            &self.who(""),
-            &format!("{kind:?}"),
-        );
-        let applied = self.apply(
-            &[
+            let forward = link_key(from, kind, to);
+            if self.read(&forward)?.is_some() {
+                return Err(Error::DuplicateLink);
+            }
+            // Every generation read below is required unchanged at commit.
+            let mut seen: BTreeMap<ChunkId, Option<Vec<u8>>> = BTreeMap::new();
+            for id in [from, to] {
+                seen.insert(id.clone(), self.read(&gen_key(id))?);
+            }
+            if matches!(kind, LinkKind::PartOf | LinkKind::DerivedFrom) {
+                let mut next = |node: &ChunkId| -> Result<Vec<ChunkId>, Error> {
+                    if !seen.contains_key(node) {
+                        seen.insert(node.clone(), self.read(&gen_key(node))?);
+                    }
+                    Ok(self
+                        .scan_links(&format!("l/{}/{}/", node.as_str(), kind.name()))?
+                        .into_iter()
+                        .map(|l| l.to().clone())
+                        .collect())
+                };
+                if closes_cycle(to, from, &mut next)? {
+                    return Err(Error::LinkCycle);
+                }
+            }
+            if attempt == 0
+                && let Some(hook) = hook
+            {
+                hook();
+            }
+            let link = Link::new(from.clone(), from_version, kind, to.clone(), at);
+            let event = AuditEvent::new(
+                at,
+                Action::Link,
+                Some(from.clone()),
+                &self.who(""),
+                &format!("{kind:?}"),
+            );
+            let mut ops = vec![
                 BatchOp::Require {
                     key: forward.clone(),
                     expected: None,
@@ -644,29 +705,51 @@ impl PersistStore {
                     key: head_key(from),
                     expected: Some(from_version.to_string().into_bytes()),
                 },
-                BatchOp::Put {
-                    key: forward,
-                    value: link.encode(),
-                    ttl: NO_TTL,
+                BatchOp::Require {
+                    key: head_key(to),
+                    expected: Some(to_version.to_string().into_bytes()),
                 },
-                BatchOp::Put {
-                    key: reverse_key(from, kind, to),
-                    value: link.encode(),
+            ];
+            for (id, generation) in &seen {
+                ops.push(BatchOp::Require {
+                    key: gen_key(id),
+                    expected: generation.clone(),
+                });
+            }
+            ops.push(BatchOp::Put {
+                key: forward,
+                value: link.encode(),
+                ttl: NO_TTL,
+            });
+            ops.push(BatchOp::Put {
+                key: reverse_key(from, kind, to),
+                value: link.encode(),
+                ttl: NO_TTL,
+            });
+            for id in [from, to] {
+                let current = seen.get(id).and_then(Option::as_ref);
+                ops.push(BatchOp::Put {
+                    key: gen_key(id),
+                    value: bumped(current)?,
                     ttl: NO_TTL,
-                },
-            ],
-            &[event],
-        )?;
-        if applied {
-            return Ok(());
+                });
+            }
+            if self.apply(&ops, &[event])? {
+                return Ok(());
+            }
+            if self.read(&link_key(from, kind, to))?.is_some() {
+                return Err(Error::DuplicateLink);
+            }
+            let found = self.head(from)?.unwrap_or(0);
+            if found != from_version {
+                return Err(Error::Conflict {
+                    expected: from_version,
+                    found,
+                });
+            }
+            // Otherwise a link landed on a chunk this one read, or the target changed: read again.
         }
-        if self.read(&link_key(from, kind, to))?.is_some() {
-            return Err(Error::DuplicateLink);
-        }
-        Err(Error::Conflict {
-            expected: from_version,
-            found: self.head(from)?.unwrap_or(0),
-        })
+        Err(Error::Backend("link contention".to_owned()))
     }
 
     fn scan_links(&self, prefix: &str) -> Result<Vec<Link>, Error> {
@@ -857,42 +940,86 @@ impl PersistStore {
         keyed_hash: Option<&str>,
         at: Timestamp,
     ) -> Result<Removed, Error> {
-        let head = self.head(id)?.ok_or_else(|| self.missing(id))?;
-        let history = self.history(id)?;
-        let tombstone = Tombstone::new(
-            id.clone(),
-            history.first().map_or("", Chunk::collection),
-            u32::try_from(history.len()).unwrap_or(u32::MAX),
-            at,
-            actor,
-            reason,
-            keyed_hash,
-        );
-        let mut ops = vec![BatchOp::Require {
-            key: head_key(id),
-            expected: Some(head.to_string().into_bytes()),
-        }];
-        ops.extend(self.removal_ops(id)?);
-        ops.push(BatchOp::Put {
-            key: tombstone_key(id),
-            value: tombstone.encode(),
-            ttl: NO_TTL,
-        });
-        let event = AuditEvent::new(
-            at,
-            Action::Forget,
-            Some(id.clone()),
-            &self.who(actor),
-            reason,
-        );
-        if self.apply(&ops, &[event])? {
-            Ok(Removed::Unretrievable)
-        } else {
-            Err(Error::Conflict {
-                expected: head,
-                found: self.head(id)?.unwrap_or(0),
-            })
+        self.forget_inner(id, actor, reason, keyed_hash, at, None)
+    }
+
+    /// [`forget`](Self::forget), running `hook` once after the reads and before the commit. Test only.
+    #[doc(hidden)]
+    pub fn forget_with_hook_for_test(
+        &self,
+        id: &ChunkId,
+        actor: &str,
+        reason: &str,
+        keyed_hash: Option<&str>,
+        at: Timestamp,
+        hook: &dyn Fn(),
+    ) -> Result<Removed, Error> {
+        self.forget_inner(id, actor, reason, keyed_hash, at, Some(hook))
+    }
+
+    fn forget_inner(
+        &self,
+        id: &ChunkId,
+        actor: &str,
+        reason: &str,
+        keyed_hash: Option<&str>,
+        at: Timestamp,
+        hook: Option<&dyn Fn()>,
+    ) -> Result<Removed, Error> {
+        for attempt in 0..GEN_RETRIES {
+            let head = self.head(id)?.ok_or_else(|| self.missing(id))?;
+            // Read the link generation before the links, so a link that lands later makes the commit retry.
+            let generation = self.read(&gen_key(id))?;
+            let history = self.history(id)?;
+            let tombstone = Tombstone::new(
+                id.clone(),
+                history.first().map_or("", Chunk::collection),
+                u32::try_from(history.len()).unwrap_or(u32::MAX),
+                at,
+                actor,
+                reason,
+                keyed_hash,
+            );
+            let mut ops = vec![
+                BatchOp::Require {
+                    key: head_key(id),
+                    expected: Some(head.to_string().into_bytes()),
+                },
+                BatchOp::Require {
+                    key: gen_key(id),
+                    expected: generation,
+                },
+            ];
+            ops.extend(self.removal_ops(id)?);
+            ops.push(BatchOp::Put {
+                key: tombstone_key(id),
+                value: tombstone.encode(),
+                ttl: NO_TTL,
+            });
+            if attempt == 0
+                && let Some(hook) = hook
+            {
+                hook();
+            }
+            let event = AuditEvent::new(
+                at,
+                Action::Forget,
+                Some(id.clone()),
+                &self.who(actor),
+                reason,
+            );
+            if self.apply(&ops, &[event])? {
+                return Ok(Removed::Unretrievable);
+            }
+            let found = self.head(id)?.unwrap_or(0);
+            if found != head {
+                return Err(Error::Conflict {
+                    expected: head,
+                    found,
+                });
+            }
         }
+        Err(Error::Backend("forget contention".to_owned()))
     }
 
     /// Remove everything about a chunk, including its tombstone. Needs a [`PersonAuthority`].
@@ -906,36 +1033,74 @@ impl PersistStore {
         authority: &PersonAuthority,
         at: Timestamp,
     ) -> Result<(), Error> {
-        let head = self.head(id)?;
-        let tombstone = self.read(&tombstone_key(id))?;
-        if head.is_none() && tombstone.is_none() {
-            return Err(Error::NotFound);
+        self.purge_inner(id, authority, at, None)
+    }
+
+    /// [`purge`](Self::purge), running `hook` once after the reads and before the commit. Test only.
+    #[doc(hidden)]
+    pub fn purge_with_hook_for_test(
+        &self,
+        id: &ChunkId,
+        authority: &PersonAuthority,
+        at: Timestamp,
+        hook: &dyn Fn(),
+    ) -> Result<(), Error> {
+        self.purge_inner(id, authority, at, Some(hook))
+    }
+
+    fn purge_inner(
+        &self,
+        id: &ChunkId,
+        authority: &PersonAuthority,
+        at: Timestamp,
+        hook: Option<&dyn Fn()>,
+    ) -> Result<(), Error> {
+        for attempt in 0..GEN_RETRIES {
+            let head = self.head(id)?;
+            let tombstone = self.read(&tombstone_key(id))?;
+            if head.is_none() && tombstone.is_none() {
+                return Err(Error::NotFound);
+            }
+            let generation = self.read(&gen_key(id))?;
+            let mut ops = vec![
+                BatchOp::Require {
+                    key: head_key(id),
+                    expected: head.map(|h| h.to_string().into_bytes()),
+                },
+                BatchOp::Require {
+                    key: tombstone_key(id),
+                    expected: tombstone,
+                },
+                BatchOp::Require {
+                    key: gen_key(id),
+                    expected: generation,
+                },
+                BatchOp::Delete {
+                    key: tombstone_key(id),
+                },
+                BatchOp::Delete { key: gen_key(id) },
+            ];
+            if head.is_some() {
+                ops.extend(self.removal_ops(id)?);
+            }
+            if attempt == 0
+                && let Some(hook) = hook
+            {
+                hook();
+            }
+            let event = AuditEvent::new(at, Action::Purge, Some(id.clone()), authority.how(), "");
+            if self.apply(&ops, &[event])? {
+                return Ok(());
+            }
+            let found = self.head(id)?.unwrap_or(0);
+            if found != head.unwrap_or(0) {
+                return Err(Error::Conflict {
+                    expected: head.unwrap_or(0),
+                    found,
+                });
+            }
         }
-        let mut ops = vec![
-            BatchOp::Require {
-                key: head_key(id),
-                expected: head.map(|h| h.to_string().into_bytes()),
-            },
-            BatchOp::Require {
-                key: tombstone_key(id),
-                expected: tombstone,
-            },
-            BatchOp::Delete {
-                key: tombstone_key(id),
-            },
-        ];
-        if head.is_some() {
-            ops.extend(self.removal_ops(id)?);
-        }
-        let event = AuditEvent::new(at, Action::Purge, Some(id.clone()), authority.how(), "");
-        if self.apply(&ops, &[event])? {
-            Ok(())
-        } else {
-            Err(Error::Conflict {
-                expected: head.unwrap_or(0),
-                found: self.head(id)?.unwrap_or(0),
-            })
-        }
+        Err(Error::Backend("purge contention".to_owned()))
     }
 
     /// The tombstone of a forgotten lineage, if it is currently forgotten.
