@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.6
+
+- Row 5: the patent sweep (`docs/PATENT-SWEEP.md`) over 0.3.x at 31bd649: 14 ideas, 10 queries, 19 hits whose claims were read; 18 clear as read, 1 design-around (US20230063214A1, the earlier ruling: no owner notification on the put path), none needs review. AI-assisted, not legal advice. No code changed.
+
 ## 0.3.5
 
 - ROADMAP: row 4 is done and row 5 (patent sweep before any release) is next; the stale "stub crate, no API" status line is replaced. No code changed.
