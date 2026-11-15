@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.10
+
+- `sageant-persistant`: the two documented atomicity limits are closed. Each chunk now has a link generation (`n/<id>`, bumped when a link is added from or to it); a writer that read links requires the generations it read to be unchanged at commit and otherwise reads again (up to 16 times). (1) The `part-of` / `derived-from` cycle check is now atomic with the write: two writers adding opposite links at once cannot both win, and a longer cycle closed by a racing edge is caught; the link batch also requires the target still has the version it was checked at, so a link to a chunk forgotten mid-link is refused (`Forgotten`) instead of left dangling. (2) `forget` and `purge` now retry when a link lands between reading a chunk's links and committing, so no outgoing link of a forgotten chunk survives and a chunk derived from it is still flagged for review. New `tests/atomicity.rs` makes each race deterministic with a test-only hook (six tests, red before the fix, green after) plus a threaded stress test.
+- Known limits that remain: a write that loses 16 retries in a row reports a `Backend` contention error; `Conflict` semantics are unchanged.
+
 ## 0.3.9
 
 - ROADMAP: rows 5 (patent sweep) and 6 (first release, 0.3.8 on crates.io) are done; the status line is current. `ROADMAP.md` is excluded from the published packages, so this changes nothing a crates.io user receives; the version moves because the repository changed.
