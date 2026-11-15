@@ -17,6 +17,10 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod index;
+
+pub use index::KvTextIndex;
+
 use std::collections::BTreeMap;
 use std::time::Duration;
 
@@ -32,14 +36,14 @@ use sageant::{
     Timestamp, Tombstone, Writer, closes_cycle, derive_confidence,
 };
 
-const SCAN_PAGE: usize = 256;
-const NO_TTL: Option<Duration> = None;
+pub(crate) const SCAN_PAGE: usize = 256;
+pub(crate) const NO_TTL: Option<Duration> = None;
 
-fn backend(e: &impl std::fmt::Display) -> Error {
+pub(crate) fn backend(e: &impl std::fmt::Display) -> Error {
     Error::Backend(e.to_string())
 }
 
-fn kv_error(e: KvError) -> Error {
+pub(crate) fn kv_error(e: KvError) -> Error {
     backend(&e)
 }
 
@@ -76,6 +80,27 @@ fn reverse_key(from: &ChunkId, kind: LinkKind, to: &ChunkId) -> String {
     format!("r/{}/{}/{}", to.as_str(), kind.name(), from.as_str())
 }
 
+/// Open the PersistAnt backend with every capability the stores here rely on.
+pub(crate) fn open_kv(backend_id: &str, endpoint: &Endpoint) -> Result<KvHandle, Error> {
+    let ids: Result<Vec<CapabilityId>, _> = [
+        "kv.get",
+        "kv.put",
+        "kv.delete",
+        "kv.ordered_scan_values",
+        "kv.batch_atomic.rollback",
+        "kv.batch_atomic.concurrent_read",
+        "kv.batch_atomic.optimistic_sequence",
+        "kv.batch_atomic.absent_race",
+    ]
+    .into_iter()
+    .map(CapabilityId::new)
+    .collect();
+    let ids = ids.map_err(|e| backend(&e))?;
+    let needs = ProviderNeeds::new(ids, Durability::Process);
+    let kv = open_named(backend_id, endpoint, &needs).map_err(|e| backend(&e))?;
+    Ok(kv)
+}
+
 /// A sageant store kept in a PersistAnt key-value backend.
 pub struct PersistStore {
     kv: KvHandle,
@@ -104,22 +129,7 @@ impl PersistStore {
     /// # Errors
     /// `Backend` naming what is missing when the backend cannot give those, or cannot be opened.
     pub fn open(backend_id: &str, endpoint: &Endpoint) -> Result<Self, Error> {
-        let ids: Result<Vec<CapabilityId>, _> = [
-            "kv.get",
-            "kv.put",
-            "kv.delete",
-            "kv.ordered_scan_values",
-            "kv.batch_atomic.rollback",
-            "kv.batch_atomic.concurrent_read",
-            "kv.batch_atomic.optimistic_sequence",
-            "kv.batch_atomic.absent_race",
-        ]
-        .into_iter()
-        .map(CapabilityId::new)
-        .collect();
-        let ids = ids.map_err(|e| backend(&e))?;
-        let needs = ProviderNeeds::new(ids, Durability::Process);
-        let kv = open_named(backend_id, endpoint, &needs).map_err(|e| backend(&e))?;
+        let kv = open_kv(backend_id, endpoint)?;
         Ok(Self {
             kv,
             screen: None,
