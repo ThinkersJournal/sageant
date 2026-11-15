@@ -4,7 +4,7 @@ resolver = "3"
 
 # One version number for every crate in the project (CireSnave's standing rule); the PM allocates it.
 [workspace.package]
-version = "0.3.6"
+version = "0.3.7"
 edition = "2024"
 rust-version = "1.94"
 license = "MIT OR Apache-2.0"
@@ -15,11 +15,13 @@ name = "sageant"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Planned. The crate name is reserved; there is no API yet."
+description = "A knowledge store for people and AI agents: immutable versioned chunks, provenance, deletion by archive, forget or purge, and an in-memory reference store."
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
-publish = false
+keywords = ["knowledge-base", "memory", "ai-agents", "provenance", "versioning"]
+categories = ["data-structures", "database-implementations"]
+exclude = ["/HANDOFF.md", "/ROADMAP.md", "/deny.toml", "/.github", "/.gitattributes", "/supertool"]
 
 [dependencies]
 redactant = { version = "0.1.2", optional = true }

@@ -6,7 +6,9 @@ rust-version.workspace = true
 description = "Lexical retrieval for sageant: a TextIndex trait, an in-memory index and integer-only BM25."
 license.workspace = true
 repository.workspace = true
-publish = false
+readme = "README.md"
+keywords = ["search", "bm25", "full-text", "retrieval", "knowledge-base"]
+categories = ["text-processing", "algorithms"]
 
 [dependencies]
-sageant = { path = "../..", version = "0.3.6" }
+sageant = { path = "../..", version = "0.3.7" }
