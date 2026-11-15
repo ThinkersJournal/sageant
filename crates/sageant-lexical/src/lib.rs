@@ -71,15 +71,30 @@ pub struct Stats {
 /// trait (CONTRACT D17). Every method returns owned values so a backend need not lend references.
 pub trait TextIndex {
     /// Index `text` as `chunk`, replacing anything indexed earlier for that exact chunk version.
-    fn index(&mut self, chunk: &ChunkRef, text: &str);
+    ///
+    /// # Errors
+    /// `Backend` or `Corrupt` when the index cannot be written.
+    fn index(&mut self, chunk: &ChunkRef, text: &str) -> Result<(), Error>;
     /// Drop every version of a lineage.
-    fn remove(&mut self, id: &ChunkId);
+    ///
+    /// # Errors
+    /// `Backend` or `Corrupt` when the index cannot be written.
+    fn remove(&mut self, id: &ChunkId) -> Result<(), Error>;
     /// The postings of `term`, ordered by (chunk id, version).
-    fn postings(&self, term: &str) -> Vec<Posting>;
+    ///
+    /// # Errors
+    /// `Backend` or `Corrupt` when the index cannot be read.
+    fn postings(&self, term: &str) -> Result<Vec<Posting>, Error>;
     /// The token count of an indexed chunk version.
-    fn doc_len(&self, chunk: &ChunkRef) -> Option<u32>;
+    ///
+    /// # Errors
+    /// `Backend` or `Corrupt` when the index cannot be read.
+    fn doc_len(&self, chunk: &ChunkRef) -> Result<Option<u32>, Error>;
     /// Corpus totals.
-    fn stats(&self) -> Stats;
+    ///
+    /// # Errors
+    /// `Backend` or `Corrupt` when the index cannot be read.
+    fn stats(&self) -> Result<Stats, Error>;
 }
 
 type DocKey = (ChunkId, u32);
@@ -101,7 +116,7 @@ impl MemoryIndex {
         let mut index = Self::default();
         for chunk_ref in reader.list(&Filter::new().include_archived())? {
             if let Ok(chunk) = reader.get_version(&chunk_ref.id, chunk_ref.version) {
-                index.index(&chunk_ref, chunk.content());
+                index.index(&chunk_ref, chunk.content())?;
             }
         }
         Ok(index)
@@ -118,7 +133,7 @@ impl MemoryIndex {
 }
 
 impl TextIndex for MemoryIndex {
-    fn index(&mut self, chunk: &ChunkRef, text: &str) {
+    fn index(&mut self, chunk: &ChunkRef, text: &str) -> Result<(), Error> {
         let key: DocKey = (chunk.id.clone(), chunk.version);
         self.drop_doc(&key);
         let counts = term_counts(text);
@@ -127,17 +142,19 @@ impl TextIndex for MemoryIndex {
             self.terms.entry(term).or_default().insert(key.clone(), tf);
         }
         self.docs.insert(key, len);
+        Ok(())
     }
 
-    fn remove(&mut self, id: &ChunkId) {
+    fn remove(&mut self, id: &ChunkId) -> Result<(), Error> {
         let keys: Vec<DocKey> = self.docs.keys().filter(|(i, _)| i == id).cloned().collect();
         for key in keys {
             self.drop_doc(&key);
         }
+        Ok(())
     }
 
-    fn postings(&self, term: &str) -> Vec<Posting> {
-        self.terms.get(term).map_or_else(Vec::new, |docs| {
+    fn postings(&self, term: &str) -> Result<Vec<Posting>, Error> {
+        Ok(self.terms.get(term).map_or_else(Vec::new, |docs| {
             docs.iter()
                 .map(|((id, version), tf)| {
                     Posting::new(
@@ -149,18 +166,18 @@ impl TextIndex for MemoryIndex {
                     )
                 })
                 .collect()
-        })
+        }))
     }
 
-    fn doc_len(&self, chunk: &ChunkRef) -> Option<u32> {
-        self.docs.get(&(chunk.id.clone(), chunk.version)).copied()
+    fn doc_len(&self, chunk: &ChunkRef) -> Result<Option<u32>, Error> {
+        Ok(self.docs.get(&(chunk.id.clone(), chunk.version)).copied())
     }
 
-    fn stats(&self) -> Stats {
-        Stats {
+    fn stats(&self) -> Result<Stats, Error> {
+        Ok(Stats {
             docs: self.docs.len() as u64,
             total_len: self.docs.values().map(|n| u64::from(*n)).sum(),
-        }
+        })
     }
 }
 
@@ -249,7 +266,7 @@ impl<I: TextIndex> Retriever for LexicalRetriever<I> {
         if terms.is_empty() {
             return Ok(Vec::new());
         }
-        let stats = self.index.stats();
+        let stats = self.index.stats()?;
         let visible: BTreeSet<(ChunkId, u32)> = store
             .list(query.filter_ref())?
             .into_iter()
@@ -257,14 +274,14 @@ impl<I: TextIndex> Retriever for LexicalRetriever<I> {
             .collect();
         let mut scored: BTreeMap<(ChunkId, u32), (i64, Vec<String>)> = BTreeMap::new();
         for term in &terms {
-            let postings = self.index.postings(term);
+            let postings = self.index.postings(term)?;
             let n = postings.len() as u64;
             for p in postings {
                 let key = (p.chunk().id.clone(), p.chunk().version);
                 if !visible.contains(&key) {
                     continue;
                 }
-                let dl = self.index.doc_len(p.chunk()).unwrap_or(0);
+                let dl = self.index.doc_len(p.chunk())?.unwrap_or(0);
                 let entry = scored.entry(key).or_insert((0, Vec::new()));
                 entry.0 = entry.0.saturating_add(bm25_milli(p.tf(), dl, n, stats));
                 entry.1.push(term.clone());
