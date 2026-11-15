@@ -7,10 +7,12 @@
 //! consistent snapshot), never `prefix_list`, so results are deterministic (CONTRACT D16). A backend that cannot give
 //! atomic batches is refused when the store is opened, by PersistAnt, not worked around here.
 //!
-//! This first slice stores chunks and their versions. Links, deletion and the audit log follow.
+//! Stored so far: chunks and their versions, typed links and the confidence derived from them. Deletion, the audit
+//! log and the `Reader`/`Writer` trait impls follow.
 //!
 //! Keys: `c/<id>/<version, 10 digits>` holds one version's record (the core's canonical encoding, verified on every
-//! read); `h/<id>` holds the current version number.
+//! read); `h/<id>` holds the current version number; `l/<from>/<kind>/<to>` holds a link, and `r/<to>/<kind>/<from>`
+//! the same link for reverse lookup (both written in the same batch).
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -23,7 +25,10 @@ use persistant::capability::choose::Durability;
 use persistant::capability::provider::ProviderNeeds;
 use persistant::kv::{BatchOp, KvError};
 use persistant::registry::Endpoint;
-use sageant::{Chunk, ChunkId, ChunkRef, Confidence, Error, Filter, NewChunk, Origin, Timestamp};
+use sageant::{
+    Chunk, ChunkId, ChunkRef, Confidence, Error, Filter, Link, LinkKind, NewChunk, Origin,
+    Timestamp, closes_cycle, derive_confidence,
+};
 
 const SCAN_PAGE: usize = 256;
 const NO_TTL: Option<Duration> = None;
@@ -42,6 +47,14 @@ fn chunk_key(id: &ChunkId, version: u32) -> String {
 
 fn head_key(id: &ChunkId) -> String {
     format!("h/{}", id.as_str())
+}
+
+fn link_key(from: &ChunkId, kind: LinkKind, to: &ChunkId) -> String {
+    format!("l/{}/{}/{}", from.as_str(), kind.name(), to.as_str())
+}
+
+fn reverse_key(from: &ChunkId, kind: LinkKind, to: &ChunkId) -> String {
+    format!("r/{}/{}/{}", to.as_str(), kind.name(), from.as_str())
 }
 
 /// A sageant store kept in a PersistAnt key-value backend.
@@ -280,12 +293,9 @@ impl PersistStore {
     /// `sageant::Reader::list` orders them.
     ///
     /// # Errors
-    /// `Invalid("confidence filter")` for a filter on confidence (derived from links, which this slice does not
-    /// store yet); `Corrupt` or `Backend`.
+    /// `Corrupt` or `Backend`.
     pub fn list(&self, filter: &Filter) -> Result<Vec<ChunkRef>, Error> {
-        if filter.confidence_filter().is_some() {
-            return Err(Error::Invalid("confidence filter"));
-        }
+        let wants_confidence = filter.confidence_filter().is_some();
         let mut all: Vec<Chunk> = Vec::new();
         for bytes in self.scan("c/")? {
             all.push(Chunk::decode(&bytes)?);
@@ -302,7 +312,12 @@ impl PersistStore {
                 if n > 0 && !filter.includes_superseded() {
                     break;
                 }
-                if filter.matches(chunk, Confidence::Unconfirmed) {
+                let confidence = if wants_confidence {
+                    self.confidence(chunk.id())?
+                } else {
+                    Confidence::Unconfirmed
+                };
+                if filter.matches(chunk, confidence) {
                     out.push(ChunkRef {
                         id: chunk.id().clone(),
                         version: chunk.version(),
@@ -315,6 +330,127 @@ impl PersistStore {
             out.truncate(n);
         }
         Ok(out)
+    }
+
+    /// Link `from` to `to`, attached to `from`'s current version.
+    ///
+    /// # Errors
+    /// `NotFound` if either lineage is unknown; `LinkCycle` for a self-link or a cycle in `part-of` or
+    /// `derived-from`; `DuplicateLink` for the same (source, kind, target), including when another writer added it
+    /// first; `Conflict` if `from` got a new version while the link was being made; `Backend`. A refused link
+    /// changes nothing. The cycle check reads the existing links and is not atomic with the write: two writers
+    /// adding opposite `part-of` links at the same moment could both pass it.
+    pub fn link(
+        &self,
+        from: &ChunkId,
+        kind: LinkKind,
+        to: &ChunkId,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        let from_version = self.get(from)?.version();
+        self.get(to)?;
+        if from == to {
+            return Err(Error::LinkCycle);
+        }
+        let forward = link_key(from, kind, to);
+        if self.read(&forward)?.is_some() {
+            return Err(Error::DuplicateLink);
+        }
+        if matches!(kind, LinkKind::PartOf | LinkKind::DerivedFrom) {
+            let mut next = |node: &ChunkId| -> Result<Vec<ChunkId>, Error> {
+                Ok(self
+                    .scan_links(&format!("l/{}/{}/", node.as_str(), kind.name()))?
+                    .into_iter()
+                    .map(|l| l.to().clone())
+                    .collect())
+            };
+            if closes_cycle(to, from, &mut next)? {
+                return Err(Error::LinkCycle);
+            }
+        }
+        let link = Link::new(from.clone(), from_version, kind, to.clone(), at);
+        let applied = self.batch(&[
+            BatchOp::Require {
+                key: forward.clone(),
+                expected: None,
+            },
+            BatchOp::Require {
+                key: head_key(from),
+                expected: Some(from_version.to_string().into_bytes()),
+            },
+            BatchOp::Put {
+                key: forward,
+                value: link.encode(),
+                ttl: NO_TTL,
+            },
+            BatchOp::Put {
+                key: reverse_key(from, kind, to),
+                value: link.encode(),
+                ttl: NO_TTL,
+            },
+        ])?;
+        if applied {
+            return Ok(());
+        }
+        if self.read(&link_key(from, kind, to))?.is_some() {
+            return Err(Error::DuplicateLink);
+        }
+        Err(Error::Conflict {
+            expected: from_version,
+            found: self.head(from)?.unwrap_or(0),
+        })
+    }
+
+    fn scan_links(&self, prefix: &str) -> Result<Vec<Link>, Error> {
+        self.scan(prefix)?.iter().map(|b| Link::decode(b)).collect()
+    }
+
+    /// Links made from `id`, ordered by (kind, target id).
+    ///
+    /// # Errors
+    /// `NotFound`, `Corrupt` or `Backend`.
+    pub fn links_from(&self, id: &ChunkId) -> Result<Vec<Link>, Error> {
+        self.get(id)?;
+        let mut links = self.scan_links(&format!("l/{}/", id.as_str()))?;
+        if links.iter().any(|l| l.from() != id) {
+            return Err(Error::Corrupt("key does not match record"));
+        }
+        links.sort_by(|a, b| (a.kind(), a.to()).cmp(&(b.kind(), b.to())));
+        Ok(links)
+    }
+
+    /// Links pointing at `id`, ordered by (kind, source id).
+    ///
+    /// # Errors
+    /// `NotFound`, `Corrupt` or `Backend`.
+    pub fn links_to(&self, id: &ChunkId) -> Result<Vec<Link>, Error> {
+        self.get(id)?;
+        let mut links = self.scan_links(&format!("r/{}/", id.as_str()))?;
+        if links.iter().any(|l| l.to() != id) {
+            return Err(Error::Corrupt("key does not match record"));
+        }
+        links.sort_by(|a, b| (a.kind(), a.from()).cmp(&(b.kind(), b.from())));
+        Ok(links)
+    }
+
+    /// The current confidence of `id`, derived from its links by the core's rule (CONTRACT D6).
+    ///
+    /// # Errors
+    /// `NotFound`, `Corrupt` or `Backend`.
+    pub fn confidence(&self, id: &ChunkId) -> Result<Confidence, Error> {
+        let me = self.get(id)?;
+        let mut targets: Vec<(LinkKind, Option<Chunk>)> = Vec::new();
+        for link in self.links_from(id)? {
+            let target = match self.get(link.to()) {
+                Ok(chunk) => Some(chunk),
+                Err(Error::NotFound) => None, // removed evidence counts for nothing
+                Err(e) => return Err(e),
+            };
+            targets.push((link.kind(), target));
+        }
+        let evidence: Vec<(LinkKind, Option<&Chunk>)> =
+            targets.iter().map(|(k, c)| (*k, c.as_ref())).collect();
+        Ok(derive_confidence(&me, &evidence))
     }
 
     /// Overwrite a stored version with raw bytes, to test that corrupt records are refused. Not for production use.

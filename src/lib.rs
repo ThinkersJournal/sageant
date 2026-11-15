@@ -9,6 +9,7 @@
 #![warn(missing_docs)]
 
 mod error;
+mod graph;
 mod lifecycle;
 mod maintain;
 mod model;
@@ -23,6 +24,7 @@ mod store;
 mod writer;
 
 pub use error::Error;
+pub use graph::{closes_cycle, derive_confidence};
 pub use lifecycle::{
     Action, Actor, AuditEvent, LinkTarget, PersonAuthority, Removed, SecretOverride, Tombstone,
 };

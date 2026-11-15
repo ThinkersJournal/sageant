@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Row 4: `sageant-persistant` slice 2, links and derived confidence. `PersistStore::link`, `links_from`, `links_to`, `confidence`, and `list` now accepts a confidence filter (it was refused in 0.1.3). A link is stored twice in one atomic batch (`l/<from>/<kind>/<to>` and `r/<to>/<kind>/<from>`) with a `Require` that it is new and that `from` still has the version it was made on. Refusals match `MemoryStore` exactly (not found, self-link, duplicate, `part-of`/`derived-from` cycles) and change nothing; a differential test compares both stores on links, reverse links, confidence and the confidence filter, and on every refusal. Known limit, documented: the cycle check reads existing links and is not atomic with the write, so two writers adding opposite `part-of` links at the same instant could both pass it.
+- Core: the link rules are now pure public functions both stores use, `derive_confidence` and `closes_cycle` (`MemoryStore` was refactored onto them, all its tests unchanged); `LinkKind::name`/`parse` and `Link::new`.
+- Still to come in the crate: archive, forget, purge, audit log, caps and the secret screen, the `Reader`/`Writer` impls (`Reader::list` must become fallible first, a breaking change), the kv text index.
+
 ## 0.1.3
 
 - Row 4: new crate `sageant-persistant` (first slice: chunks). `PersistStore::open(backend_id, endpoint)` over a PersistAnt ~0.18 key-value backend (feature `registry-sqlite`; SQLite is the embedded default). It needs `kv.get`, `kv.put`, `kv.delete`, `kv.ordered_scan_values` and the four `kv.batch_atomic.*` leaves with durability `Process`, and PersistAnt refuses a backend lacking any, by name, at open (in 0.18 that is `memory` and `fs`: their batch atomicity has no recorded test). `put`, `supersede`, `supersede_expecting` (optimistic concurrency: `Conflict{expected, found}`), `get`, `get_version`, `history` and `list` (same order and filters as `Reader::list`; a differential test compares it with `MemoryStore`). Each write is one atomic batch with a `Require` on the prior state; every read verifies the stored record. Not yet in the crate: links, confidence, archive, forget, purge, audit, caps and the secret screen, the `Reader`/`Writer` impls (a confidence filter is refused until links exist), the kv text index.

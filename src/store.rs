@@ -2,6 +2,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::Error;
+use crate::graph::{closes_cycle, derive_confidence};
 use crate::lifecycle::{
     Action, Actor, AuditEvent, LinkTarget, PersonAuthority, Removed, SecretOverride, Tombstone,
 };
@@ -455,9 +456,20 @@ impl MemoryStore {
         if out.iter().any(|l| l.kind == kind && &l.to == to) {
             return Err(Error::DuplicateLink);
         }
-        if matches!(kind, LinkKind::PartOf | LinkKind::DerivedFrom) && self.reaches(to, from, kind)
-        {
-            return Err(Error::LinkCycle);
+        if matches!(kind, LinkKind::PartOf | LinkKind::DerivedFrom) {
+            let mut next = |node: &ChunkId| -> Result<Vec<ChunkId>, Error> {
+                Ok(self
+                    .links
+                    .get(node)
+                    .into_iter()
+                    .flatten()
+                    .filter(|l| l.kind == kind)
+                    .map(|l| l.to.clone())
+                    .collect())
+            };
+            if closes_cycle(to, from, &mut next)? {
+                return Err(Error::LinkCycle);
+            }
         }
         let list = self.links.entry(from.clone()).or_default();
         list.push(Link {
@@ -470,25 +482,6 @@ impl MemoryStore {
         list.sort_by(|a, b| (a.kind, &a.to).cmp(&(b.kind, &b.to)));
         self.record(at, Action::Link, Some(from), "", &format!("{kind:?}"));
         Ok(())
-    }
-
-    /// Whether `goal` can be reached from `start` along edges of `kind`.
-    fn reaches(&self, start: &ChunkId, goal: &ChunkId, kind: LinkKind) -> bool {
-        let mut seen: Vec<&ChunkId> = Vec::new();
-        let mut stack = vec![start];
-        while let Some(node) = stack.pop() {
-            if node == goal {
-                return true;
-            }
-            if seen.contains(&node) {
-                continue;
-            }
-            seen.push(node);
-            if let Some(out) = self.links.get(node) {
-                stack.extend(out.iter().filter(|l| l.kind == kind).map(|l| &l.to));
-            }
-        }
-        false
     }
 
     /// Links made from `id`, ordered by (kind, target id).
@@ -527,25 +520,15 @@ impl MemoryStore {
     /// `NotFound`.
     pub fn confidence(&self, id: &ChunkId) -> Result<Confidence, Error> {
         let me = self.get(id)?;
-        let mut corroborated = false;
-        for link in self.links.get(id).into_iter().flatten() {
-            // Evidence that was forgotten or purged counts for nothing, either way.
-            let Ok(other) = self.get(&link.to) else {
-                continue;
-            };
-            match link.kind {
-                LinkKind::ContradictedBy => return Ok(Confidence::Contradicted),
-                LinkKind::CorroboratedBy => {
-                    corroborated |= other.origin != me.origin && other.source != me.source;
-                }
-                _ => {}
-            }
-        }
-        Ok(if corroborated {
-            Confidence::Corroborated
-        } else {
-            Confidence::Unconfirmed
-        })
+        // Evidence that was forgotten or purged is `None` and counts for nothing.
+        let evidence: Vec<(LinkKind, Option<&Chunk>)> = self
+            .links
+            .get(id)
+            .into_iter()
+            .flatten()
+            .map(|l| (l.kind, self.get(&l.to).ok()))
+            .collect();
+        Ok(derive_confidence(me, &evidence))
     }
 }
 
