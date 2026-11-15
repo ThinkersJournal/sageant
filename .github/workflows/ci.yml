@@ -49,6 +49,27 @@ jobs:
           toolchain: stable
       - run: cargo test --workspace --all-features --no-fail-fast
 
+  # The first-run gate (PM 2026-11-15): a fresh `cargo install` of the command works with no setup step, on all three
+  # platforms, using each platform's default data directory.
+  install-smoke:
+    name: install smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: stable
+      - name: cargo install the command
+        shell: bash
+        run: cargo install --path crates/sageant-cli --locked --root "$RUNNER_TEMP/sg-install"
+      - name: first run with an empty home
+        shell: bash
+        run: tools/first-run-smoke.sh "$RUNNER_TEMP/sg-install/bin/sageant"
+
   doc:
     name: doc
     runs-on: ubuntu-latest
