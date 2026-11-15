@@ -137,10 +137,14 @@ impl SecretOverride {
             by: by.to_owned(),
         }
     }
-    pub(crate) fn class(&self) -> &str {
+    /// The class of secret this override allows.
+    #[must_use]
+    pub fn class(&self) -> &str {
         &self.class
     }
-    pub(crate) fn by(&self) -> &str {
+    /// Who allowed it, as it will appear in the audit log.
+    #[must_use]
+    pub fn by(&self) -> &str {
         &self.by
     }
 }
@@ -210,10 +214,14 @@ impl Actor {
     pub fn agent(&self) -> &str {
         &self.agent
     }
-    pub(crate) fn is_valid(&self) -> bool {
+    /// Whether both parts are named.
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
         !self.role.is_empty() && !self.agent.is_empty()
     }
-    pub(crate) fn label(&self) -> String {
+    /// The `role/agent` label written to the audit log.
+    #[must_use]
+    pub fn label(&self) -> String {
         format!("{}/{}", self.role, self.agent)
     }
 }
