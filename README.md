@@ -1,7 +1,69 @@
 # sageant
 
-Planned. This repository is a placeholder: the crate name `sageant` is reserved (version 0.0.0, `publish = false`) and
-nothing here works yet.
+A durable knowledge store for people and AI agents. You put text in; it keeps every version, remembers where it came
+from, finds it again with search, and lets you hide it (archive), make it unretrievable (forget) or remove it for good
+(purge). An AI client can read it, and write to the collections you allow, over MCP.
+
+## Status
+
+Pre-1.0 and not yet published to crates.io: the crate names are reserved, and for now you install from a checkout.
+The API is unstable (a breaking change moves the second version number).
+
+## Install and first run
+
+```
+cargo install --path crates/sageant-cli
+```
+
+That puts a `sageant` program on your path. There is no setup step; the first command creates the store.
+
+```
+sageant put "Owls hunt at night and see well in the dark"     # prints the new chunk's id
+sageant search owls
+sageant get 0a02                                              # an id prefix is enough if it is unique
+sageant list
+sageant where                                                 # where the store lives
+```
+
+The store is two SQLite files in your user data directory (`%LOCALAPPDATA%\sageant` on Windows,
+`~/Library/Application Support/sageant` on macOS, `$XDG_DATA_HOME/sageant` or `~/.local/share/sageant` elsewhere).
+Set `SAGEANT_HOME` or pass `--home <DIR>` to keep it somewhere else.
+
+Other commands: `history`, `links`, `link`, `archive`, `forget`, `purge`, `reindex`, `serve`. `sageant --help` lists
+them all.
+
+## Removing things
+
+- **archive** keeps a chunk but takes it out of search and listings (`sageant list --all` shows it).
+- **forget** makes a chunk *unretrievable* and leaves a minimal tombstone. It does not claim the bytes are erased:
+  the storage backend may keep old pages until it is compacted.
+- **purge** removes everything about a chunk, tombstone included. It needs you at a terminal to type a confirmation,
+  and no MCP tool can do it.
+
+## Use it from an AI client (MCP)
+
+`sageant serve` speaks MCP on standard input and output. It is read-only unless you name collections the client may
+write to:
+
+```json
+{ "mcpServers": { "sageant": { "command": "sageant", "args": ["serve", "--allow-write", "notes"] } } }
+```
+
+The client gets ten tools (`sageant_get`, `_list`, `_search`, `_links`, `_history`, `_put`, `_supersede`, `_link`,
+`_archive`, `_forget`) and no purge. Everything it reads comes back in a JSON envelope; the stored text is only ever in
+the `content` field, as data. What a client writes is marked as written by an agent, never by you.
+
+## The crates
+
+| Crate | What it is |
+|---|---|
+| `sageant` | The model and rules: chunks, versions, links, confidence, deletion, an in-memory store |
+| `sageant-lexical` | BM25 search with integer-only scoring, behind a `TextIndex` trait |
+| `sageant-persistant` | A durable store and text index on PersistAnt key-value backends (SQLite) |
+| `sageant-mcp` | The MCP server |
+| `sageant-cli` | The `sageant` command |
+
+`docs/CONTRACT.md` is the design; `docs/MUTATION.md` records the mutation testing.
 
 Licensed under either of the Apache License, Version 2.0 (`LICENSE-APACHE`) or the MIT licence (`LICENSE-MIT`), at your
 option.
