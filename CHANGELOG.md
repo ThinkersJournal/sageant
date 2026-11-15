@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.9
+
+- ROADMAP: rows 5 (patent sweep) and 6 (first release, 0.3.8 on crates.io) are done; the status line is current. `ROADMAP.md` is excluded from the published packages, so this changes nothing a crates.io user receives; the version moves because the repository changed.
+
 ## 0.3.8
 
 - Release fix: 0.3.7 reached crates.io for `sageant`, `sageant-lexical` and `sageant-persistant` only. crates.io refused `sageant-mcp` at upload because its keyword `model-context-protocol` is 22 characters (the limit is 20), and `sageant-cli` was not attempted. `cargo publish --dry-run` does not check keyword length, so the 0.3.7 release PR did not catch it (my miss). The keyword is now `llm`; no other package had a problem. The git tag `v0.3.7` (on 589c821) stays where it was put and does not mean all five crates shipped at 0.3.7; 0.3.8 is the first version of all five crates. New test `tests/package_metadata.rs` holds crates.io's metadata limits for every package (at most 5 keywords of at most 20 ASCII characters, known category slugs, description, readme, licence files, no `publish = false`), so a bad keyword now fails `cargo test` instead of the upload. No code changed.
