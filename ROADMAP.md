@@ -2,7 +2,7 @@
 
 SageAnt is the Knowledge Store: a storable, organised collection of annotated, sorted, retrievable
 knowledge chunks, with manual retrieval tooling and pluggable interfaces for automated retrieval.
-It sits above PersistAnt (storage). Status: stub crate, no API.
+It sits above PersistAnt (storage). Status: pre-1.0, not yet published; rows 0 to 4 are done (the crates: `sageant`, `sageant-lexical`, `sageant-persistant`, `sageant-mcp`, `sageant-cli`).
 
 ## Decided model (changes need an `[ASK]`)
 
@@ -26,8 +26,8 @@ It sits above PersistAnt (storage). Status: stub crate, no API.
 | 1 | Read-only inventory of `weavatrix-memory` (MIT) and `areev-store` (MIT OR Apache-2.0); fork-vs-fresh recommendation | done (#2; recommendation: fresh) |
 | 2 | Contract note, options first: data model, retriever trait, promoter/demoter/maintainer traits, MCP tool surface, errors, determinism, PersistAnt mapping. PM reads before any code | done (#3; PM answered 6 questions) |
 | 3 | Core plus in-memory reference store; value-asserting tests, mutation checks, no `unsafe`, zero required dependencies | done (#4 to #12; mutation run in `docs/MUTATION.md`) |
-| 4 | PersistAnt-backed store, lexical retriever, MCP tool server, CLI; ease gate for a stranger | in progress (0.1.0: `Reader` returns owned values; next: workspace, `sageant-lexical`, `sageant-persistant`, `sageant-mcp`, `sageant-cli`) |
-| 5 | Patent sweep before any release | blocked on 4 |
+| 4 | PersistAnt-backed store, lexical retriever, MCP tool server, CLI; ease gate for a stranger | done (#13 to #25: 0.2.0 to 0.3.4; recorded workspace mutation run in `docs/MUTATION.md`; first run verified from a real `cargo install`; `rmcp` 3.10.0) |
+| 5 | Patent sweep before any release | next (row 4 is done; nothing is published yet, `publish = false`) |
 
 ## Constraints
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.5
+
+- ROADMAP: row 4 is done and row 5 (patent sweep before any release) is next; the stale "stub crate, no API" status line is replaced. No code changed.
+
 ## 0.3.4
 
 - Row 4: new crate `sageant-cli`, the `sageant` command. No setup step: the first command creates the store in the user data directory (or `SAGEANT_HOME` / `--home`). `put`, `get`, `list`, `search`, `history`, `links`, `link`, `archive`, `forget`, `purge`, `reindex`, `where` and `serve` (MCP on standard input and output, read-only unless `--allow-write <collection>`). An id prefix is enough where it is unique. `forget` says "unretrievable", never "erased". `purge` refuses unless standard input is a terminal and the person types `purge <first 8 characters of the id>`; it is audited as a typed confirmation. Verified from a real `cargo install --path crates/sageant-cli --root <dir> --locked`: the installed binary stored, searched, read and listed on a fresh home with no setup. The README is now accurate (it was a placeholder).
