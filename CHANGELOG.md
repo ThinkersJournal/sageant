@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- Row 4: `sageant_persistant::KvTextIndex`, a durable `sageant_lexical::TextIndex` on a PersistAnt key-value backend, so BM25 retrieval survives a restart. Keys `x/<term>/<id>/<version>` (term frequency), `d/<id>/<version>` (token count), `f/<id>/<version>/<term>` (a document's terms, for re-indexing and removal) and `m/ix` (corpus totals); every change is one atomic batch with a `Require` on the totals, so concurrent writers cannot desynchronise them (a lost race is retried). A differential test drives it and `MemoryIndex` through the same index, re-index and remove steps and compares postings, lengths and totals; another shows a `LexicalRetriever` over either returns identical hits. `sageant-persistant` now depends on `sageant-lexical`.
+- Still to come: `sageant-mcp`, `sageant-cli`, then the recorded mutation run.
+
 ## 0.3.0
 
 - **Breaking.** `sageant_lexical::TextIndex` methods (`index`, `remove`, `postings`, `doc_len`, `stats`) now return `Result<_, Error>`, because a key-value-backed index can fail. `MemoryIndex` never fails; callers add `?` or `.unwrap()`. `LexicalRetriever::retrieve` passes an index failure to its caller instead of reading it as "no matches". The kv-backed index in `sageant-persistant` is the next slice.
