@@ -12,7 +12,10 @@ use crate::writer::Writer;
 /// A retriever with a working-memory target and no extra power: it reads, it cannot write.
 pub trait Promoter {
     /// The hits to promote, given opaque caller context.
-    fn promote(&self, ctx: &[u8], reader: &dyn Reader) -> Vec<Hit>;
+    ///
+    /// # Errors
+    /// Whatever the reader reports.
+    fn promote(&self, ctx: &[u8], reader: &dyn Reader) -> Result<Vec<Hit>, Error>;
 }
 
 /// Writes a derived chunk for `item` (for example a summary) and never edits `item`. The harness reads the item
@@ -163,7 +166,10 @@ impl Applied {
 /// `Reader`; only `apply` writes, through a `Writer`, and every write is audited under the `Actor`.
 pub trait Maintainer {
     /// What this maintainer would do. Reads only.
-    fn plan(&self, reader: &dyn Reader) -> Plan;
+    ///
+    /// # Errors
+    /// Whatever the reader reports.
+    fn plan(&self, reader: &dyn Reader) -> Result<Plan, Error>;
 
     /// Execute `plan` in order through `writer`, auditing each step under `actor`: an archive carries its `Why` label as the reason, a link or supersede is
     /// followed by a `note` carrying it.
@@ -214,16 +220,16 @@ impl ExpireMaintainer {
 }
 
 impl Maintainer for ExpireMaintainer {
-    fn plan(&self, reader: &dyn Reader) -> Plan {
+    fn plan(&self, reader: &dyn Reader) -> Result<Plan, Error> {
         // "Created before 0" is nothing; guard it so `created_until(0)` cannot match chunks created at 0.
         let Some(last) = self.before.0.checked_sub(1) else {
-            return Plan::default();
+            return Ok(Plan::default());
         };
         let steps = reader
-            .list(&Filter::new().created_until(Timestamp(last)))
+            .list(&Filter::new().created_until(Timestamp(last)))?
             .into_iter()
             .map(|c| Step::new(Change::Archive { id: c.id }, Why::Expired))
             .collect();
-        Plan::new(steps)
+        Ok(Plan::new(steps))
     }
 }

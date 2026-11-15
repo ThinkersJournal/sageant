@@ -33,7 +33,7 @@ struct Everything;
 impl Retriever for Everything {
     fn retrieve(&self, q: &Query, store: &dyn Reader) -> Result<Vec<Hit>, Error> {
         let mut hits: Vec<Hit> = store
-            .list(q.filter_ref())
+            .list(q.filter_ref())?
             .into_iter()
             .map(|chunk| Hit::new(chunk, Some(100), Reason::Recency))
             .collect();

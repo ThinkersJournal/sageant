@@ -551,7 +551,7 @@ impl Reader for MemoryStore {
     fn confidence(&self, id: &ChunkId) -> Result<Confidence, Error> {
         Self::confidence(self, id)
     }
-    fn list(&self, filter: &Filter) -> Vec<ChunkRef> {
+    fn list(&self, filter: &Filter) -> Result<Vec<ChunkRef>, Error> {
         let mut out = Vec::new();
         for (id, versions) in &self.lineages {
             let confidence = Self::confidence(self, id).unwrap_or(Confidence::Unconfirmed);
@@ -571,7 +571,7 @@ impl Reader for MemoryStore {
         if let Some(n) = filter.limit {
             out.truncate(n);
         }
-        out
+        Ok(out)
     }
 }
 

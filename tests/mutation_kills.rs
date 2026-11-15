@@ -76,7 +76,7 @@ fn a_query_hands_its_own_filter_to_the_retriever() {
     impl Retriever for Listing {
         fn retrieve(&self, q: &Query, store: &dyn Reader) -> Result<Vec<Hit>, Error> {
             Ok(store
-                .list(q.filter_ref())
+                .list(q.filter_ref())?
                 .into_iter()
                 .map(|c| Hit::new(c, None, Reason::Recency))
                 .collect())

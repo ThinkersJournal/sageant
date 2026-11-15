@@ -30,7 +30,7 @@ fn the_expire_maintainer_plans_archives_for_old_active_chunks_and_changes_nothin
     let archived = put(&mut s, "already", 5);
     s.archive(&archived, "x", "r", Timestamp(6)).unwrap();
     let audit_before = s.audit().len();
-    let plan = ExpireMaintainer::new(Timestamp(50)).plan(&s);
+    let plan = ExpireMaintainer::new(Timestamp(50)).plan(&s).unwrap();
     assert_eq!(s.audit().len(), audit_before); // planning wrote nothing
     assert_eq!(plan.steps().len(), 1);
     assert_eq!(plan.steps()[0].change(), &Change::Archive { id: old });
@@ -41,7 +41,7 @@ fn the_expire_maintainer_plans_archives_for_old_active_chunks_and_changes_nothin
 fn applying_a_plan_writes_through_the_writer_and_audits_each_step_under_the_actor() {
     let mut s = MemoryStore::new();
     let old = put(&mut s, "old", 10);
-    let plan = ExpireMaintainer::new(Timestamp(50)).plan(&s);
+    let plan = ExpireMaintainer::new(Timestamp(50)).plan(&s).unwrap();
     let out = ExpireMaintainer::new(Timestamp(50)).apply(&mut s, &plan, &actor(), Timestamp(60));
     assert_eq!(out.applied(), 1);
     assert!(out.failed().is_empty());
@@ -54,6 +54,7 @@ fn applying_a_plan_writes_through_the_writer_and_audits_each_step_under_the_acto
     assert!(
         ExpireMaintainer::new(Timestamp(50))
             .plan(&s)
+            .unwrap()
             .steps()
             .is_empty()
     );
@@ -145,13 +146,13 @@ fn an_empty_actor_applies_nothing() {
 
 struct Recent;
 impl Promoter for Recent {
-    fn promote(&self, ctx: &[u8], reader: &dyn Reader) -> Vec<Hit> {
+    fn promote(&self, ctx: &[u8], reader: &dyn Reader) -> Result<Vec<Hit>, sageant::Error> {
         let _ = ctx;
-        reader
-            .list(&sageant::Filter::new())
+        Ok(reader
+            .list(&sageant::Filter::new())?
             .into_iter()
             .map(|c| Hit::new(c, None, Reason::Recency))
-            .collect()
+            .collect())
     }
 }
 
@@ -159,7 +160,7 @@ impl Promoter for Recent {
 fn a_promoter_is_a_retriever_with_no_write_power() {
     let mut s = MemoryStore::new();
     put(&mut s, "one", 1);
-    let hits = Recent.promote(b"working memory", &s);
+    let hits = Recent.promote(b"working memory", &s).unwrap();
     assert_eq!(hits.len(), 1);
 }
 
