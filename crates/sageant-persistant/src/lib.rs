@@ -459,3 +459,27 @@ impl PersistStore {
         let _ = self.kv.put(&chunk_key(id, version), bytes, None);
     }
 }
+
+impl sageant::Reader for PersistStore {
+    fn get(&self, id: &ChunkId) -> Result<Chunk, Error> {
+        Self::get(self, id)
+    }
+    fn get_version(&self, id: &ChunkId, version: u32) -> Result<Chunk, Error> {
+        Self::get_version(self, id, version)
+    }
+    fn history(&self, id: &ChunkId) -> Result<Vec<Chunk>, Error> {
+        Self::history(self, id)
+    }
+    fn links_from(&self, id: &ChunkId) -> Result<Vec<Link>, Error> {
+        Self::links_from(self, id)
+    }
+    fn links_to(&self, id: &ChunkId) -> Result<Vec<Link>, Error> {
+        Self::links_to(self, id)
+    }
+    fn confidence(&self, id: &ChunkId) -> Result<Confidence, Error> {
+        Self::confidence(self, id)
+    }
+    fn list(&self, filter: &Filter) -> Result<Vec<ChunkRef>, Error> {
+        Self::list(self, filter)
+    }
+}

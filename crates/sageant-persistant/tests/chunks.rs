@@ -164,7 +164,7 @@ fn listing_agrees_with_the_memory_store_for_every_filter() {
     ];
     for f in filters {
         let from_persist = p.list(&f).unwrap();
-        let from_memory = sageant::Reader::list(&m, &f);
+        let from_memory = sageant::Reader::list(&m, &f).unwrap();
         assert_eq!(from_persist, from_memory, "filter {f:?}");
     }
     // Positive control: the listings above are not all empty.

@@ -94,15 +94,17 @@ pub struct MemoryIndex {
 impl MemoryIndex {
     /// Index the current version of every chunk the reader holds, archived ones included (visibility is the
     /// reader's call at query time).
-    #[must_use]
-    pub fn from_reader(reader: &dyn Reader) -> Self {
+    ///
+    /// # Errors
+    /// Whatever the reader reports.
+    pub fn from_reader(reader: &dyn Reader) -> Result<Self, Error> {
         let mut index = Self::default();
-        for chunk_ref in reader.list(&Filter::new().include_archived()) {
+        for chunk_ref in reader.list(&Filter::new().include_archived())? {
             if let Ok(chunk) = reader.get_version(&chunk_ref.id, chunk_ref.version) {
                 index.index(&chunk_ref, chunk.content());
             }
         }
-        index
+        Ok(index)
     }
 
     fn drop_doc(&mut self, key: &DocKey) {
@@ -249,7 +251,7 @@ impl<I: TextIndex> Retriever for LexicalRetriever<I> {
         }
         let stats = self.index.stats();
         let visible: BTreeSet<(ChunkId, u32)> = store
-            .list(query.filter_ref())
+            .list(query.filter_ref())?
             .into_iter()
             .map(|r| (r.id, r.version))
             .collect();

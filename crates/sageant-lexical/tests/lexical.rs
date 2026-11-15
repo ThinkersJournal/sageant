@@ -73,7 +73,7 @@ fn corpus() -> (MemoryStore, [sageant::ChunkId; 4]) {
 #[test]
 fn a_query_ranks_the_chunk_with_more_of_its_terms_first_and_says_why() {
     let (s, [a, b, ..]) = corpus();
-    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s));
+    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s).unwrap());
     // Within collection "n": `a` holds both terms, `b` holds only "memory" (twice).
     let q = Query::new("rust memory").filter(Filter::new().collection("n"));
     let hits = r.retrieve(&q, &s).unwrap();
@@ -98,7 +98,7 @@ fn the_integer_scores_match_a_float_bm25_to_a_thousandth() {
     // Float reference computed independently (python, k1 = 1.2, b = 0.75, idf = ln(1 + (N - n + 0.5) / (n + 0.5))):
     // a = 1.1131, b = 0.9531, d = 1.1913. Integer scores are in thousandths, so allow 2 for truncation.
     let (s, [a, b, _, d]) = corpus();
-    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s));
+    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s).unwrap());
     let hits = r.retrieve(&Query::new("rust memory"), &s).unwrap();
     let score = |id: &sageant::ChunkId| {
         hits.iter()
@@ -119,7 +119,7 @@ fn the_integer_scores_match_a_float_bm25_to_a_thousandth() {
 #[test]
 fn a_rarer_term_is_worth_more() {
     let (s, [_, _, gardening, _]) = corpus();
-    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s));
+    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s).unwrap());
     let rare = r.retrieve(&Query::new("tomatoes"), &s).unwrap();
     let common = r.retrieve(&Query::new("memory"), &s).unwrap();
     assert_eq!(rare[0].chunk().id, gardening);
@@ -129,7 +129,7 @@ fn a_rarer_term_is_worth_more() {
 #[test]
 fn no_matching_term_or_an_empty_query_returns_nothing() {
     let (s, _) = corpus();
-    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s));
+    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s).unwrap());
     assert!(r.retrieve(&Query::new("zeppelin"), &s).unwrap().is_empty());
     assert!(r.retrieve(&Query::new("  !! "), &s).unwrap().is_empty());
     let empty = LexicalRetriever::new(MemoryIndex::default());
@@ -139,7 +139,7 @@ fn no_matching_term_or_an_empty_query_returns_nothing() {
 #[test]
 fn the_filter_and_limit_apply_and_archived_or_forgotten_chunks_are_not_returned() {
     let (mut s, [a, b, _, d]) = corpus();
-    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s));
+    let r = LexicalRetriever::new(MemoryIndex::from_reader(&s).unwrap());
     let only_m = r
         .retrieve(
             &Query::new("rust").filter(Filter::new().collection("m")),
@@ -200,7 +200,7 @@ fn indexing_order_does_not_change_the_result() {
 #[test]
 fn reindexing_a_chunk_replaces_its_postings_and_remove_drops_a_lineage() {
     let (s, [a, ..]) = corpus();
-    let mut idx = MemoryIndex::from_reader(&s);
+    let mut idx = MemoryIndex::from_reader(&s).unwrap();
     let r1 = sageant::ChunkRef {
         id: a.clone(),
         version: 1,

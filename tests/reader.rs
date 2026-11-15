@@ -61,7 +61,7 @@ fn the_reader_trait_is_object_safe_and_reads_like_the_store() {
 #[test]
 fn an_empty_filter_lists_every_active_current_chunk_in_a_stated_order() {
     let (s, [a, b, c, d]) = fixture();
-    let got = s.list(&Filter::new());
+    let got = s.list(&Filter::new()).unwrap();
     assert_eq!(got.len(), 4);
     let mut want = vec![&a, &b, &c, &d];
     want.sort(); // order is (ChunkId asc, version desc)
@@ -71,31 +71,45 @@ fn an_empty_filter_lists_every_active_current_chunk_in_a_stated_order() {
 #[test]
 fn filters_narrow_by_collection_kind_origin_and_time() {
     let (s, [a, b, c, d]) = fixture();
-    assert_eq!(ids(&s.list(&Filter::new().collection("docs"))), vec![&c]);
     assert_eq!(
-        ids(&s.list(&Filter::new().collection("notes").kind("note"))),
+        ids(&s.list(&Filter::new().collection("docs")).unwrap()),
+        vec![&c]
+    );
+    assert_eq!(
+        ids(&s
+            .list(&Filter::new().collection("notes").kind("note"))
+            .unwrap()),
         sorted(vec![&a, &d])
     );
-    assert_eq!(ids(&s.list(&Filter::new().origin(Origin::Web))), vec![&b]);
     assert_eq!(
-        ids(&s.list(
-            &Filter::new()
-                .created_from(Timestamp(20))
-                .created_until(Timestamp(30))
-        )),
+        ids(&s.list(&Filter::new().origin(Origin::Web)).unwrap()),
+        vec![&b]
+    );
+    assert_eq!(
+        ids(&s
+            .list(
+                &Filter::new()
+                    .created_from(Timestamp(20))
+                    .created_until(Timestamp(30))
+            )
+            .unwrap()),
         sorted(vec![&b, &c])
     );
-    assert!(s.list(&Filter::new().collection("nope")).is_empty());
+    assert!(
+        s.list(&Filter::new().collection("nope"))
+            .unwrap()
+            .is_empty()
+    );
 }
 
 #[test]
 fn archived_chunks_are_hidden_unless_asked_for() {
     let (mut s, [a, ..]) = fixture();
     s.archive(&a, "alice", "stale", Timestamp(50)).unwrap();
-    assert!(!ids(&s.list(&Filter::new())).contains(&&a));
-    assert!(ids(&s.list(&Filter::new().include_archived())).contains(&&a));
+    assert!(!ids(&s.list(&Filter::new()).unwrap()).contains(&&a));
+    assert!(ids(&s.list(&Filter::new().include_archived()).unwrap()).contains(&&a));
     assert_eq!(
-        ids(&s.list(&Filter::new().status(Status::Archived))),
+        ids(&s.list(&Filter::new().status(Status::Archived)).unwrap()),
         vec![&a]
     );
 }
@@ -105,11 +119,13 @@ fn superseded_versions_are_hidden_unless_asked_for_and_come_newest_first() {
     let (mut s, [a, ..]) = fixture();
     s.supersede(&a, "alpha two", Origin::User, "cli", Timestamp(60))
         .unwrap();
-    let cur = s.list(&Filter::new().collection("notes").kind("note"));
+    let cur = s
+        .list(&Filter::new().collection("notes").kind("note"))
+        .unwrap();
     let mine: Vec<_> = cur.iter().filter(|r| r.id == a).collect();
     assert_eq!(mine.len(), 1);
     assert_eq!(mine[0].version, 2);
-    let all = s.list(&Filter::new().include_superseded());
+    let all = s.list(&Filter::new().include_superseded()).unwrap();
     let versions: Vec<u32> = all
         .iter()
         .filter(|r| r.id == a)
@@ -125,7 +141,9 @@ fn confidence_filter_uses_the_derived_value() {
     s.link(&a, LinkKind::CorroboratedBy, &b, Timestamp(70))
         .unwrap();
     assert_eq!(
-        ids(&s.list(&Filter::new().confidence(Confidence::Corroborated))),
+        ids(&s
+            .list(&Filter::new().confidence(Confidence::Corroborated))
+            .unwrap()),
         vec![&a]
     );
 }
@@ -133,17 +151,22 @@ fn confidence_filter_uses_the_derived_value() {
 #[test]
 fn limit_keeps_the_first_in_order() {
     let (s, _) = fixture();
-    let all = s.list(&Filter::new());
-    let two = s.list(&Filter::new().limit(2));
+    let all = s.list(&Filter::new()).unwrap();
+    let two = s.list(&Filter::new().limit(2)).unwrap();
     assert_eq!(two, all[..2].to_vec());
-    assert!(s.list(&Filter::new().limit(0)).is_empty());
+    assert!(s.list(&Filter::new().limit(0)).unwrap().is_empty());
 }
 
 #[test]
 fn forgotten_chunks_are_never_listed() {
     let (mut s, [a, ..]) = fixture();
     s.forget(&a, "alice", "r", None, Timestamp(80)).unwrap();
-    assert!(!ids(&s.list(&Filter::new().include_archived().include_superseded())).contains(&&a));
+    assert!(
+        !ids(&s
+            .list(&Filter::new().include_archived().include_superseded())
+            .unwrap())
+        .contains(&&a)
+    );
 }
 
 #[test]

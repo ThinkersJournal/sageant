@@ -150,7 +150,10 @@ pub trait Reader {
     /// `NotFound`, or `Forgotten`.
     fn confidence(&self, id: &ChunkId) -> Result<Confidence, Error>;
     /// The chunks matching `filter`, in `(ChunkId` ascending, version descending`)` order.
-    fn list(&self, filter: &Filter) -> Vec<ChunkRef>;
+    ///
+    /// # Errors
+    /// `Backend` or `Corrupt` when the store cannot be read.
+    fn list(&self, filter: &Filter) -> Result<Vec<ChunkRef>, Error>;
 }
 
 impl Filter {

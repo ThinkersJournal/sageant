@@ -77,7 +77,7 @@ fn links_and_confidence_agree_with_the_memory_store() {
     ] {
         assert_eq!(
             p.list(&Filter::new().confidence(c)).unwrap(),
-            sageant::Reader::list(&m, &Filter::new().confidence(c)),
+            sageant::Reader::list(&m, &Filter::new().confidence(c)).unwrap(),
             "{c:?}"
         );
     }

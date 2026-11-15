@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- **Breaking.** `Reader::list`, `Promoter::promote` and `Maintainer::plan` now return `Result<_, Error>`, and `MemoryIndex::from_reader` returns `Result<Self, Error>`, because a key-value store can fail to list. `MemoryStore` never fails; callers add `?` or `.unwrap()`. Nothing else changes.
+- `PersistStore` now implements `Reader`, so every `Retriever`, `Promoter` and `Maintainer` runs over it unchanged (new test `crates/sageant-persistant/tests/reader.rs`; fallible-reader tests in `tests/fallible.rs`).
+- Still to come in the crate: archive, forget, purge, audit log, caps and the secret screen, the `Writer` impl, the kv text index.
+
 ## 0.1.4
 
 - Row 4: `sageant-persistant` slice 2, links and derived confidence. `PersistStore::link`, `links_from`, `links_to`, `confidence`, and `list` now accepts a confidence filter (it was refused in 0.1.3). A link is stored twice in one atomic batch (`l/<from>/<kind>/<to>` and `r/<to>/<kind>/<from>`) with a `Require` that it is new and that `from` still has the version it was made on. Refusals match `MemoryStore` exactly (not found, self-link, duplicate, `part-of`/`derived-from` cycles) and change nothing; a differential test compares both stores on links, reverse links, confidence and the confidence filter, and on every refusal. Known limit, documented: the cycle check reads existing links and is not atomic with the write, so two writers adding opposite `part-of` links at the same instant could both pass it.
