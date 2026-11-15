@@ -5,6 +5,8 @@ use std::io::{BufRead, IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+mod exchange;
+
 use persistant::registry::Endpoint;
 use rmcp::ServiceExt;
 use sageant::{
@@ -88,6 +90,16 @@ pub enum Command {
     Reindex,
     Info,
     Where,
+    Unarchive {
+        id: String,
+        reason: String,
+    },
+    Export {
+        out: Option<PathBuf>,
+    },
+    Import {
+        file: PathBuf,
+    },
 }
 
 /// Where the store lives when `--home` and `SAGEANT_HOME` are not given.
@@ -314,6 +326,27 @@ pub fn run(home: Option<PathBuf>, command: Command) -> Result<(), Failure> {
                 }
                 Err(e) => writeln!(out, "  warning: {e}").ok().unwrap_or(()),
             }
+            Ok(())
+        }
+        Command::Unarchive { id, reason } => {
+            let id = app.resolve(&id)?;
+            let actor = app.actor.clone();
+            Writer::set_status(&mut app.store, &id, Status::Active, &actor, &reason, now())?;
+            Ok(())
+        }
+        Command::Export { out: path } => {
+            let n = exchange::write_export(&app, path.as_deref(), out)?;
+            eprintln!("exported {n} records");
+            Ok(())
+        }
+        Command::Import { file } => {
+            let input = std::fs::read_to_string(&file)
+                .map_err(|e| fail(format!("cannot read {}: {e}", file.display())))?;
+            let s = exchange::import(&mut app, &input)?;
+            eprintln!(
+                "imported {} chunks ({} versions), {} links; skipped {} already present or not applicable",
+                s.chunks, s.versions, s.links, s.skipped
+            );
             Ok(())
         }
         Command::Where => Ok(()),
