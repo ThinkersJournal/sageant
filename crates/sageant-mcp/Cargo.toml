@@ -9,14 +9,14 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-sageant = { path = "../..", version = "0.3.4" }
-sageant-lexical = { path = "../sageant-lexical", version = "0.3.4" }
+sageant = { path = "../..", version = "0.3.5" }
+sageant-lexical = { path = "../sageant-lexical", version = "0.3.5" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rmcp = { version = "3.10", default-features = false, features = ["server", "transport-io"] }
 
 [dev-dependencies]
-sageant-persistant = { path = "../sageant-persistant", version = "0.3.4" }
+sageant-persistant = { path = "../sageant-persistant", version = "0.3.5" }
 persistant = { version = "~0.18", features = ["registry-sqlite"] }
 rmcp = { version = "3.10", default-features = false, features = ["server", "client", "transport-io"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util"] }

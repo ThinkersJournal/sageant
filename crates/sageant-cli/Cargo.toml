@@ -14,10 +14,10 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
-sageant = { path = "../..", version = "0.3.4" }
-sageant-lexical = { path = "../sageant-lexical", version = "0.3.4" }
-sageant-persistant = { path = "../sageant-persistant", version = "0.3.4" }
-sageant-mcp = { path = "../sageant-mcp", version = "0.3.4" }
+sageant = { path = "../..", version = "0.3.5" }
+sageant-lexical = { path = "../sageant-lexical", version = "0.3.5" }
+sageant-persistant = { path = "../sageant-persistant", version = "0.3.5" }
+sageant-mcp = { path = "../sageant-mcp", version = "0.3.5" }
 persistant = { version = "~0.18", features = ["registry-sqlite"] }
 rmcp = { version = "3.10", default-features = false, features = ["server", "transport-io"] }
 clap = { version = "4", features = ["derive", "env"] }
