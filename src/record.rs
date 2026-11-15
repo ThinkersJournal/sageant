@@ -7,12 +7,15 @@
 //! store would accept, and the id of a first version. A corrupt or forged record is `Error::Corrupt`, never trusted.
 
 use crate::Error;
+use crate::lifecycle::{Action, AuditEvent, Tombstone};
 use crate::model::{Chunk, ChunkId, Confidence, Link, LinkKind, Origin, Status, Timestamp};
 use crate::sha256::sha256_hex;
 use crate::store::check_text;
 
 const CHUNK_HEADER: &str = "sageant-chunk/1\n";
 const LINK_HEADER: &str = "sageant-link/1\n";
+const AUDIT_HEADER: &str = "sageant-audit/1\n";
+const TOMBSTONE_HEADER: &str = "sageant-tombstone/1\n";
 
 fn put_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
     out.extend_from_slice(name.as_bytes());
@@ -224,5 +227,102 @@ impl Link {
             return Err(Error::Corrupt("not canonical"));
         }
         Ok(link)
+    }
+}
+
+impl AuditEvent {
+    /// The canonical stored form of this entry. An entry about no chunk has an empty `id` field.
+    #[must_use]
+    pub fn encode(&self) -> Vec<u8> {
+        let mut out = AUDIT_HEADER.as_bytes().to_vec();
+        put_field(&mut out, "at", self.at.0.to_string().as_bytes());
+        put_field(&mut out, "action", self.action.name().as_bytes());
+        put_field(
+            &mut out,
+            "id",
+            self.id.as_ref().map_or("", ChunkId::as_str).as_bytes(),
+        );
+        put_field(&mut out, "actor", self.actor.as_bytes());
+        put_field(&mut out, "reason", self.reason.as_bytes());
+        out
+    }
+
+    /// Read a stored entry back, verifying it.
+    ///
+    /// # Errors
+    /// `Corrupt` for anything that is not exactly what `encode` writes.
+    pub fn decode(bytes: &[u8]) -> Result<Self, Error> {
+        let mut cur = Cursor { rest: bytes };
+        cur.header(AUDIT_HEADER)?;
+        let at = Timestamp(number(cur.field("at")?)?);
+        let action = Action::parse(cur.field("action")?).map_err(|_| Error::Corrupt("action"))?;
+        let id_text = cur.field("id")?;
+        let id = if id_text.is_empty() {
+            None
+        } else {
+            Some(id(id_text)?)
+        };
+        let actor = cur.field("actor")?.to_owned();
+        let reason = cur.field("reason")?.to_owned();
+        cur.finish()?;
+        let event = Self::new(at, action, id, &actor, &reason);
+        if event.encode() != bytes {
+            return Err(Error::Corrupt("not canonical"));
+        }
+        Ok(event)
+    }
+}
+
+impl Tombstone {
+    /// The canonical stored form of this tombstone. An absent keyed hash is an empty field.
+    #[must_use]
+    pub fn encode(&self) -> Vec<u8> {
+        let mut out = TOMBSTONE_HEADER.as_bytes().to_vec();
+        put_field(&mut out, "id", self.id.as_str().as_bytes());
+        put_field(&mut out, "collection", self.collection.as_bytes());
+        put_field(
+            &mut out,
+            "versions_removed",
+            self.versions_removed.to_string().as_bytes(),
+        );
+        put_field(&mut out, "at", self.at.0.to_string().as_bytes());
+        put_field(&mut out, "actor", self.actor.as_bytes());
+        put_field(&mut out, "reason", self.reason.as_bytes());
+        put_field(
+            &mut out,
+            "keyed_hash",
+            self.keyed_hash.as_deref().unwrap_or("").as_bytes(),
+        );
+        out
+    }
+
+    /// Read a stored tombstone back, verifying it.
+    ///
+    /// # Errors
+    /// `Corrupt` for anything that is not exactly what `encode` writes.
+    pub fn decode(bytes: &[u8]) -> Result<Self, Error> {
+        let mut cur = Cursor { rest: bytes };
+        cur.header(TOMBSTONE_HEADER)?;
+        let tomb_id = id(cur.field("id")?)?;
+        let collection = cur.field("collection")?.to_owned();
+        let versions_removed: u32 = number(cur.field("versions_removed")?)?;
+        let at = Timestamp(number(cur.field("at")?)?);
+        let actor = cur.field("actor")?.to_owned();
+        let reason = cur.field("reason")?.to_owned();
+        let hash = cur.field("keyed_hash")?;
+        cur.finish()?;
+        let tombstone = Self::new(
+            tomb_id,
+            &collection,
+            versions_removed,
+            at,
+            &actor,
+            &reason,
+            (!hash.is_empty()).then_some(hash),
+        );
+        if tombstone.encode() != bytes {
+            return Err(Error::Corrupt("not canonical"));
+        }
+        Ok(tombstone)
     }
 }

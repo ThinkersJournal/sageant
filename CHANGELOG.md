@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Row 4: `sageant-persistant` slice 3, the audit log and the removal lifecycle. Every `PersistStore` write now appends a content-free entry to the audit log in the same atomic batch (`a/<seq>`, sequence held in `m/aseq`; a lost race for the sequence number is retried), with the same actors and reasons as `MemoryStore`; a refused write appends nothing. New: `audit`, `archive`, `unarchive` (every version, a new version of an archived chunk stays archived), `note`, `forget` (every version, source, hash and outgoing links removed in one batch, minimal tombstone left, links pointing at it stay and read as removed, chunks derived from it flagged for review), `purge` (also removes the tombstone), `tombstone`, `needs_review`, `link_target`. Reads of a forgotten chunk say `Forgotten`, not `NotFound`; putting the same text again ends the tombstone. A differential test compares both stores on listings, tombstones, review flags, link targets, confidence, every refusal and the audit log; a dump of every stored key proves a forgotten chunk's content is gone. Forget makes a chunk unretrievable; it does not claim the backend's old pages are erased.
+- Core: canonical stored forms for audit entries and tombstones (`AuditEvent::encode/decode/new`, `Tombstone::encode/decode/new`), `Action::name/parse`, `Chunk::with_status`, and `PersonAuthority::how` is public so a store can audit who authorised a purge.
+- Still to come in the crate: caps and the secret screen, the `Writer` impl, the kv text index.
+
 ## 0.2.0
 
 - **Breaking.** `Reader::list`, `Promoter::promote` and `Maintainer::plan` now return `Result<_, Error>`, and `MemoryIndex::from_reader` returns `Result<Self, Error>`, because a key-value store can fail to list. `MemoryStore` never fails; callers add `?` or `.unwrap()`. Nothing else changes.
