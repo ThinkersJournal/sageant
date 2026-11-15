@@ -156,6 +156,7 @@ fn help_lists_every_command_and_an_unknown_one_fails() {
         "archive",
         "forget",
         "purge",
+        "add",
         "unarchive",
         "export",
         "import",
@@ -511,4 +512,210 @@ fn an_import_record_whose_id_does_not_match_its_content_is_refused() {
         "{}",
         err(&o)
     );
+}
+
+// ---- `sageant add <folder>` (row D) ----
+
+fn write(path: &std::path::Path, text: &str) {
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(path, text).unwrap();
+}
+
+#[test]
+fn add_puts_every_text_file_in_a_folder_and_records_where_it_came_from() {
+    let home = tempfile::tempdir().unwrap();
+    let notes = tempfile::tempdir().unwrap();
+    write(&notes.path().join("owls.txt"), "Owls hunt at night.");
+    write(
+        &notes.path().join("deep/er/garden.md"),
+        "# Tomatoes\nneed sun",
+    );
+    write(&notes.path().join("image.png"), "not text we should read");
+    write(&notes.path().join("empty.txt"), "");
+    std::fs::write(notes.path().join("binary.txt"), [0xff, 0xfe, 0x00, 0x80]).unwrap();
+    let o = run(home.path(), &["add", notes.path().to_str().unwrap()]);
+    assert!(o.status.success(), "{}", err(&o));
+    assert!(err(&o).contains("added 2"), "{}", err(&o));
+    assert_eq!(out(&run(home.path(), &["list"])).lines().count(), 2);
+    assert_eq!(
+        out(&run(home.path(), &["search", "owls"])).lines().count(),
+        1
+    );
+    let id = out(&run(home.path(), &["search", "tomatoes"]))
+        .split_whitespace()
+        .nth(1)
+        .unwrap()
+        .to_owned();
+    let shown = out(&run(home.path(), &["get", &id[..8]]));
+    assert!(
+        shown.contains("source: deep/er/garden.md"),
+        "the relative path is the source:\n{shown}"
+    );
+    assert!(shown.contains("origin: User"), "{shown}");
+}
+
+#[test]
+fn adding_the_same_folder_again_adds_nothing() {
+    let home = tempfile::tempdir().unwrap();
+    let notes = tempfile::tempdir().unwrap();
+    write(&notes.path().join("a.txt"), "alpha");
+    assert!(
+        run(home.path(), &["add", notes.path().to_str().unwrap()])
+            .status
+            .success()
+    );
+    let again = run(home.path(), &["add", notes.path().to_str().unwrap()]);
+    assert!(again.status.success());
+    assert!(
+        err(&again).contains("added 0") && err(&again).contains("already present"),
+        "{}",
+        err(&again)
+    );
+    assert_eq!(out(&run(home.path(), &["list"])).lines().count(), 1);
+}
+
+#[test]
+fn add_refuses_a_missing_folder_and_a_file() {
+    let home = tempfile::tempdir().unwrap();
+    let none = run(
+        home.path(),
+        &["add", home.path().join("nope").to_str().unwrap()],
+    );
+    assert_eq!(none.status.code(), Some(1));
+    assert!(err(&none).contains("folder"), "{}", err(&none));
+    let file = home.path().join("f.txt");
+    std::fs::write(&file, "x").unwrap();
+    assert_eq!(
+        run(home.path(), &["add", file.to_str().unwrap()])
+            .status
+            .code(),
+        Some(1)
+    );
+}
+
+/// Make `link` point at `target`: a symbolic link where the platform allows one, else (Windows without the
+/// privilege) a directory junction, which needs none. Returns false only if neither could be made.
+fn link_dir(target: &std::path::Path, link: &std::path::Path) -> bool {
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(target, link).is_ok()
+    }
+    #[cfg(windows)]
+    {
+        std::os::windows::fs::symlink_dir(target, link).is_ok()
+            || Command::new("cmd")
+                .args([
+                    "/C",
+                    "mklink",
+                    "/J",
+                    link.to_str().unwrap(),
+                    target.to_str().unwrap(),
+                ])
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+    }
+}
+
+#[test]
+fn add_never_reads_outside_the_folder_through_a_link_to_another_directory() {
+    let home = tempfile::tempdir().unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    write(
+        &outside.path().join("secret.txt"),
+        "TOPSECRETMARKER outside the folder",
+    );
+    let notes = tempfile::tempdir().unwrap();
+    write(&notes.path().join("inside.txt"), "an ordinary note");
+    assert!(
+        link_dir(outside.path(), &notes.path().join("escape")),
+        "the test needs to be able to make a directory link (symlink or junction); it could not, so it proves nothing"
+    );
+    let o = run(home.path(), &["add", notes.path().to_str().unwrap()]);
+    assert!(o.status.success(), "{}", err(&o));
+    assert!(
+        out(&run(home.path(), &["search", "TOPSECRETMARKER"]))
+            .trim()
+            .is_empty(),
+        "outside content was read"
+    );
+    assert_eq!(
+        out(&run(home.path(), &["list"])).lines().count(),
+        1,
+        "only the file inside was added"
+    );
+    assert_eq!(
+        out(&run(home.path(), &["search", "ordinary"]))
+            .lines()
+            .count(),
+        1
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn add_never_follows_a_symlink_to_a_file_outside_the_folder() {
+    let home = tempfile::tempdir().unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    write(
+        &outside.path().join("secret.txt"),
+        "TOPSECRETMARKER in a file outside",
+    );
+    let notes = tempfile::tempdir().unwrap();
+    write(&notes.path().join("inside.txt"), "an ordinary note");
+    std::os::unix::fs::symlink(
+        outside.path().join("secret.txt"),
+        notes.path().join("link.txt"),
+    )
+    .unwrap();
+    let o = run(home.path(), &["add", notes.path().to_str().unwrap()]);
+    assert!(o.status.success(), "{}", err(&o));
+    assert!(
+        out(&run(home.path(), &["search", "TOPSECRETMARKER"]))
+            .trim()
+            .is_empty()
+    );
+    assert!(
+        err(&o).contains("link"),
+        "links are skipped and said so: {}",
+        err(&o)
+    );
+}
+
+#[test]
+fn add_skips_files_over_the_size_limit_and_says_so() {
+    let home = tempfile::tempdir().unwrap();
+    let notes = tempfile::tempdir().unwrap();
+    write(&notes.path().join("small.txt"), "small");
+    write(&notes.path().join("big.txt"), &"word ".repeat(300));
+    let o = run(
+        home.path(),
+        &["add", notes.path().to_str().unwrap(), "--max-bytes", "1000"],
+    );
+    assert!(o.status.success(), "{}", err(&o));
+    assert_eq!(out(&run(home.path(), &["list"])).lines().count(), 1);
+    assert!(err(&o).contains("too large"), "{}", err(&o));
+}
+
+#[test]
+fn add_can_choose_the_collection_and_extensions() {
+    let home = tempfile::tempdir().unwrap();
+    let notes = tempfile::tempdir().unwrap();
+    write(&notes.path().join("a.rs"), "fn main() {}");
+    write(&notes.path().join("b.txt"), "plain");
+    let o = run(
+        home.path(),
+        &[
+            "add",
+            notes.path().to_str().unwrap(),
+            "--collection",
+            "code",
+            "--ext",
+            "rs",
+        ],
+    );
+    assert!(o.status.success(), "{}", err(&o));
+    let list = out(&run(home.path(), &["list", "--collection", "code"]));
+    assert_eq!(list.lines().count(), 1, "{list}");
+    assert!(list.contains("code/"), "{list}");
 }

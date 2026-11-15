@@ -131,6 +131,23 @@ enum Command {
         /// The export file.
         file: PathBuf,
     },
+    /// Put the text files of a folder in the store (never reading outside it: links are skipped).
+    Add {
+        /// The folder.
+        folder: PathBuf,
+        /// The collection to put them in.
+        #[arg(long, default_value = "notes")]
+        collection: String,
+        /// What kind of thing they are.
+        #[arg(long, default_value = "note")]
+        kind: String,
+        /// File extensions to take (repeat or comma-separate).
+        #[arg(long = "ext", value_delimiter = ',', default_values_t = ["txt".to_owned(), "md".to_owned()])]
+        extensions: Vec<String>,
+        /// Skip files larger than this many bytes.
+        #[arg(long, default_value_t = 1_048_576)]
+        max_bytes: u64,
+    },
     /// Rebuild the search index from the store.
     Reindex,
     /// Show where the store is and which storage backend PersistAnt chose for it, and why.
@@ -177,6 +194,19 @@ impl From<Command> for app::Command {
             Command::Unarchive { id, reason } => Self::Unarchive { id, reason },
             Command::Export { out } => Self::Export { out },
             Command::Import { file } => Self::Import { file },
+            Command::Add {
+                folder,
+                collection,
+                kind,
+                extensions,
+                max_bytes,
+            } => Self::Add {
+                folder,
+                collection,
+                kind,
+                extensions,
+                max_bytes,
+            },
             Command::Reindex => Self::Reindex,
             Command::Info => Self::Info,
             Command::Where => Self::Where,

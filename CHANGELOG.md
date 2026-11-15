@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.14
+
+- `sageant-cli`: `sageant add FOLDER [--collection C] [--kind K] [--ext txt,md] [--max-bytes N]` puts the text files of a folder (recursively; `txt` and `md` by default; 1 MiB limit) into the store, one chunk per file with the folder-relative path (forward slashes) as its source and origin User; adding the same folder again adds nothing; it prints what it added and what it skipped (links, outside the folder, too large, unreadable, other files). **It never reads outside the folder:** the walk uses real directory entries only, so a symbolic link to a file or directory is skipped and counted, never followed (which also rules out loops); a Windows directory junction, which the platform does not report as a link, is caught because every directory and every file must still resolve to a path inside the folder's resolved path, checked again at the moment of reading. The refutation test makes a directory link (a symlink, else a junction) to a folder holding a marker, and shows the marker is never read; I ran the same test against a deliberately naive walk that follows links and it fails with "outside content was read". A symlink-to-file test runs on Unix only (it needs no privilege there).
+
 ## 0.3.13
 
 - CI: a new `install smoke` job on Linux, Windows and macOS runs a real `cargo install --path crates/sageant-cli --locked` and then `tools/first-run-smoke.sh`, which, with every data-directory variable pointed at an empty temporary directory and `SAGEANT_HOME` unset, checks `--version`, `where`, `put` (the id alone on stdout), `search`, `get` by id prefix and `list`, and that something was created under the data directory. It is the first-run-with-no-setup gate as an automated check, using each platform's default data directory. The script can be run by hand against any `sageant` binary. It is not a required check until the PM adds it to branch protection.

@@ -20,6 +20,7 @@ That puts a `sageant` program on your path. There is no setup step; the first co
 sageant put "Owls hunt at night and see well in the dark"     # prints the new chunk's id
 sageant search owls
 sageant get 0a02                                              # an id prefix is enough if it is unique
+sageant add ~/notes                                           # put a folder of .txt and .md files (never reads outside it)
 sageant list
 sageant where                                                 # where the store lives
 ```
