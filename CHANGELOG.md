@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+- Row 4: the recorded mutation run over the whole workspace (`docs/MUTATION.md`): 712 mutants, 551 caught, 36 missed, 119 unviable, 6 timeouts. New kill tests (`tests/mutation_kills_row4.rs`, `crates/sageant-lexical/tests/mutation_kills.rs`, `crates/sageant-persistant/tests/mutation_kills.rs`) catch every miss except the 3 known SHA-256 equivalents; a rerun of the 160 mutants in the affected functions shows 0 missed. No library code changed.
+
 ## 0.3.1
 
 - Row 4: `sageant_persistant::KvTextIndex`, a durable `sageant_lexical::TextIndex` on a PersistAnt key-value backend, so BM25 retrieval survives a restart. Keys `x/<term>/<id>/<version>` (term frequency), `d/<id>/<version>` (token count), `f/<id>/<version>/<term>` (a document's terms, for re-indexing and removal) and `m/ix` (corpus totals); every change is one atomic batch with a `Require` on the totals, so concurrent writers cannot desynchronise them (a lost race is retried). A differential test drives it and `MemoryIndex` through the same index, re-index and remove steps and compares postings, lengths and totals; another shows a `LexicalRetriever` over either returns identical hits. `sageant-persistant` now depends on `sageant-lexical`.
