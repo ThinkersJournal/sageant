@@ -68,7 +68,7 @@ jobs:
         run: cargo install --path crates/sageant-cli --locked --root "$RUNNER_TEMP/sg-install"
       - name: first run with an empty home
         shell: bash
-        run: tools/first-run-smoke.sh "$RUNNER_TEMP/sg-install/bin/sageant"
+        run: bash tools/first-run-smoke.sh "$RUNNER_TEMP/sg-install/bin/sageant"
 
   doc:
     name: doc
