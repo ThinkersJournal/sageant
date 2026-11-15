@@ -80,3 +80,16 @@ fn the_backend_error_says_what_failed_without_content() {
     let e = Error::Backend("connection refused".to_owned());
     assert_eq!(e.to_string(), "storage backend: connection refused");
 }
+
+#[test]
+fn with_status_changes_only_the_status() {
+    use sageant::Status;
+    let c = Chunk::first_version(new("hello"), Timestamp(5)).unwrap();
+    let a = c.with_status(Status::Archived);
+    assert_eq!(a.status(), Status::Archived);
+    assert_eq!(a.content(), c.content());
+    assert_eq!(a.id(), c.id());
+    assert_eq!(a.version(), c.version());
+    assert_ne!(a.encode(), c.encode());
+    assert_eq!(a.with_status(Status::Active).encode(), c.encode());
+}

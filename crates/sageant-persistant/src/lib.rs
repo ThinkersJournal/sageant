@@ -26,8 +26,9 @@ use persistant::capability::provider::ProviderNeeds;
 use persistant::kv::{BatchOp, KvError};
 use persistant::registry::Endpoint;
 use sageant::{
-    Chunk, ChunkId, ChunkRef, Confidence, Error, Filter, Link, LinkKind, NewChunk, Origin,
-    Timestamp, closes_cycle, derive_confidence,
+    Action, AuditEvent, Chunk, ChunkId, ChunkRef, Confidence, Error, Filter, Link, LinkKind,
+    LinkTarget, NewChunk, Origin, PersonAuthority, Removed, Status, Timestamp, Tombstone,
+    closes_cycle, derive_confidence,
 };
 
 const SCAN_PAGE: usize = 256;
@@ -52,6 +53,23 @@ fn head_key(id: &ChunkId) -> String {
 fn link_key(from: &ChunkId, kind: LinkKind, to: &ChunkId) -> String {
     format!("l/{}/{}/{}", from.as_str(), kind.name(), to.as_str())
 }
+
+fn tombstone_key(id: &ChunkId) -> String {
+    format!("t/{}", id.as_str())
+}
+
+fn review_key(id: &ChunkId) -> String {
+    format!("v/{}", id.as_str())
+}
+
+fn audit_key(seq: u64) -> String {
+    format!("a/{seq:020}")
+}
+
+/// The next audit sequence number is held here; the entries themselves are `a/<seq>`.
+const AUDIT_COUNTER: &str = "m/aseq";
+/// Tries at a write whose only failed precondition was another writer's audit entry.
+const AUDIT_RETRIES: usize = 16;
 
 fn reverse_key(from: &ChunkId, kind: LinkKind, to: &ChunkId) -> String {
     format!("r/{}/{}/{}", to.as_str(), kind.name(), from.as_str())
@@ -108,6 +126,60 @@ impl PersistStore {
         self.kv.batch(ops).map_err(kv_error)
     }
 
+    fn audit_counter(&self) -> Result<u64, Error> {
+        match self.read(AUDIT_COUNTER)? {
+            None => Ok(0),
+            Some(bytes) => std::str::from_utf8(&bytes)
+                .ok()
+                .and_then(|t| t.parse().ok())
+                .ok_or(Error::Corrupt("audit counter")),
+        }
+    }
+
+    /// Apply `ops` and append `events` to the audit log in one atomic batch. `Ok(false)` means one of `ops`'s own
+    /// `Require`s no longer held; a lost race for the audit sequence number is retried, because nothing else
+    /// changed.
+    fn apply(&self, ops: &[BatchOp], events: &[AuditEvent]) -> Result<bool, Error> {
+        for _ in 0..AUDIT_RETRIES {
+            let n = self.audit_counter()?;
+            let mut all = ops.to_vec();
+            all.push(BatchOp::Require {
+                key: AUDIT_COUNTER.to_owned(),
+                expected: (n > 0).then(|| n.to_string().into_bytes()),
+            });
+            let mut next = n;
+            for event in events {
+                next += 1;
+                all.push(BatchOp::Put {
+                    key: audit_key(next),
+                    value: event.encode(),
+                    ttl: NO_TTL,
+                });
+            }
+            all.push(BatchOp::Put {
+                key: AUDIT_COUNTER.to_owned(),
+                value: next.to_string().into_bytes(),
+                ttl: NO_TTL,
+            });
+            if self.batch(&all)? {
+                return Ok(true);
+            }
+            if self.audit_counter()? == n {
+                return Ok(false);
+            }
+        }
+        Err(Error::Backend("audit log contention".to_owned()))
+    }
+
+    /// Why `id` has no head: forgotten (a tombstone) or never stored.
+    fn missing(&self, id: &ChunkId) -> Error {
+        match self.read(&tombstone_key(id)) {
+            Ok(Some(_)) => Error::Forgotten,
+            Ok(None) => Error::NotFound,
+            Err(e) => e,
+        }
+    }
+
     fn head(&self, id: &ChunkId) -> Result<Option<u32>, Error> {
         match self.read(&head_key(id))? {
             None => Ok(None),
@@ -135,22 +207,37 @@ impl PersistStore {
     pub fn put(&self, new: NewChunk, at: Timestamp) -> Result<ChunkRef, Error> {
         let chunk = Chunk::first_version(new, at)?;
         let id = chunk.id().clone();
-        let applied = self.batch(&[
-            BatchOp::Require {
-                key: head_key(&id),
-                expected: None,
-            },
-            BatchOp::Put {
-                key: chunk_key(&id, 1),
-                value: chunk.encode(),
-                ttl: NO_TTL,
-            },
-            BatchOp::Put {
-                key: head_key(&id),
-                value: b"1".to_vec(),
-                ttl: NO_TTL,
-            },
-        ])?;
+        // The audit log names the origin class, never the free-text source (which may hold a URL or a name).
+        let event = AuditEvent::new(
+            at,
+            Action::Put,
+            Some(id.clone()),
+            &format!("{:?}", chunk.origin()),
+            "",
+        );
+        let applied = self.apply(
+            &[
+                BatchOp::Require {
+                    key: head_key(&id),
+                    expected: None,
+                },
+                BatchOp::Put {
+                    key: chunk_key(&id, 1),
+                    value: chunk.encode(),
+                    ttl: NO_TTL,
+                },
+                BatchOp::Put {
+                    key: head_key(&id),
+                    value: b"1".to_vec(),
+                    ttl: NO_TTL,
+                },
+                // Storing the text again after a forget ends the tombstone.
+                BatchOp::Delete {
+                    key: tombstone_key(&id),
+                },
+            ],
+            &[event],
+        )?;
         if applied {
             Ok(ChunkRef { id, version: 1 })
         } else {
@@ -174,7 +261,7 @@ impl PersistStore {
         source: &str,
         at: Timestamp,
     ) -> Result<ChunkRef, Error> {
-        let current = self.head(id)?.ok_or(Error::NotFound)?;
+        let current = self.head(id)?.ok_or_else(|| self.missing(id))?;
         self.supersede_expecting(id, current, content, origin, source, at)
     }
 
@@ -192,7 +279,7 @@ impl PersistStore {
         source: &str,
         at: Timestamp,
     ) -> Result<ChunkRef, Error> {
-        let found = self.head(id)?.ok_or(Error::NotFound)?;
+        let found = self.head(id)?.ok_or_else(|| self.missing(id))?;
         if found != expected {
             return Err(Error::Conflict { expected, found });
         }
@@ -200,22 +287,32 @@ impl PersistStore {
             .load(id, expected)?
             .next_version(content, origin, source, at)?;
         let version = next.version();
-        let applied = self.batch(&[
-            BatchOp::Require {
-                key: head_key(id),
-                expected: Some(expected.to_string().into_bytes()),
-            },
-            BatchOp::Put {
-                key: chunk_key(id, version),
-                value: next.encode(),
-                ttl: NO_TTL,
-            },
-            BatchOp::Put {
-                key: head_key(id),
-                value: version.to_string().into_bytes(),
-                ttl: NO_TTL,
-            },
-        ])?;
+        let event = AuditEvent::new(
+            at,
+            Action::Supersede,
+            Some(id.clone()),
+            &format!("{origin:?}"),
+            "",
+        );
+        let applied = self.apply(
+            &[
+                BatchOp::Require {
+                    key: head_key(id),
+                    expected: Some(expected.to_string().into_bytes()),
+                },
+                BatchOp::Put {
+                    key: chunk_key(id, version),
+                    value: next.encode(),
+                    ttl: NO_TTL,
+                },
+                BatchOp::Put {
+                    key: head_key(id),
+                    value: version.to_string().into_bytes(),
+                    ttl: NO_TTL,
+                },
+            ],
+            &[event],
+        )?;
         if applied {
             Ok(ChunkRef {
                 id: id.clone(),
@@ -234,7 +331,7 @@ impl PersistStore {
     /// # Errors
     /// `NotFound`, `Corrupt` or `Backend`.
     pub fn get(&self, id: &ChunkId) -> Result<Chunk, Error> {
-        let head = self.head(id)?.ok_or(Error::NotFound)?;
+        let head = self.head(id)?.ok_or_else(|| self.missing(id))?;
         self.load(id, head)
     }
 
@@ -243,6 +340,9 @@ impl PersistStore {
     /// # Errors
     /// `NotFound` for an unknown id or version, `Corrupt` or `Backend`.
     pub fn get_version(&self, id: &ChunkId, version: u32) -> Result<Chunk, Error> {
+        if self.head(id)?.is_none() {
+            return Err(self.missing(id));
+        }
         if version == 0 {
             return Err(Error::NotFound);
         }
@@ -256,7 +356,7 @@ impl PersistStore {
     pub fn history(&self, id: &ChunkId) -> Result<Vec<Chunk>, Error> {
         let versions = self.scan(&format!("c/{}/", id.as_str()))?;
         if versions.is_empty() {
-            return Err(Error::NotFound);
+            return Err(self.missing(id));
         }
         versions
             .into_iter()
@@ -369,26 +469,36 @@ impl PersistStore {
             }
         }
         let link = Link::new(from.clone(), from_version, kind, to.clone(), at);
-        let applied = self.batch(&[
-            BatchOp::Require {
-                key: forward.clone(),
-                expected: None,
-            },
-            BatchOp::Require {
-                key: head_key(from),
-                expected: Some(from_version.to_string().into_bytes()),
-            },
-            BatchOp::Put {
-                key: forward,
-                value: link.encode(),
-                ttl: NO_TTL,
-            },
-            BatchOp::Put {
-                key: reverse_key(from, kind, to),
-                value: link.encode(),
-                ttl: NO_TTL,
-            },
-        ])?;
+        let event = AuditEvent::new(
+            at,
+            Action::Link,
+            Some(from.clone()),
+            "",
+            &format!("{kind:?}"),
+        );
+        let applied = self.apply(
+            &[
+                BatchOp::Require {
+                    key: forward.clone(),
+                    expected: None,
+                },
+                BatchOp::Require {
+                    key: head_key(from),
+                    expected: Some(from_version.to_string().into_bytes()),
+                },
+                BatchOp::Put {
+                    key: forward,
+                    value: link.encode(),
+                    ttl: NO_TTL,
+                },
+                BatchOp::Put {
+                    key: reverse_key(from, kind, to),
+                    value: link.encode(),
+                    ttl: NO_TTL,
+                },
+            ],
+            &[event],
+        )?;
         if applied {
             return Ok(());
         }
@@ -443,7 +553,7 @@ impl PersistStore {
         for link in self.links_from(id)? {
             let target = match self.get(link.to()) {
                 Ok(chunk) => Some(chunk),
-                Err(Error::NotFound) => None, // removed evidence counts for nothing
+                Err(Error::NotFound | Error::Forgotten) => None, // removed evidence counts for nothing
                 Err(e) => return Err(e),
             };
             targets.push((link.kind(), target));
@@ -451,6 +561,285 @@ impl PersistStore {
         let evidence: Vec<(LinkKind, Option<&Chunk>)> =
             targets.iter().map(|(k, c)| (*k, c.as_ref())).collect();
         Ok(derive_confidence(&me, &evidence))
+    }
+
+    /// Make an archived chunk active again (every version).
+    ///
+    /// # Errors
+    /// `NotFound`, `Forgotten`, `BadState` if already active, `Conflict` if another writer changed the chunk
+    /// meanwhile, `Corrupt` or `Backend`.
+    pub fn unarchive(
+        &self,
+        id: &ChunkId,
+        actor: &str,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        self.set_status(id, false, actor, reason, at)
+    }
+
+    /// Mark a chunk archived: kept, out of retrieval. New versions stay archived.
+    ///
+    /// # Errors
+    /// `NotFound`, `Forgotten`, `BadState` if already archived, `Conflict` if another writer changed the chunk
+    /// meanwhile, `Corrupt` or `Backend`.
+    pub fn archive(
+        &self,
+        id: &ChunkId,
+        actor: &str,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        self.set_status(id, true, actor, reason, at)
+    }
+
+    fn set_status(
+        &self,
+        id: &ChunkId,
+        archive: bool,
+        actor: &str,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        let (status, action) = if archive {
+            (Status::Archived, Action::Archive)
+        } else {
+            (Status::Active, Action::Unarchive)
+        };
+        let head = self.head(id)?.ok_or_else(|| self.missing(id))?;
+        let history = self.history(id)?;
+        if history.last().is_some_and(|c| c.status() == status) {
+            return Err(Error::BadState(if archive {
+                "already archived"
+            } else {
+                "already active"
+            }));
+        }
+        let mut ops = vec![BatchOp::Require {
+            key: head_key(id),
+            expected: Some(head.to_string().into_bytes()),
+        }];
+        for chunk in &history {
+            ops.push(BatchOp::Put {
+                key: chunk_key(id, chunk.version()),
+                value: chunk.with_status(status).encode(),
+                ttl: NO_TTL,
+            });
+        }
+        let event = AuditEvent::new(at, action, Some(id.clone()), actor, reason);
+        if self.apply(&ops, &[event])? {
+            Ok(())
+        } else {
+            Err(Error::Conflict {
+                expected: head,
+                found: self.head(id)?.unwrap_or(0),
+            })
+        }
+    }
+
+    /// Record a note against a chunk in the audit log (a reason for a link or a supersede, say).
+    ///
+    /// # Errors
+    /// `NotFound`, `Forgotten`, `Corrupt` or `Backend`.
+    pub fn note(
+        &self,
+        id: &ChunkId,
+        actor: &str,
+        reason: &str,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        self.head(id)?.ok_or_else(|| self.missing(id))?;
+        let event = AuditEvent::new(at, Action::Note, Some(id.clone()), actor, reason);
+        self.apply(&[], &[event])?;
+        Ok(())
+    }
+
+    /// The operations that remove a lineage: its versions and head, its outgoing links (and their reverse
+    /// entries), and a review flag on every chunk derived from it. Links pointing at it stay and read as removed.
+    fn removal_ops(&self, id: &ChunkId) -> Result<Vec<BatchOp>, Error> {
+        let mut ops = Vec::new();
+        for chunk in self.history(id)? {
+            ops.push(BatchOp::Delete {
+                key: chunk_key(id, chunk.version()),
+            });
+        }
+        ops.push(BatchOp::Delete { key: head_key(id) });
+        for link in self.scan_links(&format!("l/{}/", id.as_str()))? {
+            ops.push(BatchOp::Delete {
+                key: link_key(link.from(), link.kind(), link.to()),
+            });
+            ops.push(BatchOp::Delete {
+                key: reverse_key(link.from(), link.kind(), link.to()),
+            });
+        }
+        for link in self.scan_links(&format!("r/{}/", id.as_str()))? {
+            if link.kind() == LinkKind::DerivedFrom {
+                ops.push(BatchOp::Put {
+                    key: review_key(link.from()),
+                    value: b"1".to_vec(),
+                    ttl: NO_TTL,
+                });
+            }
+        }
+        Ok(ops)
+    }
+
+    /// Remove a chunk's content (every version), its source, its hash and its outgoing links, leaving a minimal
+    /// tombstone. Links pointing at it stay and read as removed; chunks derived from it are flagged for review.
+    /// "Unretrievable", not "erased": a backend may keep old pages until it is compacted.
+    ///
+    /// # Errors
+    /// `NotFound`, `Forgotten` if it is already forgotten, `Conflict` if another writer changed the chunk
+    /// meanwhile, `Corrupt` or `Backend`.
+    pub fn forget(
+        &self,
+        id: &ChunkId,
+        actor: &str,
+        reason: &str,
+        keyed_hash: Option<&str>,
+        at: Timestamp,
+    ) -> Result<Removed, Error> {
+        let head = self.head(id)?.ok_or_else(|| self.missing(id))?;
+        let history = self.history(id)?;
+        let tombstone = Tombstone::new(
+            id.clone(),
+            history.first().map_or("", Chunk::collection),
+            u32::try_from(history.len()).unwrap_or(u32::MAX),
+            at,
+            actor,
+            reason,
+            keyed_hash,
+        );
+        let mut ops = vec![BatchOp::Require {
+            key: head_key(id),
+            expected: Some(head.to_string().into_bytes()),
+        }];
+        ops.extend(self.removal_ops(id)?);
+        ops.push(BatchOp::Put {
+            key: tombstone_key(id),
+            value: tombstone.encode(),
+            ttl: NO_TTL,
+        });
+        let event = AuditEvent::new(at, Action::Forget, Some(id.clone()), actor, reason);
+        if self.apply(&ops, &[event])? {
+            Ok(Removed::Unretrievable)
+        } else {
+            Err(Error::Conflict {
+                expected: head,
+                found: self.head(id)?.unwrap_or(0),
+            })
+        }
+    }
+
+    /// Remove everything about a chunk, including its tombstone. Needs a [`PersonAuthority`].
+    ///
+    /// # Errors
+    /// `NotFound` if there is neither a chunk nor a tombstone, `Conflict` if another writer changed it
+    /// meanwhile, `Corrupt` or `Backend`.
+    pub fn purge(
+        &self,
+        id: &ChunkId,
+        authority: &PersonAuthority,
+        at: Timestamp,
+    ) -> Result<(), Error> {
+        let head = self.head(id)?;
+        let tombstone = self.read(&tombstone_key(id))?;
+        if head.is_none() && tombstone.is_none() {
+            return Err(Error::NotFound);
+        }
+        let mut ops = vec![
+            BatchOp::Require {
+                key: head_key(id),
+                expected: head.map(|h| h.to_string().into_bytes()),
+            },
+            BatchOp::Require {
+                key: tombstone_key(id),
+                expected: tombstone,
+            },
+            BatchOp::Delete {
+                key: tombstone_key(id),
+            },
+        ];
+        if head.is_some() {
+            ops.extend(self.removal_ops(id)?);
+        }
+        let event = AuditEvent::new(at, Action::Purge, Some(id.clone()), authority.how(), "");
+        if self.apply(&ops, &[event])? {
+            Ok(())
+        } else {
+            Err(Error::Conflict {
+                expected: head.unwrap_or(0),
+                found: self.head(id)?.unwrap_or(0),
+            })
+        }
+    }
+
+    /// The tombstone of a forgotten lineage, if it is currently forgotten.
+    ///
+    /// # Errors
+    /// `Corrupt` or `Backend`.
+    pub fn tombstone(&self, id: &ChunkId) -> Result<Option<Tombstone>, Error> {
+        let Some(bytes) = self.read(&tombstone_key(id))? else {
+            return Ok(None);
+        };
+        let tombstone = Tombstone::decode(&bytes)?;
+        if tombstone.id() != id {
+            return Err(Error::Corrupt("key does not match record"));
+        }
+        Ok(Some(tombstone))
+    }
+
+    /// Whether a link's target is still stored.
+    ///
+    /// # Errors
+    /// `Corrupt` or `Backend`.
+    pub fn link_target(&self, link: &Link) -> Result<LinkTarget, Error> {
+        Ok(if self.head(link.to())?.is_some() {
+            LinkTarget::Present
+        } else {
+            LinkTarget::Removed
+        })
+    }
+
+    /// Whether a chunk derived from something later forgotten or purged is flagged for review.
+    ///
+    /// # Errors
+    /// `NotFound`, `Forgotten`, `Corrupt` or `Backend`.
+    pub fn needs_review(&self, id: &ChunkId) -> Result<bool, Error> {
+        self.head(id)?.ok_or_else(|| self.missing(id))?;
+        Ok(self.read(&review_key(id))?.is_some())
+    }
+
+    /// The audit log, oldest first. It never holds content.
+    ///
+    /// # Errors
+    /// `Corrupt` or `Backend`.
+    pub fn audit(&self) -> Result<Vec<AuditEvent>, Error> {
+        self.scan("a/")?
+            .iter()
+            .map(|b| AuditEvent::decode(b))
+            .collect()
+    }
+
+    /// Every stored key and value, for tests that prove content is gone. Not for production use.
+    ///
+    /// # Errors
+    /// `Backend`.
+    #[doc(hidden)]
+    pub fn dump_all_for_test(&self) -> Result<Vec<(String, Vec<u8>)>, Error> {
+        let mut out = Vec::new();
+        let mut after: Option<String> = None;
+        loop {
+            let page = self
+                .kv
+                .ordered_scan_values("", after.as_deref(), SCAN_PAGE)
+                .map_err(kv_error)?;
+            out.extend(page.entries);
+            match page.next {
+                Some(cursor) => after = Some(cursor),
+                None => return Ok(out),
+            }
+        }
     }
 
     /// Overwrite a stored version with raw bytes, to test that corrupt records are refused. Not for production use.

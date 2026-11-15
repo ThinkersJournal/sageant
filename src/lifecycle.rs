@@ -4,6 +4,7 @@
 //! The promise is "unretrievable", never "erased": PersistAnt cannot yet prove removed bytes are gone
 //! (persistant ROADMAP row 38). There is deliberately no `Erased` variant.
 
+use crate::Error;
 use crate::model::{ChunkId, Timestamp};
 
 /// What `forget` guarantees. Only `Unretrievable` exists until a backend can prove erasure.
@@ -84,7 +85,9 @@ impl PersonAuthority {
     pub fn from_person_action(how: &str) -> Self {
         Self(how.to_owned())
     }
-    pub(crate) fn how(&self) -> &str {
+    /// What the person did to authorise this, as it will appear in the audit log.
+    #[must_use]
+    pub fn how(&self) -> &str {
         &self.0
     }
 }
@@ -212,5 +215,88 @@ impl Actor {
     }
     pub(crate) fn label(&self) -> String {
         format!("{}/{}", self.role, self.agent)
+    }
+}
+
+impl Action {
+    /// The stable name written into stored audit entries.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Put => "put",
+            Self::Supersede => "supersede",
+            Self::Link => "link",
+            Self::Archive => "archive",
+            Self::Unarchive => "unarchive",
+            Self::Note => "note",
+            Self::Forget => "forget",
+            Self::Purge => "purge",
+            Self::Refused => "refused",
+            Self::Overridden => "overridden",
+        }
+    }
+
+    /// The action a stored name stands for.
+    ///
+    /// # Errors
+    /// `Invalid("action")` for a name `name` never writes.
+    pub fn parse(name: &str) -> Result<Self, Error> {
+        Ok(match name {
+            "put" => Self::Put,
+            "supersede" => Self::Supersede,
+            "link" => Self::Link,
+            "archive" => Self::Archive,
+            "unarchive" => Self::Unarchive,
+            "note" => Self::Note,
+            "forget" => Self::Forget,
+            "purge" => Self::Purge,
+            "refused" => Self::Refused,
+            "overridden" => Self::Overridden,
+            _ => return Err(Error::Invalid("action")),
+        })
+    }
+}
+
+impl AuditEvent {
+    /// An audit entry. Stores build these; this is for a store that keeps its own log.
+    #[must_use]
+    pub fn new(
+        at: Timestamp,
+        action: Action,
+        id: Option<ChunkId>,
+        actor: &str,
+        reason: &str,
+    ) -> Self {
+        Self {
+            at,
+            action,
+            id,
+            actor: actor.to_owned(),
+            reason: reason.to_owned(),
+        }
+    }
+}
+
+impl Tombstone {
+    /// A tombstone. Stores build these; this is for a store that keeps its own.
+    #[must_use]
+    pub fn new(
+        id: ChunkId,
+        collection: &str,
+        versions_removed: u32,
+        at: Timestamp,
+        actor: &str,
+        reason: &str,
+        keyed_hash: Option<&str>,
+    ) -> Self {
+        Self {
+            id,
+            collection: collection.to_owned(),
+            versions_removed,
+            at,
+            actor: actor.to_owned(),
+            reason: reason.to_owned(),
+            keyed_hash: keyed_hash.map(str::to_owned),
+        }
     }
 }

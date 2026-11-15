@@ -193,6 +193,14 @@ impl Chunk {
         })
     }
 
+    /// This version with its status set to `status`; everything else, including the content hash, is unchanged.
+    #[must_use]
+    pub fn with_status(&self, status: Status) -> Self {
+        let mut next = self.clone();
+        next.status = status;
+        next
+    }
+
     /// Lineage id.
     #[must_use]
     pub fn id(&self) -> &ChunkId {
