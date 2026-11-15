@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-sageant = { path = "../..", version = "0.2.2" }
+sageant = { path = "../..", version = "0.3.0" }
 persistant = { version = "~0.18", features = ["registry-sqlite"] }
 
 [dev-dependencies]

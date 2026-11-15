@@ -173,23 +173,27 @@ fn indexing_order_does_not_change_the_result() {
     let mut backward = MemoryIndex::default();
     for id in &ids {
         let c = Reader::get(&s, id).unwrap();
-        forward.index(
-            &sageant::ChunkRef {
-                id: id.clone(),
-                version: 1,
-            },
-            c.content(),
-        );
+        forward
+            .index(
+                &sageant::ChunkRef {
+                    id: id.clone(),
+                    version: 1,
+                },
+                c.content(),
+            )
+            .unwrap();
     }
     for id in ids.iter().rev() {
         let c = Reader::get(&s, id).unwrap();
-        backward.index(
-            &sageant::ChunkRef {
-                id: id.clone(),
-                version: 1,
-            },
-            c.content(),
-        );
+        backward
+            .index(
+                &sageant::ChunkRef {
+                    id: id.clone(),
+                    version: 1,
+                },
+                c.content(),
+            )
+            .unwrap();
     }
     let q = Query::new("rust memory pools");
     let a = LexicalRetriever::new(forward).retrieve(&q, &s).unwrap();
@@ -205,23 +209,30 @@ fn reindexing_a_chunk_replaces_its_postings_and_remove_drops_a_lineage() {
         id: a.clone(),
         version: 1,
     };
-    assert!(idx.postings("safety").iter().any(|p| p.chunk() == &r1));
-    idx.index(&r1, "completely different words");
-    assert!(idx.postings("safety").is_empty());
-    assert!(!idx.postings("different").is_empty());
-    assert_eq!(idx.doc_len(&r1), Some(3));
-    idx.remove(&a);
-    assert!(idx.postings("different").is_empty());
-    assert_eq!(idx.doc_len(&r1), None);
-    assert_eq!(idx.stats().docs, 3);
+    assert!(
+        idx.postings("safety")
+            .unwrap()
+            .iter()
+            .any(|p| p.chunk() == &r1)
+    );
+    idx.index(&r1, "completely different words").unwrap();
+    assert!(idx.postings("safety").unwrap().is_empty());
+    assert!(!idx.postings("different").unwrap().is_empty());
+    assert_eq!(idx.doc_len(&r1).unwrap(), Some(3));
+    idx.remove(&a).unwrap();
+    assert!(idx.postings("different").unwrap().is_empty());
+    assert_eq!(idx.doc_len(&r1).unwrap(), None);
+    assert_eq!(idx.stats().unwrap().docs, 3);
 }
 
 #[test]
 fn stats_count_documents_and_tokens() {
     let mut idx = MemoryIndex::default();
     let (_, [a, b, ..]) = corpus();
-    idx.index(&sageant::ChunkRef { id: a, version: 1 }, "one two three");
-    idx.index(&sageant::ChunkRef { id: b, version: 1 }, "four five");
-    let st = idx.stats();
+    idx.index(&sageant::ChunkRef { id: a, version: 1 }, "one two three")
+        .unwrap();
+    idx.index(&sageant::ChunkRef { id: b, version: 1 }, "four five")
+        .unwrap();
+    let st = idx.stats().unwrap();
     assert_eq!((st.docs, st.total_len), (2, 5));
 }

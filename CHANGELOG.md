@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+- **Breaking.** `sageant_lexical::TextIndex` methods (`index`, `remove`, `postings`, `doc_len`, `stats`) now return `Result<_, Error>`, because a key-value-backed index can fail. `MemoryIndex` never fails; callers add `?` or `.unwrap()`. `LexicalRetriever::retrieve` passes an index failure to its caller instead of reading it as "no matches". The kv-backed index in `sageant-persistant` is the next slice.
+
 ## 0.2.2
 
 - Row 4: `sageant-persistant` slice 3 finished, caps, the secret screen and the `Writer` impl. `PersistStore` gets `set_byte_cap` (`TooLarge`), `set_screen` (the screen must be `Send + Sync`; a refusal is audited by class only and stores nothing), `put_overriding` and `supersede_overriding` (an override names the class and a person; audited as `Overridden`), and implements `Writer`, attributing every audit entry of a call to the caller's `role/agent` label exactly as `MemoryStore` does. A differential test drives both stores through the same `Writer` sequence (put, supersede, link, archive and unarchive, note, forget, purge, invalid actor) and compares results and audit logs. One precedence difference remains: a supersede of an unknown id with non-NFC text reports `NotFound` where `MemoryStore` reports `NotNormalised`.
