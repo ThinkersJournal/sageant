@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.3
+
+- Row 4: new crate `sageant-mcp`, the MCP server (CONTRACT D13, D14). `Tools<S, I>` implements the ten tools (`sageant_get`, `_list`, `_search`, `_links`, `_history`, `_put`, `_supersede`, `_link`, `_archive`, `_forget`) over any `Reader + Writer` and `TextIndex`, as plain functions tested without a transport; `McpServer` wires them to MCP with `rmcp` 3.10.0 (crates.io, MSRV 1.88, Apache-2.0). There is no purge tool. Reads are on; a write works only on a collection the server was given a grant for (`Grants::writable`); a client writes as `Origin::Agent`, attributed to the configured actor. Every chunk is served in a JSON envelope (id, version, collection, kind, origin, confidence, status, source, created time) whose `content` field is the only place the stored text appears, never in prose or in an error (the D14 test: hostile text round-trips exactly, and a wire test does the same over a real MCP session). Responses are capped by an estimated token budget and say when they were cut. Errors carry a stable code (`not_found`, `forgotten`, `not_authorised`, `secret_refused`, ...) and never content.
+- Still to come: `sageant-cli` (first run from `cargo install`, typed-confirmation purge, `serve`).
+
 ## 0.3.2
 
 - Row 4: the recorded mutation run over the whole workspace (`docs/MUTATION.md`): 712 mutants, 551 caught, 36 missed, 119 unviable, 6 timeouts. New kill tests (`tests/mutation_kills_row4.rs`, `crates/sageant-lexical/tests/mutation_kills.rs`, `crates/sageant-persistant/tests/mutation_kills.rs`) catch every miss except the 3 known SHA-256 equivalents; a rerun of the 160 mutants in the affected functions shows 0 missed. No library code changed.
