@@ -77,9 +77,17 @@ fn an_id_prefix_is_enough_and_an_ambiguous_or_unknown_one_says_so() {
 }
 
 #[test]
-fn forget_makes_a_chunk_unretrievable_and_says_exactly_that() {
+fn on_a_backend_without_secure_delete_forget_says_unretrievable_never_erased() {
     let home = tempfile::tempdir().unwrap();
+    // A store made before secure delete was offered: it is SQLite without it.
     let id = put(home.path(), "forget this sentence");
+    std::fs::write(
+        home.path().join("backend"),
+        "sqlite
+",
+    )
+    .unwrap();
+    assert!(out(&run(home.path(), &["info"])).contains("secure delete: no"));
     let f = run(home.path(), &["forget", &id, "--reason", "asked"]);
     assert!(f.status.success(), "{}", err(&f));
     let said = format!("{}{}", out(&f), err(&f)).to_lowercase();
@@ -718,4 +726,63 @@ fn add_can_choose_the_collection_and_extensions() {
     let list = out(&run(home.path(), &["list", "--collection", "code"]));
     assert_eq!(list.lines().count(), 1, "{list}");
     assert!(list.contains("code/"), "{list}");
+}
+
+#[test]
+fn a_new_home_gets_secure_delete_and_forget_says_what_that_does_and_does_not_cover() {
+    let home = tempfile::tempdir().unwrap();
+    let id = put(home.path(), "erase this sentence");
+    let info = out(&run(home.path(), &["info"]));
+    assert!(info.contains("secure delete: yes"), "{info}");
+    let f = run(home.path(), &["forget", &id]);
+    assert!(f.status.success(), "{}", err(&f));
+    let said = format!("{}{}", out(&f), err(&f)).to_lowercase();
+    assert!(said.contains("erased from the store file"), "{said}");
+    assert!(
+        said.contains("backups") || said.contains("copies"),
+        "the limits are stated: {said}"
+    );
+    // And the raw store files no longer hold the text.
+    let mut all = Vec::new();
+    for e in std::fs::read_dir(home.path()).unwrap() {
+        all.extend(std::fs::read(e.unwrap().path()).unwrap_or_default());
+    }
+    assert!(
+        !all.windows(19).any(|w| w == b"erase this sentence"),
+        "the sentence is still in a file"
+    );
+}
+
+#[test]
+fn a_forget_through_mcp_erases_the_text_and_its_index_terms_from_the_files_too() {
+    let home = tempfile::tempdir().unwrap();
+    put(home.path(), "an ordinary note to create the store");
+    let mut s = Session::start(home.path(), &["--allow-write", "notes"]);
+    let text = "zqxmcpmarker unique words for the agent to write";
+    let put = s.call(
+        "sageant_put",
+        json!({"collection": "notes", "kind": "note", "content": text}),
+    );
+    let body: Value =
+        serde_json::from_str(put["result"]["content"][0]["text"].as_str().unwrap()).unwrap();
+    let id = body["id"].as_str().unwrap().to_owned();
+    let raw = || {
+        let mut all = Vec::new();
+        for e in std::fs::read_dir(home.path()).unwrap() {
+            all.extend(std::fs::read(e.unwrap().path()).unwrap_or_default());
+        }
+        all
+    };
+    let has = |bytes: &[u8]| bytes.windows(12).any(|w| w == b"zqxmcpmarker");
+    assert!(
+        has(&raw()),
+        "control: the marker is in the files before the forget"
+    );
+    let f = s.call("sageant_forget", json!({"id": id, "reason": "test"}));
+    assert_ne!(f["result"]["isError"], json!(true), "{f}");
+    drop(s);
+    assert!(
+        !has(&raw()),
+        "the text or its index terms are still in a store file after a forget through MCP"
+    );
 }

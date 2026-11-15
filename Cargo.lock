@@ -1090,9 +1090,9 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "persistant"
-version = "0.18.0"
+version = "0.18.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d32d95b0cac2a6cdb2d784257e9a041b61857f0ed9c655e739e84c470272d2e"
+checksum = "5ca88666feec0b055549cf3e8ce919848e3af5460120370b9add0fd465676ad5"
 dependencies = [
  "futures-util",
  "opendal",
@@ -1109,18 +1109,18 @@ dependencies = [
 
 [[package]]
 name = "persistant-blob"
-version = "0.18.0"
+version = "0.18.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc48e5f3cd1e929ef06febff70bebab36b907ed344abadfb8c44aa25b6a462fb"
+checksum = "c375d3e308021cf8cfde6d8174ff10a4a838e2d75aec4bb82895c9ff367edd38"
 dependencies = [
  "persistant-core",
 ]
 
 [[package]]
 name = "persistant-core"
-version = "0.18.0"
+version = "0.18.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c865fb80c883076619f64de30f46fad4fd0d9c9e6ddda1fa80b0bc83821162e2"
+checksum = "387b67fc0e1a2c6fa163a614d595a33b972f337d4b1ec61937c40436bff79195"
 dependencies = [
  "capant",
  "windows-sys 0.61.2",
@@ -1128,9 +1128,9 @@ dependencies = [
 
 [[package]]
 name = "persistant-kv"
-version = "0.18.0"
+version = "0.18.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cf16fd7b8e703c2f8891f9fe4ff3f36c018067c47507b47595380442a6197d6"
+checksum = "af975642c06c8d0952f694f6970f2f2305bc670730077baf042ab857f9823adf"
 dependencies = [
  "persistant-blob",
  "persistant-core",
@@ -1141,9 +1141,9 @@ dependencies = [
 
 [[package]]
 name = "persistant-opendal"
-version = "0.18.0"
+version = "0.18.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7e38f47689a100d3a891754c43d985d223a9732fcff7317c8ea751f1c730336"
+checksum = "127d21fe8cef9340b6f7d839a192a07188bc10c8d20217e34dee5cae78d46cb9"
 dependencies = [
  "futures-util",
  "opendal",
@@ -1154,9 +1154,9 @@ dependencies = [
 
 [[package]]
 name = "persistant-relational"
-version = "0.18.0"
+version = "0.18.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c05d008bbc479b339a7da8c11aa2b27da225ea73bd481980e09320d6edf9402"
+checksum = "4965df7871dbaee2d9ddb29025f4114a38b8096cf1b4f882b117cd985cb4cc63"
 dependencies = [
  "persistant-core",
  "unisql-core",
@@ -1164,9 +1164,9 @@ dependencies = [
 
 [[package]]
 name = "persistant-sqlx"
-version = "0.18.0"
+version = "0.18.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2ec4afc8c7a905db3c33e0512875477c4769f74dc6bbae0e2ec752d411fa32a"
+checksum = "ef87dcd13db16f58ecd236419172257dc9e6483ddaaa7348ccd48f528fc4247d"
 dependencies = [
  "bytes",
  "chrono",
@@ -1427,7 +1427,7 @@ checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
 name = "sageant"
-version = "0.3.14"
+version = "0.3.15"
 dependencies = [
  "redactant",
  "unicode-normalization",
@@ -1435,7 +1435,7 @@ dependencies = [
 
 [[package]]
 name = "sageant-cli"
-version = "0.3.14"
+version = "0.3.15"
 dependencies = [
  "clap",
  "persistant",
@@ -1451,14 +1451,14 @@ dependencies = [
 
 [[package]]
 name = "sageant-lexical"
-version = "0.3.14"
+version = "0.3.15"
 dependencies = [
  "sageant",
 ]
 
 [[package]]
 name = "sageant-mcp"
-version = "0.3.14"
+version = "0.3.15"
 dependencies = [
  "persistant",
  "rmcp",
@@ -1473,7 +1473,7 @@ dependencies = [
 
 [[package]]
 name = "sageant-persistant"
-version = "0.3.14"
+version = "0.3.15"
 dependencies = [
  "persistant",
  "sageant",

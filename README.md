@@ -38,8 +38,19 @@ them all.
 ## Removing things
 
 - **archive** keeps a chunk but takes it out of search and listings (`sageant list --all` shows it).
-- **forget** makes a chunk *unretrievable* and leaves a minimal tombstone. It does not claim the bytes are erased:
-  the storage backend may keep old pages until it is compacted.
+- **forget** removes a chunk's content and leaves a minimal tombstone. Whether the bytes are *erased* or only made
+  *unretrievable* depends on the storage backend; `sageant info` says which you have (`secure delete: yes` or `no`) and
+  this table is the single source for what each means (the other docs link here rather than restate it):
+
+  | Backend (PersistAnt id) | Who has it | What `forget` does | Checked by |
+  |---|---|---|---|
+  | `sqlite-secure` | a new store, when PersistAnt offers it | **erased from the store files**: freed bytes are zeroed, for the chunk's text and its search terms | tests that read the raw files back after a forget (`crates/sageant-persistant/tests/erase.rs`, and a forget through MCP in the CLI tests) |
+  | `sqlite` | a store made before this | **unretrievable only**: freed pages may keep the old bytes until the file is compacted | the same tests, as the control: the text IS still in the file |
+  | `sqlite-full` (WAL) and any other backend that qualifies | only if you name it | **unretrievable only** (no `storage.secure_delete`) | not claimed |
+  | `memory`, `fs` | cannot be used: PersistAnt records no atomic batches for them | n/a | n/a |
+
+  None of them reaches copies your file system, snapshots, backups or an SSD's wear levelling keep. To move an old
+  store to a secure one: `sageant export`, then `sageant import` into a new home.
 - **purge** removes everything about a chunk, tombstone included. It needs you at a terminal to type a confirmation,
   and no MCP tool can do it.
 
