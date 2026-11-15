@@ -86,6 +86,7 @@ pub enum Command {
         allow_write: Vec<String>,
     },
     Reindex,
+    Info,
     Where,
 }
 
@@ -124,6 +125,45 @@ fn snippet(text: &str) -> String {
     }
 }
 
+/// The backend this home uses and the reasons PersistAnt gave when it was chosen (empty if recorded earlier).
+///
+/// PersistAnt picks the backend the first time, from what the store declares it needs; the id is written to
+/// `<home>/backend` and used from then on, so a later change in PersistAnt's ranking can never make an existing
+/// store be read by a different engine. A store made before this record existed (it has `store.db` and no `backend`
+/// file) was SQLite, which is what is recorded for it.
+fn backend_for(home: &Path) -> Result<(String, Vec<String>), Failure> {
+    let record = home.join("backend");
+    if let Ok(text) = std::fs::read_to_string(&record) {
+        let id = text.trim().to_owned();
+        if id.is_empty() {
+            return Err(fail(format!(
+                "{} is empty; delete it to have PersistAnt choose a backend again (your data is untouched)",
+                record.display()
+            )));
+        }
+        return Ok((id, Vec::new()));
+    }
+    let (id, why) = if home.join("store.db").exists() {
+        (
+            "sqlite".to_owned(),
+            vec!["recorded for a store made before the backend was recorded".to_owned()],
+        )
+    } else {
+        let (_, chosen) = PersistStore::open_chosen(&Endpoint::Path(home.join("store.db")))
+            .map_err(|e| fail(format!("no storage backend is available: {e}")))?;
+        (chosen.backend().to_owned(), chosen.why().to_vec())
+    };
+    std::fs::write(
+        &record,
+        format!(
+            "{id}
+"
+        ),
+    )
+    .map_err(|e| fail(format!("cannot write {}: {e}", record.display())))?;
+    Ok((id, why))
+}
+
 struct App {
     home: PathBuf,
     store: PersistStore,
@@ -135,8 +175,17 @@ impl App {
     fn open(home: &Path) -> Result<Self, Failure> {
         std::fs::create_dir_all(home)
             .map_err(|e| fail(format!("cannot create {}: {e}", home.display())))?;
-        let store = PersistStore::open("sqlite", &Endpoint::Path(home.join("store.db")))?;
-        let index = KvTextIndex::open("sqlite", &Endpoint::Path(home.join("index.db")))?;
+        let (backend, _) = backend_for(home)?;
+        let wrong = |e: Error| {
+            fail(format!(
+                "cannot open the {backend:?} storage backend recorded in {}: {e} (delete that file to have PersistAnt choose again; your data is untouched)",
+                home.join("backend").display()
+            ))
+        };
+        let store =
+            PersistStore::open(&backend, &Endpoint::Path(home.join("store.db"))).map_err(wrong)?;
+        let index =
+            KvTextIndex::open(&backend, &Endpoint::Path(home.join("index.db"))).map_err(wrong)?;
         let who = ["USER", "USERNAME"]
             .iter()
             .find_map(|k| std::env::var(k).ok().filter(|v| !v.is_empty()))
@@ -163,7 +212,16 @@ impl App {
             .collect();
         hits.dedup_by(|a, b| a.id == b.id);
         match hits.as_slice() {
-            [] => Err(fail(format!("no chunk starts with {text:?}"))),
+            [] => {
+                let n = all
+                    .iter()
+                    .map(|r| &r.id)
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len();
+                Err(fail(format!(
+                    "no chunk starts with {text:?} ({n} chunks exist; `sageant list` shows them)"
+                )))
+            }
             [one] => Ok(one.id.clone()),
             _ => Err(fail(format!(
                 "{text:?} matches more than one chunk; type more of the id"
@@ -242,6 +300,20 @@ pub fn run(home: Option<PathBuf>, command: Command) -> Result<(), Failure> {
         Command::Reindex => {
             let n = app.reindex()?;
             writeln!(out, "indexed {n} chunk versions").ok();
+            Ok(())
+        }
+        Command::Info => {
+            let (backend, _) = backend_for(&app.home)?;
+            writeln!(out, "data: {}", app.home.display()).ok();
+            writeln!(out, "backend: {backend}").ok();
+            match sageant_persistant::explain_backend(&backend) {
+                Ok(lines) => {
+                    for line in lines {
+                        writeln!(out, "  {line}").ok();
+                    }
+                }
+                Err(e) => writeln!(out, "  warning: {e}").ok().unwrap_or(()),
+            }
             Ok(())
         }
         Command::Where => Ok(()),

@@ -289,3 +289,60 @@ fn serve_without_a_grant_is_read_only() {
         "the server sees what the command line stored"
     );
 }
+
+#[test]
+fn the_backend_persistant_chose_is_recorded_and_info_says_why() {
+    let home = tempfile::tempdir().unwrap();
+    put(home.path(), "recorded");
+    let recorded = std::fs::read_to_string(home.path().join("backend")).unwrap();
+    assert!(
+        !recorded.trim().is_empty(),
+        "the first run records the chosen backend id"
+    );
+    let info = out(&run(home.path(), &["info"]));
+    assert!(
+        info.contains(&format!("backend: {}", recorded.trim())),
+        "{info}"
+    );
+    assert!(
+        info.lines().count() > 2,
+        "the reasons PersistAnt gave are listed:\n{info}"
+    );
+}
+
+#[test]
+fn a_store_from_before_the_record_keeps_working_and_gets_one() {
+    let home = tempfile::tempdir().unwrap();
+    let id = put(home.path(), "old store");
+    std::fs::remove_file(home.path().join("backend")).unwrap();
+    assert!(out(&run(home.path(), &["get", &id[..8]])).contains("old store"));
+    assert!(home.path().join("backend").exists());
+}
+
+#[test]
+fn an_unknown_recorded_backend_is_refused_without_touching_the_data() {
+    let home = tempfile::tempdir().unwrap();
+    let id = put(home.path(), "keep");
+    std::fs::write(home.path().join("backend"), "no-such-backend\n").unwrap();
+    let o = run(home.path(), &["get", &id[..8]]);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(
+        err(&o).contains("no-such-backend") && err(&o).contains("backend"),
+        "{}",
+        err(&o)
+    );
+    std::fs::remove_file(home.path().join("backend")).unwrap();
+    assert!(
+        out(&run(home.path(), &["get", &id[..8]])).contains("keep"),
+        "the data was never touched"
+    );
+}
+
+#[test]
+fn a_bad_prefix_says_how_many_chunks_there_are() {
+    let home = tempfile::tempdir().unwrap();
+    put(home.path(), "one");
+    put(home.path(), "two");
+    let none = run(home.path(), &["get", "ffffffffff"]);
+    assert!(err(&none).contains("2 chunks"), "{}", err(&none));
+}

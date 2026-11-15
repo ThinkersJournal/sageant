@@ -113,6 +113,8 @@ enum Command {
     },
     /// Rebuild the search index from the store.
     Reindex,
+    /// Show where the store is and which storage backend PersistAnt chose for it, and why.
+    Info,
     /// Print the data directory.
     Where,
 }
@@ -153,6 +155,7 @@ impl From<Command> for app::Command {
             Command::Purge { id } => Self::Purge { id },
             Command::Serve { allow_write } => Self::Serve { allow_write },
             Command::Reindex => Self::Reindex,
+            Command::Info => Self::Info,
             Command::Where => Self::Where,
         }
     }
