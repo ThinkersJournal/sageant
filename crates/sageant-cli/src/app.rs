@@ -5,6 +5,7 @@ use std::io::{BufRead, IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+mod add;
 mod exchange;
 
 use persistant::registry::Endpoint;
@@ -99,6 +100,13 @@ pub enum Command {
     },
     Import {
         file: PathBuf,
+    },
+    Add {
+        folder: PathBuf,
+        collection: String,
+        kind: String,
+        extensions: Vec<String>,
+        max_bytes: u64,
     },
 }
 
@@ -346,6 +354,26 @@ pub fn run(home: Option<PathBuf>, command: Command) -> Result<(), Failure> {
             eprintln!(
                 "imported {} chunks ({} versions), {} links; skipped {} already present or not applicable",
                 s.chunks, s.versions, s.links, s.skipped
+            );
+            Ok(())
+        }
+        Command::Add {
+            folder,
+            collection,
+            kind,
+            extensions,
+            max_bytes,
+        } => {
+            let options = add::Options {
+                collection,
+                kind,
+                extensions,
+                max_bytes,
+            };
+            let s = add::add(&mut app, &folder, &options)?;
+            eprintln!(
+                "added {} ({} already present); skipped: {} links, {} outside the folder, {} too large, {} unreadable, {} other files",
+                s.added, s.present, s.links, s.outside, s.too_large, s.unreadable, s.other
             );
             Ok(())
         }

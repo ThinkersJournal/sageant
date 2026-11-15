@@ -13,7 +13,7 @@ sageant get 0a02                                            # an id prefix is en
 
 There is no setup step: the first command creates the store in your user data directory (`sageant where` prints it;
 set `SAGEANT_HOME` or pass `--home <DIR>` to move it). `sageant --help` lists the commands: `put get list search history
-links link archive unarchive forget purge export import reindex info where serve`.
+links link archive unarchive forget purge add export import reindex info where serve`.
 
 `purge` needs you at a terminal to type a confirmation. `forget` makes a chunk unretrievable and does not claim the bytes
 are erased.
