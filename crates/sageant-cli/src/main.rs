@@ -111,6 +111,26 @@ enum Command {
         #[arg(long = "allow-write", value_name = "COLLECTION")]
         allow_write: Vec<String>,
     },
+    /// Bring an archived chunk back into search and listings.
+    Unarchive {
+        /// The chunk id or a unique prefix of it.
+        id: String,
+        /// Why.
+        #[arg(long, default_value = "")]
+        reason: String,
+    },
+    /// Write every chunk version and link as JSON lines (to standard output, or --out FILE). Forgotten chunks are not
+    /// in it.
+    Export {
+        /// Write to this file instead of standard output.
+        #[arg(long, value_name = "FILE")]
+        out: Option<PathBuf>,
+    },
+    /// Read a file made by `export`. Safe to repeat: what is already there is skipped. A bad file imports nothing.
+    Import {
+        /// The export file.
+        file: PathBuf,
+    },
     /// Rebuild the search index from the store.
     Reindex,
     /// Show where the store is and which storage backend PersistAnt chose for it, and why.
@@ -154,6 +174,9 @@ impl From<Command> for app::Command {
             Command::Forget { id, reason } => Self::Forget { id, reason },
             Command::Purge { id } => Self::Purge { id },
             Command::Serve { allow_write } => Self::Serve { allow_write },
+            Command::Unarchive { id, reason } => Self::Unarchive { id, reason },
+            Command::Export { out } => Self::Export { out },
+            Command::Import { file } => Self::Import { file },
             Command::Reindex => Self::Reindex,
             Command::Info => Self::Info,
             Command::Where => Self::Where,

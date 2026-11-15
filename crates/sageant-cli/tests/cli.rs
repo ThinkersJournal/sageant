@@ -146,8 +146,21 @@ fn help_lists_every_command_and_an_unknown_one_fails() {
     let home = tempfile::tempdir().unwrap();
     let help = out(&run(home.path(), &["--help"]));
     for c in [
-        "put", "get", "list", "search", "history", "links", "link", "archive", "forget", "purge",
-        "serve", "where",
+        "put",
+        "get",
+        "list",
+        "search",
+        "history",
+        "links",
+        "link",
+        "archive",
+        "forget",
+        "purge",
+        "unarchive",
+        "export",
+        "import",
+        "serve",
+        "where",
     ] {
         assert!(help.contains(c), "help should mention {c}:\n{help}");
     }
@@ -345,4 +358,157 @@ fn a_bad_prefix_says_how_many_chunks_there_are() {
     put(home.path(), "two");
     let none = run(home.path(), &["get", "ffffffffff"]);
     assert!(err(&none).contains("2 chunks"), "{}", err(&none));
+}
+
+// ---- export, import, unarchive (row D) ----
+
+fn export(home: &std::path::Path) -> String {
+    let o = run(home, &["export"]);
+    assert!(o.status.success(), "{}", err(&o));
+    out(&o)
+}
+
+#[test]
+fn unarchive_brings_a_chunk_back() {
+    let home = tempfile::tempdir().unwrap();
+    let id = put(home.path(), "come back");
+    assert!(run(home.path(), &["archive", &id]).status.success());
+    assert!(out(&run(home.path(), &["list"])).trim().is_empty());
+    let u = run(home.path(), &["unarchive", &id[..8]]);
+    assert!(u.status.success(), "{}", err(&u));
+    assert!(out(&run(home.path(), &["list"])).contains(&id));
+    assert!(out(&run(home.path(), &["search", "come"])).contains(&id[..8]));
+}
+
+#[test]
+fn export_then_import_rebuilds_the_store_in_a_fresh_home() {
+    let a = tempfile::tempdir().unwrap();
+    let b = tempfile::tempdir().unwrap();
+    let one = put(a.path(), "first note about owls");
+    let two = put(a.path(), "second note about tomatoes");
+    let three = put(a.path(), "archived note");
+    assert!(
+        run(a.path(), &["link", &one, "Related", &two])
+            .status
+            .success()
+    );
+    assert!(run(a.path(), &["archive", &three]).status.success());
+    let dump = export(a.path());
+    assert!(
+        dump.lines().next().unwrap().contains("sageant_export"),
+        "{dump}"
+    );
+
+    let file = a.path().join("dump.jsonl");
+    std::fs::write(&file, &dump).unwrap();
+    let imp = run(b.path(), &["import", file.to_str().unwrap()]);
+    assert!(imp.status.success(), "{}", err(&imp));
+    assert!(err(&imp).contains("3 chunks"), "{}", err(&imp));
+
+    // The same ids, text, links and archive state; and search works (the index was rebuilt).
+    assert!(out(&run(b.path(), &["get", &one[..8]])).contains("first note about owls"));
+    assert!(out(&run(b.path(), &["links", &one])).contains(&two));
+    assert!(out(&run(b.path(), &["list"])).contains(&two));
+    assert!(
+        !out(&run(b.path(), &["list"])).contains(&three),
+        "the archived chunk stays archived"
+    );
+    assert!(out(&run(b.path(), &["list", "--all"])).contains(&three));
+    assert_eq!(out(&run(b.path(), &["search", "owls"])).lines().count(), 1);
+    // Exporting the copy gives the same dump.
+    assert_eq!(export(b.path()), dump);
+}
+
+#[test]
+fn every_version_of_a_chunk_travels_and_importing_twice_adds_nothing() {
+    let a = tempfile::tempdir().unwrap();
+    let b = tempfile::tempdir().unwrap();
+    let id = put(a.path(), "version one");
+    // A second version through the MCP-free path: supersede via the library is not on the CLI, so use history of a
+    // chunk that was written twice with the same text is impossible; import a hand-written two-version export.
+    let dump = format!(
+        "{{\"sageant_export\":1}}\n{}",
+        [
+            serde_json::json!({"type":"chunk","id":id,"version":1,"collection":"notes","kind":"note","content":"version one","origin":"User","source":"cli","status":"Active","created_at":1}),
+            serde_json::json!({"type":"chunk","id":id,"version":2,"collection":"notes","kind":"note","content":"version two","origin":"User","source":"cli","status":"Active","created_at":2}),
+        ]
+        .iter()
+        .map(|v| format!("{v}\n"))
+        .collect::<String>()
+    );
+    let file = a.path().join("two.jsonl");
+    std::fs::write(&file, dump).unwrap();
+    assert!(
+        run(b.path(), &["import", file.to_str().unwrap()])
+            .status
+            .success()
+    );
+    let h = out(&run(b.path(), &["history", &id]));
+    assert!(
+        h.contains("version one") && h.contains("version two"),
+        "{h}"
+    );
+    let again = run(b.path(), &["import", file.to_str().unwrap()]);
+    assert!(again.status.success(), "{}", err(&again));
+    assert!(err(&again).contains("skipped"), "{}", err(&again));
+    assert_eq!(out(&run(b.path(), &["history", &id])).lines().count(), 2);
+}
+
+#[test]
+fn a_bad_import_file_is_refused_whole_and_names_the_line() {
+    let home = tempfile::tempdir().unwrap();
+    let file = home.path().join("bad.jsonl");
+    std::fs::write(&file, "not json at all\n").unwrap();
+    let o = run(home.path(), &["import", file.to_str().unwrap()]);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(err(&o).contains("export"), "{}", err(&o));
+    // A good header and a broken second record: nothing is imported.
+    let other = tempfile::tempdir().unwrap();
+    let real = put(other.path(), "x"); // the id a first version of "x" in notes really has
+    let good = format!(
+        "{{\"sageant_export\":1}}\n{}\n{{\"type\":\"chunk\"}}\n",
+        serde_json::json!({"type":"chunk","id":real,"version":1,"collection":"notes","kind":"note","content":"x","origin":"User","source":"cli","status":"Active","created_at":1})
+    );
+    std::fs::write(&file, good).unwrap();
+    let o = run(home.path(), &["import", file.to_str().unwrap()]);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(err(&o).contains("line 3"), "{}", err(&o));
+    assert!(
+        out(&run(home.path(), &["list", "--all"])).trim().is_empty(),
+        "nothing was imported"
+    );
+}
+
+#[test]
+fn a_forgotten_chunk_is_not_in_the_export() {
+    let home = tempfile::tempdir().unwrap();
+    let id = put(home.path(), "secret sentence to forget");
+    put(home.path(), "keeper");
+    assert!(run(home.path(), &["forget", &id]).status.success());
+    let dump = export(home.path());
+    assert!(
+        !dump.contains("secret sentence") && !dump.contains(&id),
+        "{dump}"
+    );
+    assert!(dump.contains("keeper"));
+}
+
+#[test]
+fn an_import_record_whose_id_does_not_match_its_content_is_refused() {
+    let home = tempfile::tempdir().unwrap();
+    let file = home.path().join("lie.jsonl");
+    let lie = format!(
+        "{{\"sageant_export\":1}}
+{}
+",
+        serde_json::json!({"type":"chunk","id":"ab".repeat(32),"version":1,"collection":"notes","kind":"note","content":"x","origin":"User","source":"cli","status":"Active","created_at":1})
+    );
+    std::fs::write(&file, lie).unwrap();
+    let o = run(home.path(), &["import", file.to_str().unwrap()]);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(
+        err(&o).contains("does not match the content"),
+        "{}",
+        err(&o)
+    );
 }

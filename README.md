@@ -28,7 +28,10 @@ The store is two SQLite files in your user data directory (`%LOCALAPPDATA%\sagea
 `~/Library/Application Support/sageant` on macOS, `$XDG_DATA_HOME/sageant` or `~/.local/share/sageant` elsewhere).
 Set `SAGEANT_HOME` or pass `--home <DIR>` to keep it somewhere else.
 
-Other commands: `history`, `links`, `link`, `archive`, `forget`, `purge`, `reindex`, `info` (which storage backend PersistAnt chose, and why), `serve`. `sageant --help` lists
+Other commands: `history`, `links`, `link`, `archive`, `unarchive`, `forget`, `purge`, `export`, `import`, `reindex`, `info` (which storage backend PersistAnt chose, and why), `serve`.
+
+Back up with `sageant export --out backup.jsonl`; restore (or move to another machine) with `sageant import backup.jsonl`,
+which is safe to repeat. Forgotten chunks are not in an export. `sageant --help` lists
 them all.
 
 ## Removing things
