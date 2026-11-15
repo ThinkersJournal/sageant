@@ -40,17 +40,6 @@ fn status_name(s: Status) -> &'static str {
     }
 }
 
-fn kind_name(k: LinkKind) -> &'static str {
-    match k {
-        LinkKind::PartOf => "PartOf",
-        LinkKind::DerivedFrom => "DerivedFrom",
-        LinkKind::Cites => "Cites",
-        LinkKind::Related => "Related",
-        LinkKind::CorroboratedBy => "CorroboratedBy",
-        LinkKind::ContradictedBy => "ContradictedBy",
-    }
-}
-
 struct Cursor<'a> {
     rest: &'a [u8],
 }
@@ -198,7 +187,7 @@ impl Link {
             "from_version",
             self.from_version.to_string().as_bytes(),
         );
-        put_field(&mut out, "kind", kind_name(self.kind).as_bytes());
+        put_field(&mut out, "kind", self.kind.name().as_bytes());
         put_field(&mut out, "to", self.to.as_str().as_bytes());
         put_field(
             &mut out,
@@ -217,15 +206,7 @@ impl Link {
         cur.header(LINK_HEADER)?;
         let from = id(cur.field("from")?)?;
         let from_version: u32 = number(cur.field("from_version")?)?;
-        let kind = match cur.field("kind")? {
-            "PartOf" => LinkKind::PartOf,
-            "DerivedFrom" => LinkKind::DerivedFrom,
-            "Cites" => LinkKind::Cites,
-            "Related" => LinkKind::Related,
-            "CorroboratedBy" => LinkKind::CorroboratedBy,
-            "ContradictedBy" => LinkKind::ContradictedBy,
-            _ => return Err(Error::Corrupt("kind")),
-        };
+        let kind = LinkKind::parse(cur.field("kind")?).map_err(|_| Error::Corrupt("kind"))?;
         let to = id(cur.field("to")?)?;
         let created_at = Timestamp(number(cur.field("created_at")?)?);
         cur.finish()?;

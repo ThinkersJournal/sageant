@@ -269,6 +269,39 @@ pub enum LinkKind {
     ContradictedBy,
 }
 
+impl LinkKind {
+    /// The kind's stable name, as stored and as the MCP tools spell it.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::PartOf => "PartOf",
+            Self::DerivedFrom => "DerivedFrom",
+            Self::Cites => "Cites",
+            Self::Related => "Related",
+            Self::CorroboratedBy => "CorroboratedBy",
+            Self::ContradictedBy => "ContradictedBy",
+        }
+    }
+
+    /// Read a kind from its [`name`](Self::name).
+    ///
+    /// # Errors
+    /// `Invalid("link kind")` for anything else.
+    pub fn parse(text: &str) -> Result<Self, crate::Error> {
+        [
+            Self::PartOf,
+            Self::DerivedFrom,
+            Self::Cites,
+            Self::Related,
+            Self::CorroboratedBy,
+            Self::ContradictedBy,
+        ]
+        .into_iter()
+        .find(|k| k.name() == text)
+        .ok_or(crate::Error::Invalid("link kind"))
+    }
+}
+
 /// A directed, append-only link, attached to the source version that was current when it was made.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Link {
@@ -280,6 +313,24 @@ pub struct Link {
 }
 
 impl Link {
+    /// A link, as a store builds one after it has checked the rules.
+    #[must_use]
+    pub fn new(
+        from: ChunkId,
+        from_version: u32,
+        kind: LinkKind,
+        to: ChunkId,
+        created_at: Timestamp,
+    ) -> Self {
+        Self {
+            from,
+            from_version,
+            kind,
+            to,
+            created_at,
+        }
+    }
+
     /// Source lineage.
     #[must_use]
     pub fn from(&self) -> &ChunkId {

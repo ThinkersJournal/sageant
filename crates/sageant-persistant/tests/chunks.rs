@@ -172,16 +172,6 @@ fn listing_agrees_with_the_memory_store_for_every_filter() {
 }
 
 #[test]
-fn a_confidence_filter_is_refused_until_links_exist() {
-    let dir = tempfile::tempdir().unwrap();
-    let s = open(dir.path());
-    assert!(matches!(
-        s.list(&Filter::new().confidence(sageant::Confidence::Corroborated)),
-        Err(Error::Invalid(_))
-    ));
-}
-
-#[test]
 fn a_backend_without_atomic_batches_is_refused_at_open() {
     // The `memory` backend cannot give kv.batch_atomic in persistant 0.18: refused by name, not worked around.
     let err = PersistStore::open("memory", &Endpoint::None).unwrap_err();

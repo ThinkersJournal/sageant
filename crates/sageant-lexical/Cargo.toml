@@ -9,4 +9,4 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-sageant = { path = "../..", version = "0.1.3" }
+sageant = { path = "../..", version = "0.1.4" }
