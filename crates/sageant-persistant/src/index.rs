@@ -12,7 +12,7 @@ use persistant::registry::Endpoint;
 use sageant::{ChunkId, ChunkRef, Error};
 use sageant_lexical::{Posting, Stats, TextIndex, term_counts};
 
-use crate::{NO_TTL, SCAN_PAGE, kv_error, open_kv};
+use crate::{Chosen, NO_TTL, SCAN_PAGE, choose_backend, kv_error, open_kv};
 
 const TOTALS: &str = "m/ix";
 const RETRIES: usize = 16;
@@ -53,6 +53,17 @@ impl std::fmt::Debug for KvTextIndex {
 }
 
 impl KvTextIndex {
+    /// Let PersistAnt choose the backend for `endpoint` and open the index in it; see
+    /// [`PersistStore::open_chosen`](crate::PersistStore::open_chosen).
+    ///
+    /// # Errors
+    /// As `PersistStore::open_chosen`.
+    pub fn open_chosen(endpoint: &Endpoint) -> Result<(Self, Chosen), Error> {
+        let chosen = choose_backend(endpoint)?;
+        let index = Self::open(chosen.backend(), endpoint)?;
+        Ok((index, chosen))
+    }
+
     /// Open the index in the PersistAnt backend named `backend_id`. It may share a backend with a
     /// [`PersistStore`](crate::PersistStore): their key prefixes do not overlap.
     ///

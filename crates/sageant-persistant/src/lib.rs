@@ -104,7 +104,16 @@ fn reverse_key(from: &ChunkId, kind: LinkKind, to: &ChunkId) -> String {
 
 /// Open the PersistAnt backend with every capability the stores here rely on.
 pub(crate) fn open_kv(backend_id: &str, endpoint: &Endpoint) -> Result<KvHandle, Error> {
-    let ids: Result<Vec<CapabilityId>, _> = [
+    open_named(backend_id, endpoint, &storage_needs()).map_err(|e| backend(&e))
+}
+
+/// What these stores need from a PersistAnt backend: key-value get, put, delete and ordered value scans, the four
+/// atomic-batch leaves (rollback, concurrent read, optimistic sequence, absent race) each with a recorded passing test,
+/// and durability that survives the process exiting. Erase-on-forget is not asked for: PersistAnt 0.18 records no
+/// secure-delete capability, so "forgotten" stays "unretrievable"; when it does, it is declared here as a preference.
+#[must_use]
+pub fn storage_needs() -> ProviderNeeds {
+    let ids: Vec<CapabilityId> = [
         "kv.get",
         "kv.put",
         "kv.delete",
@@ -115,12 +124,79 @@ pub(crate) fn open_kv(backend_id: &str, endpoint: &Endpoint) -> Result<KvHandle,
         "kv.batch_atomic.absent_race",
     ]
     .into_iter()
-    .map(CapabilityId::new)
+    .filter_map(|id| CapabilityId::new(id).ok())
     .collect();
-    let ids = ids.map_err(|e| backend(&e))?;
-    let needs = ProviderNeeds::new(ids, Durability::Process);
-    let kv = open_named(backend_id, endpoint, &needs).map_err(|e| backend(&e))?;
-    Ok(kv)
+    ProviderNeeds::new(ids, Durability::Process)
+}
+
+/// The backend PersistAnt chose for a [`storage_needs`], and why.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Chosen {
+    backend: &'static str,
+    why: Vec<String>,
+}
+
+impl Chosen {
+    /// The stable backend id: store it in your configuration and pass it to `open` next time, so a later change in
+    /// PersistAnt's ranking can never make an existing store be read by a different engine.
+    #[must_use]
+    pub fn backend(&self) -> &'static str {
+        self.backend
+    }
+
+    /// Why this backend, as lines for a person: the capabilities it meets, its durability and its caveats.
+    #[must_use]
+    pub fn why(&self) -> &[String] {
+        &self.why
+    }
+}
+
+/// Why PersistAnt lists `backend_id` for a [`storage_needs`], as lines for a person.
+///
+/// # Errors
+/// `Backend` if the backend does not have every needed capability in this build of PersistAnt (the message says what
+/// each backend lacks), or is not offered at all.
+pub fn explain_backend(backend_id: &str) -> Result<Vec<String>, Error> {
+    let listings = persistant::registry::providers(&storage_needs()).map_err(|e| backend(&e))?;
+    listings
+        .iter()
+        .find(|l| l.id == backend_id)
+        .map(persistant::registry::Listing::why)
+        .ok_or_else(|| {
+            Error::Backend(format!(
+                "backend {backend_id:?} does not satisfy the storage need in this build (offered: {})",
+                listings.iter().map(|l| l.id).collect::<Vec<_>>().join(", ")
+            ))
+        })
+}
+
+/// Ask PersistAnt which backend to use for a file or directory `endpoint`: the first it ranks, among those with every
+/// needed capability, that opens from a path. No silent fallback: if none qualifies the error says what each lacks.
+/// A server (URL) endpoint is not chosen for you, because which backend a URL needs depends on its scheme: name the
+/// backend and use `open`.
+pub(crate) fn choose_backend(endpoint: &Endpoint) -> Result<Chosen, Error> {
+    use persistant::capability::provider::EndpointSpec;
+    let wanted = match endpoint {
+        Endpoint::Path(_) => EndpointSpec::Path,
+        Endpoint::None => EndpointSpec::None,
+        _ => {
+            return Err(Error::Backend(
+                "a server endpoint is not chosen for you: name the backend and use `open`"
+                    .to_owned(),
+            ));
+        }
+    };
+    let listings = persistant::registry::providers(&storage_needs()).map_err(|e| backend(&e))?;
+    if let Some(listing) = listings.iter().find(|l| l.endpoint == wanted) {
+        return Ok(Chosen {
+            backend: listing.id,
+            why: listing.why(),
+        });
+    }
+    Err(Error::Backend(format!(
+        "no backend PersistAnt ranks for this need accepts that kind of endpoint (candidates: {})",
+        listings.iter().map(|l| l.id).collect::<Vec<_>>().join(", ")
+    )))
 }
 
 /// A sageant store kept in a PersistAnt key-value backend.
@@ -142,6 +218,18 @@ impl std::fmt::Debug for PersistStore {
 }
 
 impl PersistStore {
+    /// Let PersistAnt choose the backend for `endpoint` (see [`storage_needs`]) and open it. Returns the store and the
+    /// [`Chosen`] backend with its reasons; record [`Chosen::backend`] and use [`open`](Self::open) with it afterwards.
+    ///
+    /// # Errors
+    /// `Backend` when no backend with the needed capabilities accepts that kind of endpoint (the message says what
+    /// each lacks), or when the chosen one cannot be opened.
+    pub fn open_chosen(endpoint: &Endpoint) -> Result<(Self, Chosen), Error> {
+        let chosen = choose_backend(endpoint)?;
+        let store = Self::open(chosen.backend(), endpoint)?;
+        Ok((store, chosen))
+    }
+
     /// Open the PersistAnt backend named `backend_id` (for example `"sqlite"` with `Endpoint::Path(file)`).
     ///
     /// The store needs `kv.get`, `kv.put`, `kv.delete`, `kv.ordered_scan_values` and the four `kv.batch_atomic.*` leaves (rollback, concurrent read, optimistic
