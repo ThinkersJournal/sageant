@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.13
+
+- CI: a new `install smoke` job on Linux, Windows and macOS runs a real `cargo install --path crates/sageant-cli --locked` and then `tools/first-run-smoke.sh`, which, with every data-directory variable pointed at an empty temporary directory and `SAGEANT_HOME` unset, checks `--version`, `where`, `put` (the id alone on stdout), `search`, `get` by id prefix and `list`, and that something was created under the data directory. It is the first-run-with-no-setup gate as an automated check, using each platform's default data directory. The script can be run by hand against any `sageant` binary. It is not a required check until the PM adds it to branch protection.
+
 ## 0.3.12
 
 - `sageant-cli`: backup and restore, and the missing way back from archive. `sageant export [--out FILE]` writes every version of every chunk and every link as JSON lines (first line `{"sageant_export":1}`); forgotten chunks, tombstones and the audit log are not in it. `sageant import FILE` reads it back: the whole file is checked first (a bad file imports nothing and the error names the line), a version-1 record whose id does not match its content is refused, what is already present is skipped so importing twice adds nothing, versions merge by appending, archived chunks stay archived, links are re-made, and the search index is updated. Provenance (origin, source, time) is carried as written. A link made on an older version of its source is re-made on the source's latest version. `sageant unarchive ID` brings a chunk back into search and listings. Seven new CLI tests, red first (five failed against the missing commands; one more was added for the lying-id refusal).
