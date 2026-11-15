@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.8
+
+- Release fix: 0.3.7 reached crates.io for `sageant`, `sageant-lexical` and `sageant-persistant` only. crates.io refused `sageant-mcp` at upload because its keyword `model-context-protocol` is 22 characters (the limit is 20), and `sageant-cli` was not attempted. `cargo publish --dry-run` does not check keyword length, so the 0.3.7 release PR did not catch it (my miss). The keyword is now `llm`; no other package had a problem. The git tag `v0.3.7` (on 589c821) stays where it was put and does not mean all five crates shipped at 0.3.7; 0.3.8 is the first version of all five crates. New test `tests/package_metadata.rs` holds crates.io's metadata limits for every package (at most 5 keywords of at most 20 ASCII characters, known category slugs, description, readme, licence files, no `publish = false`), so a bad keyword now fails `cargo test` instead of the upload. No code changed.
+
 ## 0.3.7
 
 - First release to crates.io (the five names were reserved at 0.0.0): `sageant`, `sageant-lexical`, `sageant-persistant`, `sageant-mcp`, `sageant-cli`. `publish = false` is removed. Packaging: the root package excludes the lane's working files (`HANDOFF.md`, `ROADMAP.md`, `deny.toml`, `.github`); every crate now ships `LICENSE-APACHE`, `LICENSE-MIT` and its own `README.md`, and has `readme`, `keywords`, `categories`, `repository` and an accurate `description` (the root crate's still said "Planned"). The README says `cargo install sageant-cli`. No code changed.
