@@ -46,7 +46,8 @@ them all.
   |---|---|---|---|
   | `sqlite-secure` | a new store, when PersistAnt offers it | **erased from the store files**: freed bytes are zeroed, for the chunk's text and its search terms | tests that read the raw files back after a forget (`crates/sageant-persistant/tests/erase.rs`, and a forget through MCP in the CLI tests) |
   | `sqlite` | a store made before this | **unretrievable only**: freed pages may keep the old bytes until the file is compacted | the same tests, as the control: the text IS still in the file |
-  | `sqlite-full` (WAL), `memory`, `fs`, any other | not chosen by default | **unretrievable only** (no `storage.secure_delete`) | not claimed |
+  | `sqlite-full` (WAL) and any other backend that qualifies | only if you name it | **unretrievable only** (no `storage.secure_delete`) | not claimed |
+  | `memory`, `fs` | cannot be used: PersistAnt records no atomic batches for them | n/a | n/a |
 
   None of them reaches copies your file system, snapshots, backups or an SSD's wear levelling keep. To move an old
   store to a secure one: `sageant export`, then `sageant import` into a new home.
