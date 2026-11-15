@@ -126,7 +126,13 @@ pub fn storage_needs() -> ProviderNeeds {
     .into_iter()
     .filter_map(|id| CapabilityId::new(id).ok())
     .collect();
-    ProviderNeeds::new(ids, Durability::Process)
+    // Preferred, never required: a backend that zeroes freed content (PersistAnt 0.18.12 `sqlite-secure`) ranks first, so
+    // a forgotten chunk's bytes are gone from the file, not only unretrievable. Others still qualify.
+    let prefer: Vec<CapabilityId> = ["storage.secure_delete"]
+        .into_iter()
+        .filter_map(|id| CapabilityId::new(id).ok())
+        .collect();
+    ProviderNeeds::new(ids, Durability::Process).prefer(prefer)
 }
 
 /// The backend PersistAnt chose for a [`storage_needs`], and why.
@@ -134,6 +140,7 @@ pub fn storage_needs() -> ProviderNeeds {
 pub struct Chosen {
     backend: &'static str,
     why: Vec<String>,
+    secure_delete: bool,
 }
 
 impl Chosen {
@@ -144,11 +151,44 @@ impl Chosen {
         self.backend
     }
 
+    /// Whether the backend has `storage.secure_delete`: content a delete or an overwrite frees is zeroed in the
+    /// database file. Only then may a forget be described as erased from the store file (and even then not from
+    /// copies a file system, snapshot or backup keeps); otherwise it is unretrievable.
+    #[must_use]
+    pub fn secure_delete(&self) -> bool {
+        self.secure_delete
+    }
+
     /// Why this backend, as lines for a person: the capabilities it meets, its durability and its caveats.
     #[must_use]
     pub fn why(&self) -> &[String] {
         &self.why
     }
+}
+
+fn has_secure_delete(listing: &persistant::registry::Listing) -> bool {
+    listing
+        .preferred
+        .iter()
+        .any(|(id, on)| id.as_str() == "storage.secure_delete" && *on)
+}
+
+/// Whether `backend_id` has `storage.secure_delete` in this build of PersistAnt (a forgotten chunk's bytes are zeroed
+/// in the database file as they are freed).
+///
+/// # Errors
+/// `Backend` if the backend does not satisfy [`storage_needs`] at all.
+pub fn backend_secure_delete(backend_id: &str) -> Result<bool, Error> {
+    let listings = persistant::registry::providers(&storage_needs()).map_err(|e| backend(&e))?;
+    listings
+        .iter()
+        .find(|l| l.id == backend_id)
+        .map(has_secure_delete)
+        .ok_or_else(|| {
+            Error::Backend(format!(
+                "backend {backend_id:?} does not satisfy the storage need in this build"
+            ))
+        })
 }
 
 /// Why PersistAnt lists `backend_id` for a [`storage_needs`], as lines for a person.
@@ -191,6 +231,7 @@ pub(crate) fn choose_backend(endpoint: &Endpoint) -> Result<Chosen, Error> {
         return Ok(Chosen {
             backend: listing.id,
             why: listing.why(),
+            secure_delete: has_secure_delete(listing),
         });
     }
     Err(Error::Backend(format!(

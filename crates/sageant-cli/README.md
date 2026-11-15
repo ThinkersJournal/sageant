@@ -15,8 +15,9 @@ There is no setup step: the first command creates the store in your user data di
 set `SAGEANT_HOME` or pass `--home <DIR>` to move it). `sageant --help` lists the commands: `put get list search history
 links link archive unarchive forget purge add export import reindex info where serve`.
 
-`purge` needs you at a terminal to type a confirmation. `forget` makes a chunk unretrievable and does not claim the bytes
-are erased.
+`purge` needs you at a terminal to type a confirmation. `forget` erases the chunk from the store files on a store with
+secure delete (`sageant info` says `secure delete: yes`; new stores have it) and otherwise makes it unretrievable, which
+is not the same: freed bytes may stay in the file. Neither reaches copies kept by a file system, snapshot or backup.
 
 For an AI client: `sageant serve --allow-write notes` speaks MCP on standard input and output, read-only unless you name
 collections it may write to.

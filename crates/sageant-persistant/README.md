@@ -8,7 +8,7 @@ A durable [sageant](https://crates.io/crates/sageant) store on a PersistAnt key-
 - `KvTextIndex`: a durable `sageant_lexical::TextIndex` for BM25 search, kept in the same kind of backend.
 
 The backend must give atomic batches and ordered scans; PersistAnt refuses one that cannot, by name, when you open it.
-"Forgotten" means unretrievable, not erased: a backend may keep old pages until it is compacted.
+"Forgotten" means unretrievable, and on a backend with `storage.secure_delete` (PersistAnt's `sqlite-secure`, which `storage_needs()` prefers) it also means erased from the database file: freed bytes are zeroed, and the tests read the raw files back to check. On any other backend a freed page may keep the old bytes until the file is compacted. `Chosen::secure_delete()` and `backend_secure_delete(id)` say which you have. Copies kept by a file system, snapshot or backup are never covered.
 
 ```rust,no_run
 use persistant::registry::Endpoint;

@@ -186,6 +186,7 @@ fn backend_for(home: &Path) -> Result<(String, Vec<String>), Failure> {
 
 struct App {
     home: PathBuf,
+    backend: String,
     store: PersistStore,
     retriever: LexicalRetriever<KvTextIndex>,
     actor: Actor,
@@ -212,6 +213,7 @@ impl App {
             .unwrap_or_else(|| "user".to_owned());
         Ok(Self {
             home: home.to_owned(),
+            backend,
             store,
             retriever: LexicalRetriever::new(index),
             actor: Actor::new("cli", &who),
@@ -307,12 +309,23 @@ pub fn run(home: Option<PathBuf>, command: Command) -> Result<(), Failure> {
             let actor = app.actor.clone();
             Writer::forget(&mut app.store, &id, &actor, &reason, None, now())?;
             app.retriever.index_mut().remove(&id)?;
-            writeln!(
-                out,
-                "forgotten: {id} is now unretrievable",
-                id = id.as_str()
-            )
-            .ok();
+            // "Erased" is claimed only for a backend that has secure delete (the raw store files were read back in the
+            // tests); anywhere else the bytes may remain in freed pages, so the word is "unretrievable".
+            if sageant_persistant::backend_secure_delete(&app.backend).unwrap_or(false) {
+                writeln!(
+                    out,
+                    "forgotten: {} is erased from the store file (its bytes were zeroed as they were freed). Copies your file system, snapshots or backups keep are not touched.",
+                    id.as_str()
+                )
+                .ok();
+            } else {
+                writeln!(
+                    out,
+                    "forgotten: {} is now unretrievable. This storage backend does not zero freed bytes, so they may stay in the file; `sageant export` then `sageant import` into a new home gives you one that does.",
+                    id.as_str()
+                )
+                .ok();
+            }
             Ok(())
         }
         Command::Purge { id } => purge(&mut app, &id),
@@ -326,6 +339,8 @@ pub fn run(home: Option<PathBuf>, command: Command) -> Result<(), Failure> {
             let (backend, _) = backend_for(&app.home)?;
             writeln!(out, "data: {}", app.home.display()).ok();
             writeln!(out, "backend: {backend}").ok();
+            let secure = sageant_persistant::backend_secure_delete(&backend).unwrap_or(false);
+            writeln!(out, "secure delete: {}", if secure { "yes" } else { "no" }).ok();
             match sageant_persistant::explain_backend(&backend) {
                 Ok(lines) => {
                     for line in lines {
@@ -566,11 +581,13 @@ fn purge_confirmed(app: &mut App, id: &ChunkId, typed: &str) -> Result<(), Failu
 fn serve(app: App, allow_write: &[String]) -> Result<(), Failure> {
     let App {
         home,
+        backend,
         store,
         retriever: _,
         actor: _,
     } = app;
-    let index = KvTextIndex::open("sqlite", &Endpoint::Path(home.join("index.db")))?;
+    // The recorded backend, not a hard-coded one: a forget through MCP must erase the index terms on a secure store too.
+    let index = KvTextIndex::open(&backend, &Endpoint::Path(home.join("index.db")))?;
     let tools = Tools::new(
         store,
         index,
