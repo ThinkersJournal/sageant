@@ -19,7 +19,7 @@ rmcp = { version = "3.10", default-features = false, features = ["server", "tran
 
 [dev-dependencies]
 sageant-persistant = { path = "../sageant-persistant", version = "0.3.23" }
-persistant = { version = "~0.18.22", features = ["registry-sqlite", "text-index"] }
+persistant = { version = "~0.18.23", features = ["registry-sqlite", "text-index"] }
 rmcp = { version = "3.10", default-features = false, features = ["server", "client", "transport-io"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util"] }
 tempfile = "3"

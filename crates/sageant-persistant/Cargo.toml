@@ -13,7 +13,7 @@ categories = ["database-implementations"]
 [dependencies]
 sageant = { path = "../..", version = "0.3.23" }
 sageant-lexical = { path = "../sageant-lexical", version = "0.3.23" }
-persistant = { version = "~0.18.22", features = ["registry-sqlite", "text-index"] }
+persistant = { version = "~0.18.23", features = ["registry-sqlite", "text-index"] }
 
 [dev-dependencies]
 tempfile = "3"
