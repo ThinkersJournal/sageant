@@ -222,6 +222,20 @@ fn status_name(s: Status) -> &'static str {
     }
 }
 
+/// The leading values whose serialised sizes (and one separating byte each) fit in `budget` bytes.
+fn within_budget(values: Vec<Value>, budget: usize) -> Vec<Value> {
+    let mut used = 0;
+    let mut kept = Vec::new();
+    for v in values {
+        used += serde_json::to_string(&v).map_or(0, |s| s.len()) + 1;
+        if used > budget {
+            break;
+        }
+        kept.push(v);
+    }
+    kept
+}
+
 /// The longest prefix of `text` whose JSON encoding fits in `budget` bytes.
 fn fit(text: &str, budget: usize) -> &str {
     if serde_json::to_string(text).map_or(usize::MAX, |s| s.len()) <= budget {
@@ -469,17 +483,12 @@ where
         let store = lock(&self.store);
         let refs = store.list(&filter)?;
         let total = refs.len();
-        let mut items = Vec::new();
-        let mut used = 0;
+        let mut all = Vec::new();
         for r in &refs {
             let chunk = store.get_version(&r.id, r.version)?;
-            let item = self.envelope(&store, &chunk, false, 0)?;
-            used += serde_json::to_string(&item).map_or(0, |s| s.len()) + 1;
-            if used > self.limits.bytes() {
-                break;
-            }
-            items.push(item);
+            all.push(self.envelope(&store, &chunk, false, 0)?);
         }
+        let items = within_budget(all, self.limits.bytes());
         Ok(json!({"truncated": items.len() < total, "total": total, "items": items}))
     }
 
@@ -495,8 +504,7 @@ where
         let found = lock(&self.retriever).retrieve(&query, &*store)?;
         let total = found.len();
         let each = self.limits.bytes() / 2;
-        let mut hits = Vec::new();
-        let mut used = 0;
+        let mut all = Vec::new();
         for h in &found {
             let chunk = store.get_version(&h.chunk().id, h.chunk().version)?;
             let mut v = self.envelope(&store, &chunk, true, each)?;
@@ -505,12 +513,9 @@ where
                 sageant::Reason::Lexical { terms } => json!(terms),
                 _ => json!([]),
             };
-            used += serde_json::to_string(&v).map_or(0, |s| s.len()) + 1;
-            if used > self.limits.bytes() {
-                break;
-            }
-            hits.push(v);
+            all.push(v);
         }
+        let hits = within_budget(all, self.limits.bytes());
         Ok(json!({"truncated": hits.len() < total, "total": total, "hits": hits}))
     }
 
@@ -537,16 +542,11 @@ where
         let store = lock(&self.store);
         let all = store.history(&id)?;
         let each = self.limits.bytes() / 2;
-        let mut versions = Vec::new();
-        let mut used = 0;
+        let mut built = Vec::new();
         for chunk in &all {
-            let v = self.envelope(&store, chunk, true, each)?;
-            used += serde_json::to_string(&v).map_or(0, |s| s.len()) + 1;
-            if used > self.limits.bytes() {
-                break;
-            }
-            versions.push(v);
+            built.push(self.envelope(&store, chunk, true, each)?);
         }
+        let versions = within_budget(built, self.limits.bytes());
         Ok(json!({"truncated": versions.len() < all.len(), "versions": versions}))
     }
 
@@ -622,5 +622,130 @@ where
         )?;
         lock(&self.retriever).index_mut().remove(&id)?;
         Ok(json!({"status": "unretrievable", "id": id.as_str()}))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_budget_keeps_exactly_the_items_that_fit_with_a_separator_each() {
+        // "aa" serialises to 4 bytes, plus one for the separator: 5 each.
+        let v = || vec![json!("aa"), json!("aa"), json!("aa")];
+        assert_eq!(within_budget(v(), 15).len(), 3);
+        assert_eq!(within_budget(v(), 14).len(), 2);
+        assert_eq!(within_budget(v(), 10).len(), 2);
+        assert_eq!(within_budget(v(), 9).len(), 1);
+        assert_eq!(within_budget(v(), 4).len(), 0);
+        assert_eq!(within_budget(vec![], 100).len(), 0);
+    }
+
+    #[test]
+    fn fit_returns_the_longest_prefix_whose_json_encoding_fits() {
+        assert_eq!(fit("hello", 7), "hello"); // "hello" with its quotes is 7 bytes
+        assert_eq!(fit("hello", 6), "hell");
+        assert_eq!(fit("hello", 3), "h");
+        assert_eq!(fit("hello", 2), "");
+        assert_eq!(fit("hello", 0), "");
+        // A character is never split: "é" is two bytes in UTF-8, so it needs 4 with the quotes.
+        assert_eq!(fit("éé", 4), "é");
+        assert_eq!(fit("éé", 3), "");
+        // Escapes count: a quote is two bytes in JSON.
+        assert_eq!(fit("a\"b", 6), "a\"b");
+        assert_eq!(fit("a\"b", 5), "a\"");
+        assert_eq!(fit("a\"b", 4), "a");
+        assert_eq!(fit("", 2), "");
+    }
+
+    #[test]
+    fn every_store_error_has_its_own_code_and_a_message() {
+        let cases: [(Error, &str); 12] = [
+            (Error::NotFound, "not_found"),
+            (Error::Forgotten, "forgotten"),
+            (
+                Error::Conflict {
+                    expected: 1,
+                    found: 2,
+                },
+                "conflict",
+            ),
+            (Error::SecretRefused { class: "k" }, "secret_refused"),
+            (
+                Error::TooLarge {
+                    measured: 2,
+                    cap: 1,
+                },
+                "too_large",
+            ),
+            (Error::NotNormalised { at: 0 }, "not_normalised"),
+            (Error::LinkCycle, "link_cycle"),
+            (Error::DuplicateLink, "duplicate_link"),
+            (Error::BadState("x"), "bad_state"),
+            (Error::Invalid("x"), "invalid"),
+            (Error::Corrupt("x"), "corrupt"),
+            (Error::Backend("x".to_owned()), "backend"),
+        ];
+        for (e, code) in cases {
+            let t = ToolError::Store(e);
+            assert_eq!(t.code(), code);
+            assert!(!t.to_string().is_empty(), "{code} has a message");
+            assert_eq!(t.to_json()["error"]["code"], code);
+        }
+        assert_eq!(ToolError::BadRequest("why".into()).to_string(), "why");
+        assert!(
+            ToolError::UnknownTool("zz".into())
+                .to_string()
+                .contains("zz")
+        );
+        assert!(
+            ToolError::NotAuthorised {
+                collection: "c".into()
+            }
+            .to_string()
+            .contains('c')
+        );
+    }
+
+    #[test]
+    fn names_parse_to_their_values_and_nothing_else_does() {
+        for (n, o) in [
+            ("User", Origin::User),
+            ("Tool", Origin::Tool),
+            ("Web", Origin::Web),
+            ("Agent", Origin::Agent),
+            ("Model", Origin::Model),
+        ] {
+            assert_eq!(origin_from(n).unwrap(), o);
+        }
+        assert!(origin_from("user").is_err());
+        for (n, c) in [
+            ("Unconfirmed", Confidence::Unconfirmed),
+            ("Corroborated", Confidence::Corroborated),
+            ("Contradicted", Confidence::Contradicted),
+        ] {
+            assert_eq!(confidence_from(n).unwrap(), c);
+        }
+        assert!(confidence_from("sure").is_err());
+        assert_eq!(status_name(Status::Archived), "Archived");
+        assert_eq!(status_name(Status::Active), "Active");
+    }
+
+    #[test]
+    fn grants_and_debug_output_say_what_they_hold() {
+        assert!(!Grants::read_only().allows("notes"));
+        assert!(Grants::writable(["notes"]).allows("notes"));
+        assert!(!Grants::writable(["notes"]).allows("other"));
+        let t = Tools::new(
+            sageant::MemoryStore::new(),
+            sageant_lexical::MemoryIndex::default(),
+            Grants::writable(["notes"]),
+            Actor::new("a", "b"),
+        );
+        let shown = format!("{t:?}");
+        assert!(
+            shown.contains("Tools") && shown.contains("notes"),
+            "{shown}"
+        );
     }
 }

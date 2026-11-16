@@ -632,7 +632,14 @@ mod tests {
     #[test]
     fn a_wrong_confirmation_removes_nothing() {
         let (_dir, mut app, id) = app_with_one_chunk();
-        for typed in ["", "purge", "yes", "purge 00000000", "PURGE abcdefgh"] {
+        for typed in [
+            "",
+            "purge",
+            "yes",
+            "xyzzy",
+            "purge 00000000",
+            "PURGE abcdefgh",
+        ] {
             let e = purge_confirmed(&mut app, &id, typed).unwrap_err();
             assert_eq!(e.code, 2, "{typed:?}");
         }

@@ -34,6 +34,11 @@ pub struct Options {
     pub max_bytes: u64,
 }
 
+/// Whether `path`, fully resolved (links, `..`, junctions), still lies inside `root` (itself resolved).
+fn resolves_inside(path: &Path, root: &Path) -> bool {
+    std::fs::canonicalize(path).is_ok_and(|real| real.starts_with(root))
+}
+
 fn wanted(path: &Path, extensions: &[String]) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
@@ -64,9 +69,10 @@ fn walk(
                 summary.links += 1;
             } else if kind.is_dir() {
                 // A junction looks like a directory; its resolved path gives it away.
-                match std::fs::canonicalize(&path) {
-                    Ok(real) if real.starts_with(canonical_root) => pending.push(path),
-                    _ => summary.outside += 1,
+                if resolves_inside(&path, canonical_root) {
+                    pending.push(path);
+                } else {
+                    summary.outside += 1;
                 }
             } else if kind.is_file() {
                 files.push(path);
@@ -94,12 +100,9 @@ pub fn add(app: &mut App, folder: &Path, options: &Options) -> Result<Summary, F
             continue;
         }
         // Re-check at the moment of reading: the file must still resolve to somewhere inside the folder.
-        match std::fs::canonicalize(&path) {
-            Ok(real) if real.starts_with(&canonical_root) => {}
-            _ => {
-                summary.outside += 1;
-                continue;
-            }
+        if !resolves_inside(&path, &canonical_root) {
+            summary.outside += 1;
+            continue;
         }
         let size = std::fs::metadata(&path).map_or(0, |m| m.len());
         if size > options.max_bytes {
@@ -145,4 +148,48 @@ pub fn add(app: &mut App, folder: &Path, options: &Options) -> Result<Summary, F
         }
     }
     Ok(summary)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_path_is_inside_only_if_it_resolves_inside() {
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("root");
+        let outside = base.path().join("outside");
+        std::fs::create_dir_all(root.join("sub")).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+        std::fs::write(root.join("sub/in.txt"), "in").unwrap();
+        std::fs::write(outside.join("out.txt"), "out").unwrap();
+        let canonical_root = std::fs::canonicalize(&root).unwrap();
+        assert!(resolves_inside(&root.join("sub/in.txt"), &canonical_root));
+        // Lexically under the folder, but `..` leads out: the resolved path is outside.
+        let sneaky = root
+            .join("sub")
+            .join("..")
+            .join("..")
+            .join("outside")
+            .join("out.txt");
+        assert!(
+            sneaky.starts_with(&root),
+            "the test path really looks inside"
+        );
+        assert!(!resolves_inside(&sneaky, &canonical_root));
+        assert!(!resolves_inside(&outside.join("out.txt"), &canonical_root));
+        assert!(
+            !resolves_inside(&root.join("missing.txt"), &canonical_root),
+            "a path that cannot be resolved is not inside"
+        );
+    }
+
+    #[test]
+    fn extensions_match_regardless_of_case() {
+        let exts = vec!["txt".to_owned(), "md".to_owned()];
+        assert!(wanted(Path::new("a/B.TXT"), &exts));
+        assert!(wanted(Path::new("notes.md"), &exts));
+        assert!(!wanted(Path::new("notes.rs"), &exts));
+        assert!(!wanted(Path::new("noextension"), &exts));
+    }
 }

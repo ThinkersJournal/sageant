@@ -87,3 +87,69 @@ cargo mutants --all-features --no-shuffle -j 2 --workspace --output <dir>
 ```
 
 about an hour on the lane's machine for the workspace.
+
+# Mutation run 4 (after the persistent store, MCP server and CLI)
+
+Tool: `cargo-mutants` 27.1.0, `cargo mutants --all-features --no-shuffle -j 2 --workspace`, at `main` 1dcaf8c (0.3.15, Windows).
+**1010 mutants, 3 hours.**
+
+| Run | Code | Tested | Caught | Missed | Unviable | Timeout |
+|---|---|---|---|---|---|---|
+| 4 | `main` 1dcaf8c, before this PR's tests | 1010 | 740 | 108 | 155 | 7 |
+| 4b | this PR's tests, only the 130 mutants in the functions that had misses (`--re`) | 130 | 108 | 18 | 2 | 2 |
+| 4c | the `snippet` and `walk` mutants again after fixing one test and tightening another | 11 | 4 | 4 | 0 | 3 |
+
+(Run 3, over 712 mutants before the CLI and the MCP server existed, is above.) The tests below were written **after** the run
+named the survivors, so there was no red state for them; runs 4b and 4c are the evidence they now catch what they were
+written for.
+
+## The 108 misses, grouped, and what killed them
+
+| Where | Misses | What was untested | Kill test |
+|---|---|---|---|
+| `sageant-cli` `add` and its `walk` | 21 | the summary counters; the "must still resolve inside the folder" guard (`starts_with` replaced by `true`) | exact summary lines for each kind of skip; the guard moved into `resolves_inside` and unit-tested with a `..` path that looks inside but resolves outside; a directory link is asserted to count as a link |
+| `sageant-cli` `import`, `export`, `origin_from` | 11 | every origin except User and the import/export counters | every origin round-trips; exact "imported N chunks (M versions), L links; skipped S" and "exported N records" |
+| `sageant-cli` `app.rs` | 15 | the default home, the 60-character cut, `reindex`'s count, the `[archived]` mark, `search`'s rebuild, the purge confirmation word, the audit actor from `USER`/`USERNAME` | tests for each (default home from the platform variables and the error when none is set; 60 vs 61 characters; `reindex` count; archived marker; search heals a deleted index; `xyzzy` refused; the actor is read from the environment via the audit log) |
+| `sageant-mcp` | 43 | every error code but a few, `origin_from`/`confidence_from`/`status_name`, `fit`, the byte budget on `list`/`search`/`history`/`envelope`, `get_info`, `Debug`/`Display` | the budget loop became one function (`within_budget`) with exact boundary tests; `fit` tests at exact boundaries, multi-byte and escaped text; every `ToolError` code and message; list filters by each origin and each confidence; whole-envelope size under the budget; each search and history item capped at half the budget; the server advertises tools and its instructions over a real session |
+| `sageant-persistant` | 15 | `bumped` (the link generation counter), `Chosen`, `explain_backend`, `choose_backend`'s two refusals, the purge hook, purge's conflict | generation values checked exactly after three links; a link landing mid-forget when the chunk already had links; a link that closes a cycle through a chunk in the middle of the path only; hooks run exactly once and the purge or forget really happens; Conflict on a purge or forget whose chunk got a new version; unit tests for `Chosen`, `explain_backend`, `choose_backend`, `bumped` |
+| `src/sha256.rs` | 3 | (none: equivalent, see below) | |
+
+The mutation run found one real weakness in my own tests of the new code: the cycle guard on chunks in the middle of a path
+(the generation read for every chunk the check visits) was not exercised by any test, because every earlier race touched the
+chunk being linked from. Another: the purge test passed even if its test hook did nothing.
+
+## Survivors that are equivalent, or cannot be reached
+
+- `src/sha256.rs:31` and `:38` (three mutants), `^` to `|` in `compress`: the same three as run 2, for the same reason.
+- `Grants::read_only -> Default::default()`: `read_only()` *is* `Self::default()`.
+- `fit`, `bounds.len() - 1` to `+ 1` or `/ 1` (two mutants): that value is only a sentinel for "does not fit" and the binary search
+  never reads the element it points at.
+- `search`, `&&` to `||` in the "rebuild the index" condition: it then rebuilds on every search of a non-empty store instead of
+  only when the index is empty. Rebuilding is idempotent, so no output differs.
+- `walk`, the `outside` and `other` counters (`+=` to `-=`/`*=`, four mutants, still missed in run 4c) and `add`'s `outside` counter
+  and two `unreadable` counters on an I/O error: they count a directory entry that resolves outside the folder after the
+  link check has passed, a file kind that is neither file, directory nor link (a socket, a device), or a read error. Each needs a
+  race, a special file or a failing disk to reach; the safe behaviour (skip it) is tested, the number printed is not.
+
+## Timeouts
+
+Seven in run 4, counted as detected because a hang is a detected change (the tool lists them separately, and so do we):
+`fit`'s binary-search loop (two) and `PersistStore::list`'s regrouping loop (five, as in run 3). Run 4b re-ran the two `fit`
+ones; run 4c produced three more in `walk`.
+
+## Limits of this record
+
+- Run 4 was on Windows. The Unix-only symlink-to-file test (`add_never_follows_a_symlink_to_a_file_outside_the_folder`) and the
+  Unix link-count test ran on the Linux and macOS CI jobs, not in this run.
+- Runs 4b and 4c re-ran only the functions that had survivors, not all 1010 mutants: a new test cannot make a caught mutant
+  uncaught, but a refactor (`within_budget`, `resolves_inside`, `chosen_from`) adds new mutants that run 4b only covered where
+  they sit inside a re-run function name.
+- The tests were written after the survivors were known.
+
+## Re-running
+
+```
+cargo mutants --all-features --no-shuffle -j 2 --workspace --output <dir>
+```
+
+about three hours on the lane's machine for the workspace; add `--re '<function names>'` to re-run only some.

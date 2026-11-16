@@ -145,3 +145,119 @@ fn racing_threads_never_leave_a_cycle() {
         assert_eq!(loser, Err(Error::LinkCycle));
     }
 }
+
+// ---- kill tests for the row 4 / D mutation run (docs/MUTATION.md, run 4); written after the misses ----
+
+#[test]
+fn every_link_counts_up_the_generation_of_both_chunks_it_touches() {
+    let (_d, p) = store();
+    let (a, b, c, d) = (put(&p, "a"), put(&p, "b"), put(&p, "c"), put(&p, "d"));
+    p.link(&a, LinkKind::Related, &b, Timestamp(2)).unwrap();
+    p.link(&a, LinkKind::Related, &c, Timestamp(2)).unwrap();
+    p.link(&a, LinkKind::Related, &d, Timestamp(2)).unwrap();
+    let generation = |id: &ChunkId| {
+        p.dump_all_for_test()
+            .unwrap()
+            .into_iter()
+            .find(|(k, _)| k == &format!("n/{}", id.as_str()))
+            .map(|(_, v)| String::from_utf8(v).unwrap())
+    };
+    assert_eq!(
+        generation(&a).as_deref(),
+        Some("3"),
+        "a was linked from three times"
+    );
+    assert_eq!(generation(&b).as_deref(), Some("1"));
+    assert_eq!(generation(&c).as_deref(), Some("1"));
+}
+
+#[test]
+fn a_link_landing_mid_forget_is_caught_even_when_the_chunk_already_had_links() {
+    let (_d, p) = store();
+    let (a, b, c) = (
+        put(&p, "alpha text"),
+        put(&p, "beta text"),
+        put(&p, "gamma text"),
+    );
+    p.link(&a, LinkKind::Related, &c, Timestamp(2)).unwrap(); // a's generation is now 1, not absent
+    let r = p.forget_with_hook_for_test(&a, "me", "r", None, Timestamp(5), &|| {
+        p.link(&a, LinkKind::Related, &b, Timestamp(4)).unwrap();
+    });
+    assert!(r.is_ok(), "{r:?}");
+    assert!(
+        p.links_to(&b).unwrap().is_empty(),
+        "the late link was removed with the rest"
+    );
+    assert!(p.links_to(&c).unwrap().is_empty());
+}
+
+#[test]
+fn a_link_that_would_close_a_cycle_through_a_chunk_in_the_middle_of_the_path_is_caught() {
+    let (_d, p) = store();
+    let (a, b, m, n) = (put(&p, "a"), put(&p, "b"), put(&p, "m"), put(&p, "n"));
+    p.link(&b, LinkKind::PartOf, &m, Timestamp(2)).unwrap();
+    p.link(&n, LinkKind::PartOf, &a, Timestamp(2)).unwrap();
+    // a->b is being made (so far a path from b leads b->m and stops). Meanwhile m->n lands: it touches neither a
+    // nor b, only the middle chunk m, yet it completes a->b->m->n->a.
+    let outer = p.link_with_hook_for_test(&a, LinkKind::PartOf, &b, Timestamp(3), &|| {
+        p.link(&m, LinkKind::PartOf, &n, Timestamp(3)).unwrap();
+    });
+    assert_eq!(outer, Err(Error::LinkCycle));
+    assert!(p.links_from(&a).unwrap().is_empty());
+}
+
+#[test]
+fn the_test_hooks_run_exactly_once_and_a_purge_or_forget_really_happens_around_them() {
+    use std::cell::Cell;
+    let (_d, p) = store();
+    let (a, b) = (put(&p, "purge me"), put(&p, "forget me"));
+    let ran = Cell::new(0);
+    let who = sageant::PersonAuthority::from_person_action("typed");
+    p.purge_with_hook_for_test(&a, &who, Timestamp(5), &|| ran.set(ran.get() + 1))
+        .unwrap();
+    assert_eq!(ran.get(), 1);
+    assert_eq!(p.get(&a).err(), Some(Error::NotFound));
+    p.forget_with_hook_for_test(&b, "me", "r", None, Timestamp(5), &|| {
+        ran.set(ran.get() + 1)
+    })
+    .unwrap();
+    assert_eq!(ran.get(), 2);
+    assert_eq!(p.get(&b).err(), Some(Error::Forgotten));
+}
+
+#[test]
+fn a_purge_or_forget_whose_chunk_gets_a_new_version_meanwhile_reports_a_conflict() {
+    let (_d, p) = store();
+    let (a, b) = (put(&p, "first purge text"), put(&p, "first forget text"));
+    let who = sageant::PersonAuthority::from_person_action("typed");
+    let purge = p.purge_with_hook_for_test(&a, &who, Timestamp(5), &|| {
+        p.supersede(&a, "changed meanwhile", Origin::User, "cli", Timestamp(4))
+            .unwrap();
+    });
+    assert_eq!(
+        purge,
+        Err(Error::Conflict {
+            expected: 1,
+            found: 2
+        })
+    );
+    assert!(p.get(&a).is_ok(), "nothing was removed");
+    let forget = p.forget_with_hook_for_test(&b, "me", "r", None, Timestamp(5), &|| {
+        p.supersede(
+            &b,
+            "changed meanwhile too",
+            Origin::User,
+            "cli",
+            Timestamp(4),
+        )
+        .unwrap();
+    });
+    assert_eq!(
+        forget,
+        Err(Error::Conflict {
+            expected: 1,
+            found: 2
+        })
+    );
+    assert!(p.get(&b).is_ok());
+}
