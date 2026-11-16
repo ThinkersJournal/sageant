@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.21
+
+- CI: `registry install smoke` on Linux, macOS and Windows: a clean `CARGO_HOME`, `cargo install sageant-cli --version <pinned published> --locked` from crates.io, then the same first-run smoke. Pinned to 0.3.19 (bump at each publish). CI only; no code change.
+
 ## 0.3.20
 
 - Docs: `docs/THREAT-MODEL-MCP-HTTP.md`, the threat-model draft for ROADMAP row E (MCP over HTTP), for a CireSnave decision. Nothing is built. It lists assets, attackers, fourteen threats with what the current stdio design already does and what an HTTP listener would need, what a stolen token could do under each option, three options (A do not build, B loopback-only with per-client tokens, C network-facing with TLS and OAuth), the recommendation (A now; B only on a stated need with every control as a release condition), the five decisions needed, and the refutation tests a build would need. AI-assisted analysis, not a penetration test; the current MCP authorisation spec is to be read before building.
