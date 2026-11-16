@@ -70,6 +70,35 @@ jobs:
         shell: bash
         run: bash tools/first-run-smoke.sh "$RUNNER_TEMP/sg-install/bin/sageant"
 
+  # The check a path install cannot make (PM 2026-11-16): what a stranger gets from crates.io. A clean CARGO_HOME (nothing
+  # cached, no lock from this repo), the pinned PUBLISHED version with its own lock, then the same first-run smoke. Bump
+  # REGISTRY_VERSION to the newest published version at each release (the PM publishes; this follows).
+  registry-install-smoke:
+    name: registry install smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    env:
+      REGISTRY_VERSION: "0.3.19"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: stable
+      - name: cargo install from crates.io with a clean CARGO_HOME
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CARGO_HOME="$RUNNER_TEMP/clean-cargo-home"
+          mkdir -p "$CARGO_HOME"
+          cargo install sageant-cli --version "$REGISTRY_VERSION" --locked --root "$RUNNER_TEMP/sg-registry"
+          "$RUNNER_TEMP/sg-registry/bin/sageant" --version | grep -F "$REGISTRY_VERSION"
+      - name: first run with an empty home
+        shell: bash
+        run: bash tools/first-run-smoke.sh "$RUNNER_TEMP/sg-registry/bin/sageant"
+
   doc:
     name: doc
     runs-on: ubuntu-latest
