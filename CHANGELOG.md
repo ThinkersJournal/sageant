@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.24
+
+- Repin `persistant ~0.18.23` (fixes a spurious `Corrupt` from the text-index totals under concurrent writers). **0.3.24 is the published bundle that carries everything in 0.3.20 to 0.3.23 below** (0.3.20 to 0.3.23 were never published on their own).
+
 ## 0.3.23
 
 - **The search index is now PersistAnt's text index** (`persistant ~0.18.22`, feature `text-index`, its blocking `KvHandle::text()` and `remove_prefix_erased`) instead of our hand-written `KvTextIndex`, which is **deleted** (never part of a stable API beyond 0.3.x; `PersistTextIndex` implements the same `sageant_lexical::TextIndex`). A document is `<chunk id>/<version>` in the index `sageant`; we keep our tokeniser and BM25. **Ranking is unchanged**: a differential test over 40 chunks x 3 versions (empty and one-word texts, replacement, removal, Unicode terms) on `sqlite-secure`, `sqlite` and `sqlite-full` finds postings, document lengths, stats and BM25 hits identical to the in-memory reference (and, before the old index was deleted, to it too); a home written by 0.3.19 gave the same scores (499 and 420) before and after the move.
