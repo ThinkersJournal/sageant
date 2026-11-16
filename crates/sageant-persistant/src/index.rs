@@ -7,7 +7,7 @@
 //! totals, so two writers cannot both win and the totals always match the postings; a lost race is retried.
 
 use persistant::blocking::registry::KvHandle;
-use persistant::kv::BatchOp;
+use persistant::kv::{BatchOp, KvError};
 use persistant::registry::Endpoint;
 use sageant::{ChunkId, ChunkRef, Error};
 use sageant_lexical::{Posting, Stats, TextIndex, term_counts};
@@ -43,14 +43,16 @@ type Change = (Vec<BatchOp>, i64, i64);
 
 /// What dropping one document needs: the batch operations, its old token count (if it was indexed) and the keys to erase
 /// afterwards.
-type Dropped = (Vec<BatchOp>, Option<u32>, Vec<String>);
+type Dropped = (Vec<BatchOp>, Option<u32>);
 
 /// A text index kept in a PersistAnt key-value backend.
 pub struct KvTextIndex {
     kv: KvHandle,
-    erasure: Erasure,
-    /// Test only: stop a removal after its atomic step, as a crash would, leaving the erasing to `finish_erasing`.
-    crash_before_erasing: bool,
+    /// Whether a removal overwrites the dropped keys with `BatchOp::DeleteErased` (a best effort on a backend that does
+    /// not zero freed bytes). Switched off for good the first time the backend refuses it.
+    overwrite: std::sync::atomic::AtomicBool,
+    /// Test only: make the next erased batch be refused as unsupported.
+    refuse_erased_for_test: std::sync::atomic::AtomicBool,
 }
 
 impl std::fmt::Debug for KvTextIndex {
@@ -81,14 +83,11 @@ impl KvTextIndex {
     /// be opened.
     pub fn open(backend_id: &str, endpoint: &Endpoint) -> Result<Self, Error> {
         let erasure = backend_erasure(backend_id).unwrap_or(Erasure::Unretrievable);
-        let index = Self::open_with(backend_id, endpoint, erasure)?;
-        // A removal interrupted between its atomic step and the erasing is finished here.
-        index.finish_erasing()?;
-        Ok(index)
+        Self::open_with(backend_id, endpoint, erasure != Erasure::Zeroed)
     }
 
-    /// Open with erasing switched off, so a test can show that the same steps leave the terms in the files. Not for
-    /// production use.
+    /// Open with the best-effort overwrite switched off, so a test can show what plain deletes leave in the files. Not
+    /// for production use.
     ///
     /// # Errors
     /// As `open`.
@@ -97,73 +96,50 @@ impl KvTextIndex {
         backend_id: &str,
         endpoint: &Endpoint,
     ) -> Result<Self, Error> {
-        Self::open_with(backend_id, endpoint, Erasure::Unretrievable)
+        Self::open_with(backend_id, endpoint, false)
     }
 
-    fn open_with(backend_id: &str, endpoint: &Endpoint, erasure: Erasure) -> Result<Self, Error> {
+    /// Test only: make the next erased batches be refused as unsupported, as a backend that cannot overwrite would.
+    #[doc(hidden)]
+    pub fn refuse_erased_batches_for_test(&self, on: bool) {
+        self.refuse_erased_for_test
+            .store(on, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    fn open_with(backend_id: &str, endpoint: &Endpoint, overwrite: bool) -> Result<Self, Error> {
         Ok(Self {
             kv: open_kv(backend_id, endpoint)?,
-            erasure,
-            crash_before_erasing: false,
+            overwrite: std::sync::atomic::AtomicBool::new(overwrite),
+            refuse_erased_for_test: std::sync::atomic::AtomicBool::new(false),
         })
     }
 
-    /// Test only: make the next removals stop after their atomic step, as a crash would.
-    #[doc(hidden)]
-    pub fn set_crash_before_erasing_for_test(&mut self, on: bool) {
-        self.crash_before_erasing = on;
-    }
-
-    /// Erase each key with `kv.delete_erased` (its stored bytes, key included, are overwritten before it is removed).
-    fn erase_keys(&self, keys: &[String]) -> Result<(), Error> {
-        for key in keys {
-            self.kv.delete_erased(key).map_err(|e| {
-                Error::Backend(format!(
-                    "removed, but erasing a stored index entry failed ({e}); it is finished the next time the index is opened"
-                ))
-            })?;
-        }
-        Ok(())
-    }
-
-    /// Erase the postings of any document whose entry is gone but whose forward list is still stored (a removal that
-    /// stopped after its atomic step). Returns how many index entries were erased. Does nothing unless the backend
-    /// erases on delete.
-    ///
-    /// # Errors
-    /// `Corrupt` or `Backend`.
-    pub fn finish_erasing(&self) -> Result<usize, Error> {
-        if self.erasure != Erasure::EraseOnDelete {
-            return Ok(0);
-        }
-        let mut left: Vec<(String, Option<String>)> = Vec::new();
-        for (key, _) in self.scan("f/")? {
-            let rest = key.strip_prefix("f/").ok_or(Error::Corrupt("index key"))?;
-            let mut parts = rest.splitn(3, '/');
-            let (Some(id), Some(version), Some(term)) = (parts.next(), parts.next(), parts.next())
-            else {
-                return Err(Error::Corrupt("index key"));
-            };
-            let chunk = ChunkId::parse(id).map_err(|_| Error::Corrupt("index key"))?;
-            let version: u32 = number(version.as_bytes())?;
-            if self
-                .kv
-                .get(&doc_key(&chunk, version))
-                .map_err(kv_error)?
-                .is_none()
-            {
-                left.push((key.clone(), Some(posting_key(term, &chunk, version))));
+    /// Apply `ops` atomically; `Ok(false)` means a `Require` no longer held. A backend that cannot overwrite refuses a
+    /// batch with erased deletes whole, before changing anything: it is then applied with plain deletes, and from now on.
+    fn batch(&self, ops: &[BatchOp]) -> Result<bool, Error> {
+        use std::sync::atomic::Ordering;
+        let erased = ops
+            .iter()
+            .any(|o| matches!(o, BatchOp::DeleteErased { .. }));
+        let first = if erased && self.refuse_erased_for_test.load(Ordering::SeqCst) {
+            Err(KvError::Unsupported("simulated".to_owned()))
+        } else {
+            self.kv.batch(ops)
+        };
+        match first {
+            Err(KvError::Unsupported(_)) if erased => {
+                self.overwrite.store(false, Ordering::SeqCst);
+                let plain: Vec<BatchOp> = ops
+                    .iter()
+                    .map(|o| match o {
+                        BatchOp::DeleteErased { key } => BatchOp::Delete { key: key.clone() },
+                        other => other.clone(),
+                    })
+                    .collect();
+                self.kv.batch(&plain).map_err(kv_error)
             }
+            other => other.map_err(kv_error),
         }
-        let mut erased = 0;
-        for (forward, posting) in left {
-            if let Some(posting) = posting {
-                self.erase_keys(&[posting])?;
-                erased += 1;
-            }
-            self.erase_keys(&[forward])?;
-        }
-        Ok(erased)
     }
 
     /// Every `(key, value)` under `prefix`, ascending by key, across pages.
@@ -196,37 +172,33 @@ impl KvTextIndex {
         Ok((Some(bytes), stats))
     }
 
-    /// The operations that drop one indexed document, and its token count (`None` if it was not indexed).
-    /// With `defer`, the postings and the forward list are not deleted in the batch but returned (postings first, forward
-    /// list last) to be erased with `kv.delete_erased` after it, while they are still stored.
-    fn drop_ops(&self, id: &ChunkId, version: u32, defer: bool) -> Result<Dropped, Error> {
+    /// The operations that drop one indexed document, and its token count (`None` if it was not indexed). With `erase`,
+    /// the postings and the forward list are deleted with `BatchOp::DeleteErased` (their keys hold the document's terms).
+    fn drop_ops(&self, id: &ChunkId, version: u32, erase: bool) -> Result<Dropped, Error> {
         let Some(len) = self.kv.get(&doc_key(id, version)).map_err(kv_error)? else {
-            return Ok((Vec::new(), None, Vec::new()));
+            return Ok((Vec::new(), None));
         };
         let prefix = terms_prefix(id, version);
         let mut ops = vec![BatchOp::Delete {
             key: doc_key(id, version),
         }];
-        let (mut postings, mut forwards) = (Vec::new(), Vec::new());
+        let delete = |key: String| {
+            if erase {
+                BatchOp::DeleteErased { key }
+            } else {
+                BatchOp::Delete { key }
+            }
+        };
         for (key, _) in self.scan(&prefix)? {
             let term = key
                 .strip_prefix(&prefix)
                 .ok_or(Error::Corrupt("index key"))?;
-            if defer {
-                postings.push(posting_key(term, id, version));
-                forwards.push(key);
-            } else {
-                ops.push(BatchOp::Delete {
-                    key: posting_key(term, id, version),
-                });
-                ops.push(BatchOp::Delete { key });
-            }
+            ops.push(delete(posting_key(term, id, version)));
+            ops.push(delete(key));
         }
-        postings.extend(forwards);
-        Ok((ops, Some(number(&len)?), postings))
+        Ok((ops, Some(number(&len)?)))
     }
 
-    /// Apply the change `build` describes together with the new totals, retrying a lost race for the totals.
     fn commit(&self, build: &dyn Fn(&Self) -> Result<Change, Error>) -> Result<(), Error> {
         for _ in 0..RETRIES {
             let (seen, stats) = self.totals()?;
@@ -247,7 +219,7 @@ impl KvTextIndex {
                 value: format!("{new_docs} {new_len}").into_bytes(),
                 ttl: NO_TTL,
             });
-            if self.kv.batch(&ops).map_err(kv_error)? {
+            if self.batch(&ops)? {
                 return Ok(());
             }
         }
@@ -260,7 +232,7 @@ impl TextIndex for KvTextIndex {
         let counts = term_counts(text);
         let len: u32 = counts.values().fold(0u32, |a, n| a.saturating_add(*n));
         self.commit(&|s| {
-            let (mut ops, old, _) = s.drop_ops(&chunk.id, chunk.version, false)?;
+            let (mut ops, old) = s.drop_ops(&chunk.id, chunk.version, false)?;
             let (mut docs, mut tokens) = (1_i64, i64::from(len));
             if let Some(old) = old {
                 docs -= 1;
@@ -288,10 +260,8 @@ impl TextIndex for KvTextIndex {
     }
 
     fn remove(&mut self, id: &ChunkId) -> Result<(), Error> {
-        let defer = self.erasure == Erasure::EraseOnDelete;
-        let later: std::cell::RefCell<Vec<String>> = std::cell::RefCell::new(Vec::new());
+        let erase = self.overwrite.load(std::sync::atomic::Ordering::SeqCst);
         self.commit(&|s| {
-            later.borrow_mut().clear();
             let prefix = format!("d/{}/", id.as_str());
             let (mut ops, mut docs, mut tokens) = (Vec::new(), 0_i64, 0_i64);
             for (key, _) in s.scan(&prefix)? {
@@ -300,22 +270,15 @@ impl TextIndex for KvTextIndex {
                         .ok_or(Error::Corrupt("index key"))?
                         .as_bytes(),
                 )?;
-                let (drop, old, erase) = s.drop_ops(id, version, defer)?;
+                let (drop, old) = s.drop_ops(id, version, erase)?;
                 ops.extend(drop);
-                later.borrow_mut().extend(erase);
                 if let Some(old) = old {
                     docs -= 1;
                     tokens -= i64::from(old);
                 }
             }
             Ok((ops, docs, tokens))
-        })?;
-        // The documents are gone as far as any read can tell; now erase the postings and forward lists that held their
-        // terms (postings first, so a stop in the middle leaves a forward list that finds the rest).
-        if self.crash_before_erasing {
-            return Ok(());
-        }
-        self.erase_keys(&later.borrow())
+        })
     }
 
     fn postings(&self, term: &str) -> Result<Vec<Posting>, Error> {

@@ -11,15 +11,15 @@ keywords = ["mcp", "llm", "ai-agents", "memory", "knowledge-base"]
 categories = ["development-tools", "network-programming"]
 
 [dependencies]
-sageant = { path = "../..", version = "0.3.18" }
-sageant-lexical = { path = "../sageant-lexical", version = "0.3.18" }
+sageant = { path = "../..", version = "0.3.19" }
+sageant-lexical = { path = "../sageant-lexical", version = "0.3.19" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rmcp = { version = "3.10", default-features = false, features = ["server", "transport-io"] }
 
 [dev-dependencies]
-sageant-persistant = { path = "../sageant-persistant", version = "0.3.18" }
-persistant = { version = "~0.18.15", features = ["registry-sqlite"] }
+sageant-persistant = { path = "../sageant-persistant", version = "0.3.19" }
+persistant = { version = "~0.18.21", features = ["registry-sqlite"] }
 rmcp = { version = "3.10", default-features = false, features = ["server", "client", "transport-io"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util"] }
 tempfile = "3"
