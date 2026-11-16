@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.22
+
+- Docs: `docs/DESIGN-TEXT-INDEX-MIGRATION.md`, the design note for replacing `KvTextIndex` with PersistAnt's text index (what is deleted, migration of existing homes by rebuild into a new file, rollback, acceptance tests). Design only; one open question for the persistant lane (a blocking text-index handle).
 ## 0.3.21
 
 - CI: `registry install smoke` on Linux, macOS and Windows: a clean `CARGO_HOME`, `cargo install sageant-cli --version <pinned published> --locked` from crates.io, then the same first-run smoke. Pinned to 0.3.19 (bump at each publish). CI only; no code change.
