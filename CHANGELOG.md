@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.20
+
+- Docs: `docs/THREAT-MODEL-MCP-HTTP.md`, the threat-model draft for ROADMAP row E (MCP over HTTP), for a CireSnave decision. Nothing is built. It lists assets, attackers, fourteen threats with what the current stdio design already does and what an HTTP listener would need, what a stolen token could do under each option, three options (A do not build, B loopback-only with per-client tokens, C network-facing with TLS and OAuth), the recommendation (A now; B only on a stated need with every control as a release condition), the five decisions needed, and the refutation tests a build would need. AI-assisted analysis, not a penetration test; the current MCP authorisation spec is to be read before building.
+
 ## 0.3.19
 
 - PersistAnt `~0.18.21` (crates.io, newest; the revised publish that records `kv.delete_erased` and `text.index.erased` as off on `sqlite` and `sqlite-full`, on on `sqlite-secure`). **Forget is atomic again:** the two-step forget of 0.3.17 (an atomic step, then `delete_erased` per key, finished at the next open) is replaced by one batch that carries `BatchOp::DeleteErased` for the content keys (and, in `KvTextIndex::remove`, for the postings and forward lists), so there is no window in which a forgotten chunk's bytes are still stored. A backend that cannot overwrite refuses the whole batch before changing anything; the stores then apply it with plain deletes and stop asking. `PersistStore::finish_erasing`, `KvTextIndex::finish_erasing`, `Erasure::EraseOnDelete` and the crash test hooks are gone (never published). `storage_needs()` prefers only `storage.secure_delete`. `Erasure` is now `Zeroed` or `Unretrievable`, and `backend_erasure("sqlite" | "sqlite-full")` reports `Unretrievable`, as PersistAnt's matrix now says.
