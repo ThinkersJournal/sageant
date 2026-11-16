@@ -153,3 +153,21 @@ cargo mutants --all-features --no-shuffle -j 2 --workspace --output <dir>
 ```
 
 about three hours on the lane's machine for the workspace; add `--re '<function names>'` to re-run only some.
+
+# Mutation run 5 (code changed since run 4)
+
+`cargo mutants --all-features --no-shuffle -j 2 --workspace --in-diff <diff of 1dcaf8c..8e69825>` on `main` 8e69825 (0.3.17,
+Windows). **This is not a full run:** it mutates only the lines changed since run 4's base (the #37 refactors, erase-on-forget in
+0.3.15's successor #38 and their tests' neighbours). 93 mutants, 26 minutes: **65 caught, 10 missed, 18 unviable, 0 timeouts.**
+
+| Misses | Where | What was untested | Kill test |
+|---|---|---|---|
+| 5 | `PersistStore::finish_erasing` (`+=` to `*=`), `KvTextIndex::finish_erasing` (`Ok(0)`, `Ok(1)`, `!=` to `==`, two counters) | that the function returns how many copies it erased, and that it does nothing on a backend that zeroes on delete | a store with three forgotten two-version chunks whose erasing was interrupted returns 6 and then 0; an index removal stopped after its atomic step returns 10 then 0; a `sqlite-secure` index returns 0 |
+| 4 | `add`'s `outside` (walk, add) and `unreadable` counters | a count for a path that needs a race, a special file or a failing disk | none: equivalent in practice, as in run 4 |
+
+The run's most important result was not a survivor but a failing kill test: the test that counted `finish_erasing` also
+asserted the files were clean after forgetting three chunks, and they were not. That exposed that 0.3.17's claim that `sqlite`
+and `sqlite-full` erase was wrong (SQLite leaves stale fragments after page splits); see the 0.3.18 CHANGELOG entry and the README
+table. The claim is withdrawn and a test pins the measured limit.
+
+Limits: diff-scoped, so unchanged code was not re-run; written after the survivors were known; Windows only.

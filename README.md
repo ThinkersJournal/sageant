@@ -44,11 +44,11 @@ them all.
   | Backend (PersistAnt id) | Who has it | What `forget` does | Checked by |
   |---|---|---|---|
   | `sqlite-secure` | a new store | **erased from the store files** in one atomic step: freed bytes are zeroed, for the chunk's text and its search terms | tests that read every database file back after a forget (`crates/sageant-persistant/tests/erase.rs`, and a forget through a real MCP session in the CLI tests) |
-  | `sqlite`, `sqlite-full` (WAL) | an older store, or one you name | **erased from the store files** in two steps: the chunk becomes unreadable at once (one atomic step), then each stored copy is overwritten with PersistAnt's `kv.delete_erased` before it is removed. A step interrupted in between is finished the next time the store is opened; until then the bytes are still in the file but nothing can read them | the same tests, including a chunk that was archived and superseded first (which rewrites its records), a WAL database, a simulated crash between the two steps, and a control with erasing switched off that DOES leave the text |
+  | `sqlite`, `sqlite-full` (WAL) | an older store, or one you name | **unretrievable, not erased**: the chunk becomes unreadable at once (one atomic step), then its stored copy is overwritten with PersistAnt's `kv.delete_erased` (finished at the next open if interrupted). That is a best effort: SQLite can leave stale fragments of a record in pages it split or rebalanced earlier, and they are not reached | tests that read the files back: one forgotten chunk is fully overwritten, but forgetting eight leaves copies of some of them in the files (a test pins this, so if it ever stops being true the table is re-measured before it changes) |
   | any other backend that qualifies | only if you name it | **unretrievable only**: the freed bytes may stay in the file | not claimed |
   | `memory`, `fs` | cannot be used: PersistAnt records no atomic batches for them | n/a | n/a |
 
-  None of them reaches copies your file system, snapshots, backups or an SSD's wear levelling keep.
+  Only `sqlite-secure` is claimed to erase, and that is checked at up to thirty chunks. None of them reaches copies your file system, snapshots, backups or an SSD's wear levelling keep.
 - **purge** removes everything about a chunk, tombstone included. It needs you at a terminal to type a confirmation,
   and no MCP tool can do it.
 

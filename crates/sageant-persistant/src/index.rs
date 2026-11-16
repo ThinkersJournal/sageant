@@ -49,6 +49,8 @@ type Dropped = (Vec<BatchOp>, Option<u32>, Vec<String>);
 pub struct KvTextIndex {
     kv: KvHandle,
     erasure: Erasure,
+    /// Test only: stop a removal after its atomic step, as a crash would, leaving the erasing to `finish_erasing`.
+    crash_before_erasing: bool,
 }
 
 impl std::fmt::Debug for KvTextIndex {
@@ -102,7 +104,14 @@ impl KvTextIndex {
         Ok(Self {
             kv: open_kv(backend_id, endpoint)?,
             erasure,
+            crash_before_erasing: false,
         })
+    }
+
+    /// Test only: make the next removals stop after their atomic step, as a crash would.
+    #[doc(hidden)]
+    pub fn set_crash_before_erasing_for_test(&mut self, on: bool) {
+        self.crash_before_erasing = on;
     }
 
     /// Erase each key with `kv.delete_erased` (its stored bytes, key included, are overwritten before it is removed).
@@ -303,6 +312,9 @@ impl TextIndex for KvTextIndex {
         })?;
         // The documents are gone as far as any read can tell; now erase the postings and forward lists that held their
         // terms (postings first, so a stop in the middle leaves a forward list that finds the rest).
+        if self.crash_before_erasing {
+            return Ok(());
+        }
         self.erase_keys(&later.borrow())
     }
 
