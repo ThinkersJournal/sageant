@@ -189,3 +189,18 @@ guarded by "this batch asked for an overwrite"; with the guard always true, a ba
 retried with the same plain operations and fail the same way.
 
 Limits: diff-scoped; kill tests written after the survivors were known; Windows only.
+
+# Mutation run 7 (search index on PersistAnt's text index, 0.3.23)
+
+`cargo mutants --all-features --no-shuffle -j 2 --workspace --in-diff <changes against main 7576bd3>` (Windows). **Diff-scoped, not a full
+run.** 26 mutants, 9 minutes: **17 caught, 2 missed, 7 unviable.** The two misses were both in `App::open`'s `rebuild` condition
+(`old.exists() || !new.exists()`); two kill tests were written afterwards (a store whose index files are all gone is rebuilt by the first
+command, whichever it is; an old index beside a new one means the new one may be half built and is rebuilt) and the function re-run
+(3 mutants): 2 caught, 1 missed.
+
+**Still missed, equivalent in behaviour:** `delete !` in `rebuild` (`old.exists() || new.exists()`). With no old file and no new file it
+skips the rebuild, but `put` and `search` already rebuild an empty index from a non-empty store, so the result is the same (checked by
+hand with the mutant: the second `put` after deleting `index2.db` still leaves a two-chunk search); with a new file and no old one it
+rebuilds on every open, which costs time and changes no answer. Not a test gap in behaviour, a performance difference nothing observes.
+
+Limits: diff-scoped; kill tests written after the survivors were known; Windows only.
