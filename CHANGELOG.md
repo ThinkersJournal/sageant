@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.27
+
+- Docs only: HANDOFF.md rewritten to current state (the committed text was the stale PAUSED one). No code change.
 ## 0.3.26
 
 - CI only: the `registry install smoke` pin moves from 0.3.19 to the published 0.3.24.
