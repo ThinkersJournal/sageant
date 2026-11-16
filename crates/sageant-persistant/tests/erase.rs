@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! Erase-on-forget, read back from the raw files (PersistAnt 0.18.15). "Erased" is claimed for a backend only because
-//! these tests read every database file after a forget and do not find the chunk's text or its search terms, on every
-//! backend that claims it, even for a chunk that had been archived and superseded first (which rewrites its records).
-//! The same steps with erasing switched off DO leave the text in the files (the control that shows the test can see).
+//! Erase-on-forget, read back from the raw files (PersistAnt 0.18.15). "Erased" is claimed only for `sqlite-secure`,
+//! because these tests read every database file after forgetting up to thirty chunks (one of them archived and superseded
+//! first, which rewrites its records) and do not find the text or its search terms. `sqlite` and `sqlite-full` overwrite
+//! the stored copy but measurably leave stale fragments (a test pins that), so they are unretrievable, not erased. The
+//! same steps with erasing switched off DO leave the text in the files (the control that shows the test can see).
 
 use persistant::registry::Endpoint;
 use sageant::{Actor, ChunkRef, NewChunk, Origin, Status, Timestamp, Writer};
@@ -78,22 +79,82 @@ fn backends_say_how_they_get_rid_of_forgotten_bytes() {
 }
 
 #[test]
-fn a_forgotten_chunk_that_was_rewritten_first_is_gone_from_the_files_on_every_sqlite_backend() {
-    for backend in BACKENDS {
-        let dir = tempfile::tempdir().unwrap();
-        let p = PersistStore::open(backend, &Endpoint::Path(dir.path().join("s.db"))).unwrap();
-        let (before, after) = forget_a_rewritten_chunk(p, dir.path());
-        assert!(
-            contains(&before, ONE) || contains(&before, TWO),
-            "{backend}: control: the content is in the files before the forget"
+fn a_forgotten_chunk_that_was_rewritten_first_is_gone_from_the_files_on_the_backend_that_guarantees_it()
+ {
+    let dir = tempfile::tempdir().unwrap();
+    let p = PersistStore::open("sqlite-secure", &Endpoint::Path(dir.path().join("s.db"))).unwrap();
+    let (before, after) = forget_a_rewritten_chunk(p, dir.path());
+    assert!(
+        contains(&before, ONE) || contains(&before, TWO),
+        "control: the content is in the files before the forget"
+    );
+    assert!(
+        !contains(&after, ONE),
+        "version one is still in a file after forget"
+    );
+    assert!(
+        !contains(&after, TWO),
+        "version two is still in a file after forget"
+    );
+}
+
+/// Forget `n` chunks of about 700 bytes each; how many copies of their markers are still in the files?
+fn copies_left_after_forgetting(backend: &str, n: usize) -> usize {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p = PersistStore::open(backend, &Endpoint::Path(dir.path().join("s.db"))).unwrap();
+    let mut ids = Vec::new();
+    for i in 0..n {
+        let text = format!("zqxscale{i:03} {}", filler());
+        ids.push(
+            Writer::put(
+                &mut p,
+                NewChunk::new("c", "k", &text, Origin::User, "t"),
+                &who(),
+                Timestamp(1),
+            )
+            .unwrap()
+            .id,
+        );
+    }
+    for id in &ids {
+        Writer::forget(&mut p, id, &who(), "r", None, Timestamp(2)).unwrap();
+    }
+    drop(p);
+    let files = raw(dir.path());
+    (0..n)
+        .filter(|i| contains(&files, &format!("zqxscale{i:03}")))
+        .count()
+}
+
+#[test]
+fn at_scale_the_secure_backend_leaves_no_copy_of_any_forgotten_chunk() {
+    for n in [1, 3, 8, 30] {
+        assert_eq!(
+            copies_left_after_forgetting("sqlite-secure", n),
+            0,
+            "{n} chunks"
+        );
+    }
+}
+
+#[test]
+fn plain_and_wal_sqlite_can_keep_stale_fragments_so_they_are_unretrievable_not_erased() {
+    // Measured with PersistAnt 0.18.15: one chunk is fully overwritten, but forgetting several leaves copies of some of
+    // them in pages SQLite split or rebalanced earlier. If this ever reports zero, a better erase exists: re-measure
+    // and only then change the README table.
+    for backend in ["sqlite", "sqlite-full"] {
+        assert_eq!(
+            copies_left_after_forgetting(backend, 1),
+            0,
+            "{backend}: one chunk is fully overwritten"
         );
         assert!(
-            !contains(&after, ONE),
-            "{backend}: version one is still in a file after forget"
+            copies_left_after_forgetting(backend, 3) > 0,
+            "{backend}: stale fragments remain already at three chunks"
         );
         assert!(
-            !contains(&after, TWO),
-            "{backend}: version two is still in a file after forget"
+            copies_left_after_forgetting(backend, 8) > 0,
+            "{backend}: stale fragments remain, so the word erased is not used"
         );
     }
 }
@@ -142,7 +203,8 @@ fn index_then_remove(backend: &str, erase: bool) -> (Vec<u8>, Vec<u8>) {
 }
 
 #[test]
-fn the_search_terms_of_a_forgotten_chunk_are_gone_from_the_index_files_on_every_sqlite_backend() {
+fn the_search_terms_of_a_forgotten_chunk_are_gone_from_the_index_files_on_the_backend_that_guarantees_it()
+ {
     for backend in BACKENDS {
         let (before, after) = index_then_remove(backend, true);
         assert!(
@@ -232,4 +294,83 @@ fn a_new_store_is_chosen_with_secure_delete_when_persistant_offers_it() {
     );
     assert!(chosen.secure_delete());
     assert_eq!(chosen.erasure(), Erasure::Zeroed);
+}
+
+// ---- kill tests for mutation run 5 (changed code since run 4); written after the misses ----
+
+#[test]
+fn finishing_an_interrupted_erasing_counts_exactly_what_it_erased_for_the_store() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("s.db");
+    let mut p = PersistStore::open("sqlite", &Endpoint::Path(path.clone())).unwrap();
+    p.set_crash_before_erasing_for_test(true);
+    let mut ids = Vec::new();
+    for i in 0..3 {
+        let r = Writer::put(
+            &mut p,
+            NewChunk::new(
+                "c",
+                "k",
+                &format!("{ONE} chunk {i} {}", filler()),
+                Origin::User,
+                "t",
+            ),
+            &who(),
+            Timestamp(1),
+        )
+        .unwrap();
+        Writer::supersede(
+            &mut p,
+            &r.id,
+            &format!("{TWO} chunk {i} {}", filler()),
+            Origin::User,
+            "t",
+            &who(),
+            Timestamp(2),
+        )
+        .unwrap();
+        ids.push(r.id);
+    }
+    for id in &ids {
+        Writer::forget(&mut p, id, &who(), "r", None, Timestamp(3)).unwrap();
+    }
+    // Three forgotten chunks of two versions each are waiting to be erased.
+    assert_eq!(p.finish_erasing().unwrap(), 6);
+    assert_eq!(p.finish_erasing().unwrap(), 0, "nothing is left to finish");
+}
+
+#[test]
+fn finishing_an_interrupted_index_removal_counts_exactly_what_it_erased_and_only_where_it_applies()
+{
+    let dir = tempfile::tempdir().unwrap();
+    let endpoint = Endpoint::Path(dir.path().join("i.db"));
+    let mut i = KvTextIndex::open("sqlite", &endpoint).unwrap();
+    i.set_crash_before_erasing_for_test(true);
+    let id = sageant::ChunkId::parse(&"cd".repeat(32)).unwrap();
+    for version in 1..=2 {
+        i.index(
+            &ChunkRef {
+                id: id.clone(),
+                version,
+            },
+            &format!("{ONE} alpha beta gamma {version}"),
+        )
+        .unwrap();
+    }
+    i.remove(&id).unwrap();
+    assert!(
+        contains(&raw(dir.path()), ONE),
+        "control: the terms are still in the file after the interrupted removal"
+    );
+    // Each version has the terms zqxmarkerversionone, alpha, beta, gamma and its own number: 5 postings, 2 versions.
+    assert_eq!(i.finish_erasing().unwrap(), 10);
+    assert_eq!(i.finish_erasing().unwrap(), 0);
+    // A backend that zeroes on every delete has nothing to finish and says so.
+    let secure_dir = tempfile::tempdir().unwrap();
+    let secure = KvTextIndex::open(
+        "sqlite-secure",
+        &Endpoint::Path(secure_dir.path().join("i.db")),
+    )
+    .unwrap();
+    assert_eq!(secure.finish_erasing().unwrap(), 0);
 }

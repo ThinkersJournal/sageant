@@ -183,16 +183,30 @@ fn chosen_from(listing: &persistant::registry::Listing) -> Chosen {
 }
 
 /// How a backend gets rid of the bytes of a forgotten chunk. Never covers copies a file system, snapshot or backup keeps.
+///
+/// Only [`Zeroed`](Self::Zeroed) is a guarantee that the text is gone from the database files (it is checked by reading
+/// the files back after forgetting many chunks). [`EraseOnDelete`](Self::EraseOnDelete) is a best effort: the stored copy
+/// is overwritten, but SQLite can leave stale fragments of a record in the pages around it (measured: copies of forgotten
+/// text remain after forgetting three or more chunks), so a chunk forgotten there is unretrievable, not erased.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Erasure {
     /// The backend has `storage.secure_delete`: content a delete or overwrite frees is zeroed as it is freed.
     Zeroed,
-    /// The backend has `kv.delete_erased`: forgetting erases each stored copy with it while the key is still live (two
-    /// steps; an interrupted forget is finished the next time the store is opened).
+    /// The backend has `kv.delete_erased` but not `storage.secure_delete`: forgetting overwrites each stored copy with it
+    /// while the key is still live (two steps; an interrupted forget is finished the next time the store is opened). A
+    /// best effort, not a guarantee: see the type's documentation.
     EraseOnDelete,
     /// Neither: a forgotten chunk is unretrievable but its freed bytes may stay in the file.
     Unretrievable,
+}
+
+impl Erasure {
+    /// Whether forgetting guarantees the text is gone from the database files, so the word "erased" may be used.
+    #[must_use]
+    pub fn guarantees_erasure(self) -> bool {
+        self == Self::Zeroed
+    }
 }
 
 fn has_capability(listing: &persistant::registry::Listing, capability: &str) -> bool {

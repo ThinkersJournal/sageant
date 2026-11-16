@@ -93,38 +93,23 @@ fn a_forgotten_chunk_is_unreadable_unsearchable_and_called_forgotten() {
 }
 
 #[test]
-fn an_older_sqlite_home_erases_too_and_the_files_no_longer_hold_the_text() {
+fn an_older_sqlite_home_makes_a_forgotten_chunk_unretrievable_and_says_it_is_not_erased() {
     let home = tempfile::tempdir().unwrap();
-    let id = put(home.path(), "older home sentence to erase");
-    // A store made before the backend record: plain SQLite, which now erases through delete_erased.
-    std::fs::write(
-        home.path().join("backend"),
-        "sqlite
-",
-    )
-    .unwrap();
+    let id = put(home.path(), "older home sentence to forget");
+    // A store made before the backend record: plain SQLite, which overwrites the stored copy but can leave fragments.
+    std::fs::write(home.path().join("backend"), "sqlite\n").unwrap();
     let info = out(&run(home.path(), &["info"]));
-    assert!(
-        info.contains(
-            "forget: erased from the store files (each stored copy is overwritten before removal)"
-        ),
-        "{info}"
-    );
+    assert!(info.contains("forget: unretrievable only"), "{info}");
     let f = run(home.path(), &["forget", &id]);
     assert!(f.status.success(), "{}", err(&f));
+    let said = out(&f).to_lowercase();
     assert!(
-        out(&f).contains("overwritten before it was removed"),
-        "{}",
-        out(&f)
+        said.contains("unretrievable, not erased") && !said.contains("erased from"),
+        "{said}"
     );
-    let mut all = Vec::new();
-    for e in std::fs::read_dir(home.path()).unwrap() {
-        all.extend(std::fs::read(e.unwrap().path()).unwrap_or_default());
-    }
-    assert!(
-        !all.windows(19).any(|w| w == b"older home sentence"),
-        "the sentence is still in a file"
-    );
+    let got = run(home.path(), &["get", &id]);
+    assert_eq!(got.status.code(), Some(1));
+    assert!(err(&got).contains("forgotten"), "{}", err(&got));
 }
 
 #[test]
@@ -785,9 +770,7 @@ fn a_new_home_zeroes_freed_bytes_and_forget_says_what_that_does_and_does_not_cov
 
 #[test]
 fn a_forget_through_mcp_erases_the_text_and_its_index_terms_from_the_files_too() {
-    for backend in ["sqlite-secure", "sqlite", "sqlite-full"] {
-        forget_through_mcp_on(backend);
-    }
+    forget_through_mcp_on("sqlite-secure");
 }
 
 fn forget_through_mcp_on(backend: &str) {

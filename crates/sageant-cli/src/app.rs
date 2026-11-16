@@ -144,10 +144,10 @@ fn forget_message(id: &str, erasure: sageant_persistant::Erasure) -> String {
             "forgotten: {id} is erased from the store files (its bytes were zeroed as they were freed). Copies your file system, snapshots or backups keep are not touched."
         ),
         Erasure::EraseOnDelete => format!(
-            "forgotten: {id} is erased from the store files (each stored copy was overwritten before it was removed). Copies your file system, snapshots or backups keep are not touched."
+            "forgotten: {id} is now unretrievable, not erased: its stored copy was overwritten, but this database can leave stale fragments of it in the file. `sageant export`, then `sageant import` into a new home gives you a store that zeroes freed bytes."
         ),
         _ => format!(
-            "forgotten: {id} is now unretrievable. This storage backend cannot erase, so the freed bytes may stay in the file."
+            "forgotten: {id} is now unretrievable, not erased: this storage backend cannot erase, so the freed bytes may stay in the file."
         ),
     }
 }
@@ -157,7 +157,7 @@ fn erasure_summary(erasure: sageant_persistant::Erasure) -> &'static str {
     match erasure {
         Erasure::Zeroed => "erased from the store files (freed bytes are zeroed)",
         Erasure::EraseOnDelete => {
-            "erased from the store files (each stored copy is overwritten before removal)"
+            "unretrievable only (the stored copy is overwritten, but stale fragments can remain)"
         }
         _ => "unretrievable only (this backend cannot erase)",
     }
@@ -681,21 +681,21 @@ mod tests {
     }
 
     #[test]
-    fn the_word_erased_is_used_only_for_backends_that_erase() {
+    fn the_word_erased_is_used_only_for_backends_that_guarantee_it() {
         use sageant_persistant::Erasure;
-        for e in [Erasure::Zeroed, Erasure::EraseOnDelete] {
-            let said = forget_message("abcd", e);
-            assert!(
-                said.contains("erased from the store files") && said.contains("backups"),
-                "{said}"
-            );
-            assert!(erasure_summary(e).starts_with("erased"));
-        }
-        let said = forget_message("abcd", Erasure::Unretrievable);
+        let said = forget_message("abcd", Erasure::Zeroed);
         assert!(
-            said.contains("unretrievable") && !said.contains("erased"),
+            said.contains("erased from the store files") && said.contains("backups"),
             "{said}"
         );
-        assert!(erasure_summary(Erasure::Unretrievable).starts_with("unretrievable"));
+        assert!(erasure_summary(Erasure::Zeroed).starts_with("erased"));
+        for e in [Erasure::EraseOnDelete, Erasure::Unretrievable] {
+            let said = forget_message("abcd", e);
+            assert!(
+                said.contains("unretrievable, not erased") && !said.contains("erased from"),
+                "{said}"
+            );
+            assert!(erasure_summary(e).starts_with("unretrievable"));
+        }
     }
 }
