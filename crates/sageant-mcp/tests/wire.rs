@@ -50,6 +50,15 @@ async fn a_client_sees_ten_tools_and_hostile_text_survives_the_wire_as_data() {
     });
     let client = ().serve(client_io).await.expect("client connects");
 
+    let info = client.peer_info().expect("the server introduced itself");
+    assert!(info.capabilities.tools.is_some(), "it advertises tools");
+    assert!(
+        info.instructions
+            .as_deref()
+            .is_some_and(|i| i.contains("content") && i.contains("no purge")),
+        "{:?}",
+        info.instructions
+    );
     let listed: Vec<String> = client
         .list_all_tools()
         .await

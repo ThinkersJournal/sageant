@@ -429,3 +429,217 @@ fn writes_are_attributed_to_the_configured_actor_and_refused_secrets_name_only_a
     assert!(actors.iter().all(|a| a == "mcp/claude"), "{actors:?}");
     assert!(actors.len() >= 2);
 }
+
+// ---- kill tests for the row 4 / D mutation run (docs/MUTATION.md, run 4); written after the misses ----
+
+/// A store holding one chunk of each origin, plus a corroborated and a contradicted one.
+fn mixed() -> (
+    Tools<MemoryStore, MemoryIndex>,
+    Vec<(String, sageant::ChunkId)>,
+) {
+    use sageant::{LinkKind, NewChunk, Origin, Timestamp};
+    let mut s = MemoryStore::new();
+    let mut ids = Vec::new();
+    for (i, (name, origin)) in [
+        ("User", Origin::User),
+        ("Tool", Origin::Tool),
+        ("Web", Origin::Web),
+        ("Agent", Origin::Agent),
+        ("Model", Origin::Model),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let id = s
+            .put(
+                NewChunk::new(
+                    "c",
+                    "k",
+                    &format!("text {i} {name}"),
+                    origin,
+                    &format!("src{i}"),
+                ),
+                Timestamp(1),
+            )
+            .unwrap()
+            .id;
+        ids.push((name.to_owned(), id));
+    }
+    // User (src0) is corroborated by Web (src2): a different origin class and source. Tool is contradicted by Model.
+    s.link(&ids[0].1, LinkKind::CorroboratedBy, &ids[2].1, Timestamp(2))
+        .unwrap();
+    s.link(&ids[1].1, LinkKind::ContradictedBy, &ids[4].1, Timestamp(2))
+        .unwrap();
+    let t = Tools::new(
+        s,
+        MemoryIndex::default(),
+        Grants::read_only(),
+        Actor::new("mcp", "t"),
+    );
+    (t, ids)
+}
+
+fn listed(t: &Tools<MemoryStore, MemoryIndex>, args: Value) -> Vec<String> {
+    t.call("sageant_list", args).unwrap()["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i["origin"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[test]
+fn list_filters_by_each_origin_and_each_confidence() {
+    let (t, _) = mixed();
+    for name in ["User", "Tool", "Web", "Agent", "Model"] {
+        assert_eq!(
+            listed(&t, json!({"origin": name})),
+            vec![name.to_owned()],
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn an_unknown_origin_or_confidence_is_a_bad_request() {
+    let (t, _) = mixed();
+    assert!(matches!(
+        t.call("sageant_list", json!({"origin": "Nobody"})),
+        Err(ToolError::BadRequest(_))
+    ));
+    assert!(matches!(
+        t.call("sageant_list", json!({"confidence": "Sure"})),
+        Err(ToolError::BadRequest(_))
+    ));
+}
+
+#[test]
+fn list_filters_by_each_confidence() {
+    let (t, ids) = mixed();
+    let by = |c: &str| -> Vec<String> {
+        t.call("sageant_list", json!({"confidence": c})).unwrap()["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| i["id"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    assert_eq!(by("Corroborated"), vec![ids[0].1.as_str().to_owned()]);
+    assert_eq!(by("Contradicted"), vec![ids[1].1.as_str().to_owned()]);
+    assert_eq!(by("Unconfirmed").len(), 3);
+}
+
+#[test]
+fn an_archived_chunk_is_reported_archived_and_the_rest_active() {
+    let t = writable();
+    let a = put(&t, "to archive")["id"].as_str().unwrap().to_owned();
+    let b = put(&t, "stays")["id"].as_str().unwrap().to_owned();
+    t.call("sageant_archive", json!({"id": a, "reason": "r"}))
+        .unwrap();
+    assert_eq!(
+        t.call("sageant_get", json!({"id": a})).unwrap()["status"],
+        "Archived"
+    );
+    assert_eq!(
+        t.call("sageant_get", json!({"id": b})).unwrap()["status"],
+        "Active"
+    );
+    let all = t
+        .call("sageant_list", json!({"include_archived": true}))
+        .unwrap();
+    let status = |id: &str| {
+        all["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["id"] == id)
+            .unwrap()["status"]
+            .clone()
+    };
+    assert_eq!(status(&a), "Archived");
+    assert_eq!(status(&b), "Active");
+}
+
+fn limited(tokens: usize) -> Tools<MemoryStore, MemoryIndex> {
+    Tools::new(
+        MemoryStore::new(),
+        MemoryIndex::default(),
+        Grants::writable(["notes"]),
+        Actor::new("mcp", "c"),
+    )
+    .with_limits(Limits::max_tokens(tokens))
+}
+
+#[test]
+fn a_single_chunk_response_never_exceeds_the_budget() {
+    let t = limited(100); // 400 bytes
+    let big = "word ".repeat(400);
+    let id = put(&t, &big)["id"].as_str().unwrap().to_owned();
+    let got = t.call("sageant_get", json!({"id": id})).unwrap();
+    let size = serde_json::to_string(&got).unwrap().len();
+    assert!(
+        size <= 400,
+        "the whole envelope is {size} bytes, over the 400-byte budget"
+    );
+    assert!(
+        got["content"].as_str().unwrap().len() > 100,
+        "but it still carries a useful amount of text"
+    );
+}
+
+#[test]
+fn search_and_history_cap_each_item_at_half_the_budget_and_the_total_at_the_budget() {
+    let t = limited(150); // 600 bytes
+    let big = "owls ".repeat(300);
+    let id = put(&t, &big)["id"].as_str().unwrap().to_owned();
+    t.call(
+        "sageant_supersede",
+        json!({"id": id, "content": format!("{big} owls again")}),
+    )
+    .unwrap();
+    let hits = t.call("sageant_search", json!({"query": "owls"})).unwrap();
+    let hits = hits["hits"].as_array().unwrap();
+    assert_eq!(hits.len(), 1, "one current version, and it fits: {hits:?}");
+    let one = serde_json::to_string(&hits[0]).unwrap().len();
+    assert!(
+        one <= 300 + 80,
+        "an item is capped near half the budget, got {one}"
+    );
+    assert!(one > 150, "and is not cut to nothing, got {one}");
+    let h = t.call("sageant_history", json!({"id": id})).unwrap();
+    let total = serde_json::to_string(&h["versions"]).unwrap().len();
+    assert!(total <= 600, "history is capped at the budget, got {total}");
+    assert!(!h["versions"].as_array().unwrap().is_empty());
+}
+
+#[test]
+fn a_listing_stops_exactly_when_the_next_item_would_not_fit() {
+    // Same-sized items; the budget fits two of them and one byte short of three.
+    let probe = limited(10_000);
+    for i in 0..5 {
+        put(&probe, &format!("item {i}"));
+    }
+    let all = probe.call("sageant_list", json!({})).unwrap();
+    let sizes: Vec<usize> = all["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| serde_json::to_string(v).unwrap().len() + 1)
+        .collect();
+    let two: usize = sizes[..2].iter().sum();
+    // Tokens are four bytes each, so pick the smallest token count whose bytes cover two items.
+    let tokens = two.div_ceil(4);
+    let bytes = tokens * 4;
+    let t = limited(tokens);
+    for i in 0..5 {
+        put(&t, &format!("item {i}"));
+    }
+    let got = t.call("sageant_list", json!({})).unwrap();
+    let kept = got["items"].as_array().unwrap().len();
+    let fits = (1..=sizes.len())
+        .filter(|n| sizes[..*n].iter().sum::<usize>() <= bytes)
+        .max()
+        .unwrap_or(0);
+    assert_eq!(kept, fits, "budget {bytes}, item sizes {sizes:?}");
+    assert_eq!(got["truncated"], kept < 5);
+}

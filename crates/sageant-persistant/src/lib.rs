@@ -166,6 +166,14 @@ impl Chosen {
     }
 }
 
+fn chosen_from(listing: &persistant::registry::Listing) -> Chosen {
+    Chosen {
+        backend: listing.id,
+        why: listing.why(),
+        secure_delete: has_secure_delete(listing),
+    }
+}
+
 fn has_secure_delete(listing: &persistant::registry::Listing) -> bool {
     listing
         .preferred
@@ -228,11 +236,7 @@ pub(crate) fn choose_backend(endpoint: &Endpoint) -> Result<Chosen, Error> {
     };
     let listings = persistant::registry::providers(&storage_needs()).map_err(|e| backend(&e))?;
     if let Some(listing) = listings.iter().find(|l| l.endpoint == wanted) {
-        return Ok(Chosen {
-            backend: listing.id,
-            why: listing.why(),
-            secure_delete: has_secure_delete(listing),
-        });
+        return Ok(chosen_from(listing));
     }
     Err(Error::Backend(format!(
         "no backend PersistAnt ranks for this need accepts that kind of endpoint (candidates: {})",
@@ -1414,5 +1418,76 @@ impl Writer for PersistStore {
         at: Timestamp,
     ) -> Result<(), Error> {
         Self::purge(self, id, authority, at)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn listing(id: &str) -> persistant::registry::Listing {
+        persistant::registry::providers(&storage_needs())
+            .unwrap()
+            .into_iter()
+            .find(|l| l.id == id)
+            .unwrap_or_else(|| panic!("{id} is offered"))
+    }
+
+    #[test]
+    fn a_chosen_backend_carries_its_id_its_reasons_and_whether_it_zeroes_freed_bytes() {
+        let secure = chosen_from(&listing("sqlite-secure"));
+        assert_eq!(secure.backend(), "sqlite-secure");
+        assert!(secure.secure_delete());
+        assert!(
+            secure.why().iter().any(|l| l.contains("durability")),
+            "{:?}",
+            secure.why()
+        );
+        let plain = chosen_from(&listing("sqlite"));
+        assert_eq!(plain.backend(), "sqlite");
+        assert!(
+            !plain.secure_delete(),
+            "plain sqlite does not zero freed bytes"
+        );
+        assert_ne!(plain.why(), secure.why());
+    }
+
+    #[test]
+    fn explain_backend_gives_persistants_reasons_for_a_known_id_and_an_error_for_an_unknown_one() {
+        let lines = explain_backend("sqlite-secure").unwrap();
+        assert!(lines.iter().any(|l| l.contains("durability")), "{lines:?}");
+        assert!(lines.iter().all(|l| !l.is_empty()));
+        assert_eq!(lines, listing("sqlite-secure").why());
+        let e = explain_backend("no-such-backend").unwrap_err().to_string();
+        assert!(
+            e.contains("no-such-backend") && e.contains("offered"),
+            "{e}"
+        );
+    }
+
+    #[test]
+    fn only_a_path_or_nothing_is_chosen_for_and_each_other_kind_is_told_why_not() {
+        let none = choose_backend(&Endpoint::None).unwrap_err().to_string();
+        assert!(
+            none.contains("accepts that kind of endpoint"),
+            "nothing: {none}"
+        );
+        let url = choose_backend(&Endpoint::url_env("NO_SUCH_VARIABLE"))
+            .unwrap_err()
+            .to_string();
+        assert!(url.contains("server endpoint"), "url: {url}");
+        assert!(choose_backend(&Endpoint::Path("x.db".into())).is_ok());
+    }
+
+    #[test]
+    fn a_generation_counts_up_by_one_and_an_unreadable_one_is_corrupt() {
+        assert_eq!(bumped(None).unwrap(), b"1");
+        assert_eq!(bumped(Some(&b"1".to_vec())).unwrap(), b"2");
+        assert_eq!(bumped(Some(&b"41".to_vec())).unwrap(), b"42");
+        assert!(matches!(
+            bumped(Some(&b"x".to_vec())),
+            Err(Error::Corrupt(_))
+        ));
+        assert!(matches!(bumped(Some(&vec![0xff])), Err(Error::Corrupt(_))));
     }
 }

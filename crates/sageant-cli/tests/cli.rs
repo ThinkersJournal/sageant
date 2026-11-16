@@ -640,6 +640,11 @@ fn add_never_reads_outside_the_folder_through_a_link_to_another_directory() {
         "the test needs to be able to make a directory link (symlink or junction); it could not, so it proves nothing"
     );
     let o = run(home.path(), &["add", notes.path().to_str().unwrap()]);
+    assert!(
+        err(&o).contains("skipped: 1 links, 0 outside the folder"),
+        "a directory link is skipped and counted as a link: {}",
+        err(&o)
+    );
     assert!(o.status.success(), "{}", err(&o));
     assert!(
         out(&run(home.path(), &["search", "TOPSECRETMARKER"]))
@@ -785,4 +790,271 @@ fn a_forget_through_mcp_erases_the_text_and_its_index_terms_from_the_files_too()
         !has(&raw()),
         "the text or its index terms are still in a store file after a forget through MCP"
     );
+}
+
+// ---- kill tests for the row 4 / D mutation run (docs/MUTATION.md, run 4) ----
+// These were written after the run named the surviving mutants, so there was no red state; the recorded rerun of just
+// those mutants is the evidence they are now caught.
+
+#[test]
+fn the_default_home_comes_from_the_platform_data_directory_when_nothing_is_set() {
+    let tmp = tempfile::tempdir().unwrap();
+    let base = tmp.path().to_str().unwrap().to_owned();
+    let o = Command::new(env!("CARGO_BIN_EXE_sageant"))
+        .arg("where")
+        .env_remove("SAGEANT_HOME")
+        .env("HOME", &base)
+        .env("XDG_DATA_HOME", &base)
+        .env("LOCALAPPDATA", &base)
+        .env("APPDATA", &base)
+        .env("USERPROFILE", &base)
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    assert!(o.status.success(), "{}", err(&o));
+    let shown = out(&o);
+    let shown = shown.trim();
+    assert!(shown.starts_with(&base), "{shown} should be under {base}");
+    assert!(shown.ends_with("sageant"), "{shown}");
+    // With the variables empty there is nowhere to put it, and the error says how to choose a home.
+    let none = Command::new(env!("CARGO_BIN_EXE_sageant"))
+        .arg("where")
+        .env_remove("SAGEANT_HOME")
+        .env("HOME", "")
+        .env("XDG_DATA_HOME", "")
+        .env("LOCALAPPDATA", "")
+        .env("APPDATA", "")
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    assert_eq!(none.status.code(), Some(1));
+    assert!(err(&none).contains("SAGEANT_HOME"), "{}", err(&none));
+}
+
+#[test]
+fn a_listing_cuts_a_long_text_after_sixty_characters_and_only_then() {
+    let home = tempfile::tempdir().unwrap();
+    let sixty = "a".repeat(60);
+    let sixty_one = format!("{sixty}b");
+    let id60 = put(home.path(), &sixty);
+    let id61 = put(home.path(), &sixty_one);
+    let list = out(&run(home.path(), &["list"]));
+    let text_of = |id: &str| {
+        list.lines()
+            .find(|l| l.starts_with(id))
+            .and_then(|l| l.split("v1  ").last())
+            .unwrap_or("")
+            .to_owned()
+    };
+    assert_eq!(
+        text_of(&id60),
+        sixty,
+        "sixty characters are shown whole:
+{list}"
+    );
+    assert_eq!(
+        text_of(&id61),
+        format!("{sixty}..."),
+        "sixty-one are cut:
+{list}"
+    );
+}
+
+#[test]
+fn reindex_reports_how_many_versions_it_indexed_and_search_heals_a_missing_index() {
+    let home = tempfile::tempdir().unwrap();
+    put(home.path(), "one searchable note");
+    put(home.path(), "two searchable notes");
+    put(home.path(), "three searchable notes");
+    let r = run(home.path(), &["reindex"]);
+    assert!(r.status.success(), "{}", err(&r));
+    assert!(out(&r).contains("indexed 3 chunk versions"), "{}", out(&r));
+    // No index at all: a search rebuilds it from the store.
+    std::fs::remove_file(home.path().join("index.db")).unwrap();
+    assert_eq!(
+        out(&run(home.path(), &["search", "searchable"]))
+            .lines()
+            .count(),
+        3
+    );
+    // An empty store has nothing to rebuild and finds nothing (and is not an error).
+    let empty = tempfile::tempdir().unwrap();
+    let none = run(empty.path(), &["search", "anything"]);
+    assert!(none.status.success(), "{}", err(&none));
+    assert!(out(&none).trim().is_empty());
+    let zero = run(empty.path(), &["reindex"]);
+    assert!(
+        out(&zero).contains("indexed 0 chunk versions"),
+        "{}",
+        out(&zero)
+    );
+}
+
+#[test]
+fn only_archived_chunks_are_marked_archived_in_a_full_listing() {
+    let home = tempfile::tempdir().unwrap();
+    let kept = put(home.path(), "a kept note");
+    let gone = put(home.path(), "an archived note");
+    assert!(run(home.path(), &["archive", &gone]).status.success());
+    let list = out(&run(home.path(), &["list", "--all"]));
+    let line = |id: &str| list.lines().find(|l| l.contains(id)).unwrap().to_owned();
+    assert!(line(&gone).contains("[archived]"), "{list}");
+    assert!(!line(&kept).contains("[archived]"), "{list}");
+}
+
+#[test]
+fn every_origin_survives_an_export_and_import() {
+    let a = tempfile::tempdir().unwrap();
+    let b = tempfile::tempdir().unwrap();
+    let mut records = vec!["{\"sageant_export\":1}".to_owned()];
+    let mut ids = Vec::new();
+    for (i, origin) in ["User", "Tool", "Web", "Agent", "Model"].iter().enumerate() {
+        let text = format!("note number {i} from {origin}");
+        let src = tempfile::tempdir().unwrap();
+        let id = put(src.path(), &text);
+        ids.push((id.clone(), *origin));
+        records.push(
+            serde_json::json!({"type":"chunk","id":id,"version":1,"collection":"notes","kind":"note","content":text,"origin":origin,"source":"s","status":"Active","created_at":i + 1})
+                .to_string(),
+        );
+    }
+    let file = a.path().join("origins.jsonl");
+    std::fs::write(&file, records.join("\n")).unwrap();
+    let imp = run(b.path(), &["import", file.to_str().unwrap()]);
+    assert!(imp.status.success(), "{}", err(&imp));
+    assert!(
+        err(&imp).contains("imported 5 chunks (5 versions), 0 links; skipped 0"),
+        "{}",
+        err(&imp)
+    );
+    for (id, origin) in ids {
+        let shown = out(&run(b.path(), &["get", &id[..8]]));
+        assert!(
+            shown.contains(&format!("origin: {origin}")),
+            "{origin}:\n{shown}"
+        );
+    }
+}
+
+#[test]
+fn import_and_export_report_exact_counts_and_a_second_import_counts_what_it_skips() {
+    let a = tempfile::tempdir().unwrap();
+    let b = tempfile::tempdir().unwrap();
+    let one = put(a.path(), "first exported note");
+    let two = put(a.path(), "second exported note");
+    assert!(
+        run(a.path(), &["link", &one, "Related", &two])
+            .status
+            .success()
+    );
+    let ex = run(
+        a.path(),
+        &[
+            "export",
+            "--out",
+            a.path().join("e.jsonl").to_str().unwrap(),
+        ],
+    );
+    assert!(
+        err(&ex).contains("exported 3 records"),
+        "2 chunks and 1 link: {}",
+        err(&ex)
+    );
+    let file = a.path().join("e.jsonl");
+    let first = run(b.path(), &["import", file.to_str().unwrap()]);
+    assert!(
+        err(&first).contains("imported 2 chunks (2 versions), 1 links; skipped 0"),
+        "{}",
+        err(&first)
+    );
+    let again = run(b.path(), &["import", file.to_str().unwrap()]);
+    assert!(
+        err(&again).contains("imported 0 chunks (0 versions), 0 links; skipped 3"),
+        "{}",
+        err(&again)
+    );
+}
+
+#[test]
+fn add_reports_exact_counts_for_each_kind_of_skip() {
+    let home = tempfile::tempdir().unwrap();
+    let notes = tempfile::tempdir().unwrap();
+    write(&notes.path().join("one.txt"), "first note");
+    write(&notes.path().join("sub/two.md"), "second note");
+    write(&notes.path().join("big.txt"), &"word ".repeat(300));
+    write(&notes.path().join("empty.txt"), "   ");
+    write(&notes.path().join("skip.rs"), "fn main() {}");
+    std::fs::write(notes.path().join("bad.txt"), [0xff, 0xfe]).unwrap();
+    let first = run(
+        home.path(),
+        &["add", notes.path().to_str().unwrap(), "--max-bytes", "1000"],
+    );
+    assert!(first.status.success(), "{}", err(&first));
+    assert!(
+        err(&first).contains("added 2 (0 already present); skipped: 0 links, 0 outside the folder, 1 too large, 1 unreadable, 2 other files"),
+        "{}",
+        err(&first)
+    );
+    let again = run(
+        home.path(),
+        &["add", notes.path().to_str().unwrap(), "--max-bytes", "1000"],
+    );
+    assert!(
+        err(&again).contains("added 0 (2 already present)"),
+        "{}",
+        err(&again)
+    );
+    // A file of exactly the limit is taken; one byte over is not.
+    let edge = tempfile::tempdir().unwrap();
+    write(&edge.path().join("exact.txt"), &"x".repeat(10));
+    write(&edge.path().join("over.txt"), &"y".repeat(11));
+    let o = run(
+        home.path(),
+        &["add", edge.path().to_str().unwrap(), "--max-bytes", "10"],
+    );
+    assert!(
+        err(&o).contains("added 1 ") && err(&o).contains("1 too large"),
+        "{}",
+        err(&o)
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn add_counts_a_skipped_link() {
+    let home = tempfile::tempdir().unwrap();
+    let notes = tempfile::tempdir().unwrap();
+    write(&notes.path().join("a.txt"), "note");
+    std::os::unix::fs::symlink(notes.path().join("a.txt"), notes.path().join("ln.txt")).unwrap();
+    let o = run(home.path(), &["add", notes.path().to_str().unwrap()]);
+    assert!(err(&o).contains("1 links"), "{}", err(&o));
+}
+
+#[test]
+fn a_write_is_attributed_to_the_user_named_by_the_environment() {
+    use persistant::registry::Endpoint;
+    use sageant_persistant::PersistStore;
+    let actor_for = |user: &str, username: &str| {
+        let home = tempfile::tempdir().unwrap();
+        let o = Command::new(env!("CARGO_BIN_EXE_sageant"))
+            .args(["put", "who wrote this"])
+            .env("SAGEANT_HOME", home.path())
+            .env("USER", user)
+            .env("USERNAME", username)
+            .stdin(Stdio::null())
+            .output()
+            .unwrap();
+        assert!(o.status.success(), "{}", err(&o));
+        let backend = std::fs::read_to_string(home.path().join("backend")).unwrap();
+        let store = PersistStore::open(
+            backend.trim(),
+            &Endpoint::Path(home.path().join("store.db")),
+        )
+        .unwrap();
+        let log = store.audit().unwrap();
+        log[0].actor().to_owned()
+    };
+    assert_eq!(actor_for("alice", "bob"), "cli/alice");
+    assert_eq!(actor_for("", "bob"), "cli/bob");
+    assert_eq!(actor_for("", ""), "cli/user");
 }
