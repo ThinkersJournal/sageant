@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.28
+
+- CI only: the advisory Portfolio job moves to the CodeRipper 0.47.5 workflow (`c72a6e0`). There is no `.coderipper.toml` and no old rule name in this repo, so the rule-id migration tool reports nothing to migrate.
+
 ## 0.3.27
 
 - Docs only: HANDOFF.md rewritten to current state (the committed text was the stale PAUSED one). No code change.
