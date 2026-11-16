@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.26
+
+- CI only: the `registry install smoke` pin moves from 0.3.19 to the published 0.3.24.
+
 ## 0.3.24
 
 - Repin `persistant ~0.18.23` (fixes a spurious `Corrupt` from the text-index totals under concurrent writers). **0.3.24 is the published bundle that carries everything in 0.3.20 to 0.3.23 below** (0.3.20 to 0.3.23 were never published on their own).
