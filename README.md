@@ -38,19 +38,17 @@ them all.
 ## Removing things
 
 - **archive** keeps a chunk but takes it out of search and listings (`sageant list --all` shows it).
-- **forget** removes a chunk's content and leaves a minimal tombstone. Whether the bytes are *erased* or only made
-  *unretrievable* depends on the storage backend; `sageant info` says which you have (`secure delete: yes` or `no`) and
-  this table is the single source for what each means (the other docs link here rather than restate it):
+- **forget** removes a chunk's content and leaves a minimal tombstone. `sageant info` says how your backend gets rid of
+  the bytes, and this table is the single source for what each means (the other docs link here rather than restate it):
 
   | Backend (PersistAnt id) | Who has it | What `forget` does | Checked by |
   |---|---|---|---|
-  | `sqlite-secure` | a new store, when PersistAnt offers it | **erased from the store files**: freed bytes are zeroed, for the chunk's text and its search terms | tests that read the raw files back after a forget (`crates/sageant-persistant/tests/erase.rs`, and a forget through MCP in the CLI tests) |
-  | `sqlite` | a store made before this | **unretrievable only**: freed pages may keep the old bytes until the file is compacted | the same tests, as the control: the text IS still in the file |
-  | `sqlite-full` (WAL) and any other backend that qualifies | only if you name it | **unretrievable only** (no `storage.secure_delete`) | not claimed |
+  | `sqlite-secure` | a new store | **erased from the store files** in one atomic step: freed bytes are zeroed, for the chunk's text and its search terms | tests that read every database file back after a forget (`crates/sageant-persistant/tests/erase.rs`, and a forget through a real MCP session in the CLI tests) |
+  | `sqlite`, `sqlite-full` (WAL) | an older store, or one you name | **erased from the store files** in two steps: the chunk becomes unreadable at once (one atomic step), then each stored copy is overwritten with PersistAnt's `kv.delete_erased` before it is removed. A step interrupted in between is finished the next time the store is opened; until then the bytes are still in the file but nothing can read them | the same tests, including a chunk that was archived and superseded first (which rewrites its records), a WAL database, a simulated crash between the two steps, and a control with erasing switched off that DOES leave the text |
+  | any other backend that qualifies | only if you name it | **unretrievable only**: the freed bytes may stay in the file | not claimed |
   | `memory`, `fs` | cannot be used: PersistAnt records no atomic batches for them | n/a | n/a |
 
-  None of them reaches copies your file system, snapshots, backups or an SSD's wear levelling keep. To move an old
-  store to a secure one: `sageant export`, then `sageant import` into a new home.
+  None of them reaches copies your file system, snapshots, backups or an SSD's wear levelling keep.
 - **purge** removes everything about a chunk, tombstone included. It needs you at a terminal to type a confirmation,
   and no MCP tool can do it.
 

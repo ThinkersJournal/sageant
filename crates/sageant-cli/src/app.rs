@@ -135,6 +135,34 @@ fn now() -> Timestamp {
     Timestamp(ms)
 }
 
+/// What `forget` did, in the words its backend has earned (the README table is the single source): "erased" only where
+/// the raw store files were read back in the tests and do not hold the text.
+fn forget_message(id: &str, erasure: sageant_persistant::Erasure) -> String {
+    use sageant_persistant::Erasure;
+    match erasure {
+        Erasure::Zeroed => format!(
+            "forgotten: {id} is erased from the store files (its bytes were zeroed as they were freed). Copies your file system, snapshots or backups keep are not touched."
+        ),
+        Erasure::EraseOnDelete => format!(
+            "forgotten: {id} is erased from the store files (each stored copy was overwritten before it was removed). Copies your file system, snapshots or backups keep are not touched."
+        ),
+        _ => format!(
+            "forgotten: {id} is now unretrievable. This storage backend cannot erase, so the freed bytes may stay in the file."
+        ),
+    }
+}
+
+fn erasure_summary(erasure: sageant_persistant::Erasure) -> &'static str {
+    use sageant_persistant::Erasure;
+    match erasure {
+        Erasure::Zeroed => "erased from the store files (freed bytes are zeroed)",
+        Erasure::EraseOnDelete => {
+            "erased from the store files (each stored copy is overwritten before removal)"
+        }
+        _ => "unretrievable only (this backend cannot erase)",
+    }
+}
+
 fn snippet(text: &str) -> String {
     let flat: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
     if flat.chars().count() > 60 {
@@ -309,23 +337,9 @@ pub fn run(home: Option<PathBuf>, command: Command) -> Result<(), Failure> {
             let actor = app.actor.clone();
             Writer::forget(&mut app.store, &id, &actor, &reason, None, now())?;
             app.retriever.index_mut().remove(&id)?;
-            // "Erased" is claimed only for a backend that has secure delete (the raw store files were read back in the
-            // tests); anywhere else the bytes may remain in freed pages, so the word is "unretrievable".
-            if sageant_persistant::backend_secure_delete(&app.backend).unwrap_or(false) {
-                writeln!(
-                    out,
-                    "forgotten: {} is erased from the store file (its bytes were zeroed as they were freed). Copies your file system, snapshots or backups keep are not touched.",
-                    id.as_str()
-                )
-                .ok();
-            } else {
-                writeln!(
-                    out,
-                    "forgotten: {} is now unretrievable. This storage backend does not zero freed bytes, so they may stay in the file; `sageant export` then `sageant import` into a new home gives you one that does.",
-                    id.as_str()
-                )
-                .ok();
-            }
+            let erasure = sageant_persistant::backend_erasure(&app.backend)
+                .unwrap_or(sageant_persistant::Erasure::Unretrievable);
+            writeln!(out, "{}", forget_message(id.as_str(), erasure)).ok();
             Ok(())
         }
         Command::Purge { id } => purge(&mut app, &id),
@@ -339,8 +353,9 @@ pub fn run(home: Option<PathBuf>, command: Command) -> Result<(), Failure> {
             let (backend, _) = backend_for(&app.home)?;
             writeln!(out, "data: {}", app.home.display()).ok();
             writeln!(out, "backend: {backend}").ok();
-            let secure = sageant_persistant::backend_secure_delete(&backend).unwrap_or(false);
-            writeln!(out, "secure delete: {}", if secure { "yes" } else { "no" }).ok();
+            let erasure = sageant_persistant::backend_erasure(&backend)
+                .unwrap_or(sageant_persistant::Erasure::Unretrievable);
+            writeln!(out, "forget: {}", erasure_summary(erasure)).ok();
             match sageant_persistant::explain_backend(&backend) {
                 Ok(lines) => {
                     for line in lines {
@@ -663,5 +678,24 @@ mod tests {
         let last = log.last().unwrap();
         assert_eq!(last.action(), sageant::Action::Purge);
         assert!(last.actor().starts_with("typed-confirmation:cli/"));
+    }
+
+    #[test]
+    fn the_word_erased_is_used_only_for_backends_that_erase() {
+        use sageant_persistant::Erasure;
+        for e in [Erasure::Zeroed, Erasure::EraseOnDelete] {
+            let said = forget_message("abcd", e);
+            assert!(
+                said.contains("erased from the store files") && said.contains("backups"),
+                "{said}"
+            );
+            assert!(erasure_summary(e).starts_with("erased"));
+        }
+        let said = forget_message("abcd", Erasure::Unretrievable);
+        assert!(
+            said.contains("unretrievable") && !said.contains("erased"),
+            "{said}"
+        );
+        assert!(erasure_summary(Erasure::Unretrievable).starts_with("unretrievable"));
     }
 }

@@ -154,7 +154,7 @@ guarantee the backend gave (`Removed::Unretrievable` or `Removed::Erased`). Reco
 docs and the tombstone say "unretrievable", never "erased", and the row 3 test asserts only what the in-memory store
 can truly claim.
 
-*Update 2026-11-15 (0.3.15):* PersistAnt 0.18.12 has `storage.secure_delete` (backend `sqlite-secure`) and the raw-file read-back tests exist (`crates/sageant-persistant/tests/erase.rs`), so "erased from the store file" is now claimed, only for a backend that declares the capability and never for copies a file system, snapshot or backup keeps. The wording is chosen by the command line from `backend_secure_delete`, not by a `Removed::Erased` variant (the core stays store-agnostic); everywhere else it stays "unretrievable".
+*Update 2026-11-15 (0.3.15):* PersistAnt 0.18.12 has `storage.secure_delete` (backend `sqlite-secure`) and the raw-file read-back tests exist (`crates/sageant-persistant/tests/erase.rs`), so "erased from the store file" is now claimed, only for a backend that declares the capability and never for copies a file system, snapshot or backup keeps. *Update (0.3.17):* PersistAnt 0.18.15's `kv.delete_erased` reaches the blocking handle, so `sqlite` and `sqlite-full` (WAL) erase too, in two steps (see the README table, the single source). The wording is chosen by the command line from `backend_secure_delete`, not by a `Removed::Erased` variant (the core stays store-agnostic); everywhere else it stays "unretrievable".
 
 ## 7. Testing contract (stated now so the design is testable)
 
