@@ -374,6 +374,12 @@ impl PersistStore {
             .store(on, std::sync::atomic::Ordering::SeqCst);
     }
 
+    /// Test only: whether forgets still ask for an overwriting delete.
+    #[doc(hidden)]
+    pub fn overwrites_on_forget_for_test(&self) -> bool {
+        self.overwrite.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
     fn open_with(backend_id: &str, endpoint: &Endpoint, overwrite: bool) -> Result<Self, Error> {
         let kv = open_kv(backend_id, endpoint)?;
         Ok(Self {

@@ -228,8 +228,16 @@ fn a_backend_that_refuses_erased_batches_still_forgets_and_remembers_not_to_ask_
         Timestamp(1),
     )
     .unwrap();
+    assert!(
+        p.overwrites_on_forget_for_test(),
+        "a plain sqlite store starts out asking for overwriting deletes"
+    );
     p.refuse_erased_batches_for_test(true);
     Writer::forget(&mut p, &a.id, &who(), "r", None, Timestamp(2)).unwrap();
+    assert!(
+        !p.overwrites_on_forget_for_test(),
+        "after the refusal it uses plain deletes from now on"
+    );
     assert_eq!(p.get(&a.id).err(), Some(Error::Forgotten));
     // It switched itself to plain deletes: the next forget never asks for an erased batch (so the refusal never fires).
     p.refuse_erased_batches_for_test(false);
@@ -251,10 +259,26 @@ fn a_backend_that_refuses_erased_batches_still_forgets_and_remembers_not_to_ask_
         "alpha beta",
     )
     .unwrap();
+    assert!(ix.overwrites_on_remove_for_test());
     ix.refuse_erased_batches_for_test(true);
+    // A batch that asks for no overwrite is not refused by the simulation, so indexing still works.
+    let other = ChunkId::parse(&"12".repeat(32)).unwrap();
+    ix.index(
+        &ChunkRef {
+            id: other.clone(),
+            version: 1,
+        },
+        "gamma delta",
+    )
+    .unwrap();
     ix.remove(&id).unwrap();
+    assert!(!ix.overwrites_on_remove_for_test());
     assert!(ix.postings("alpha").unwrap().is_empty());
-    assert_eq!(ix.stats().unwrap().docs, 0);
+    assert_eq!(
+        ix.stats().unwrap().docs,
+        1,
+        "only the other document is left"
+    );
 }
 
 #[test]

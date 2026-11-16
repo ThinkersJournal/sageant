@@ -171,3 +171,21 @@ and `sqlite-full` erase was wrong (SQLite leaves stale fragments after page spli
 table. The claim is withdrawn and a test pins the measured limit.
 
 Limits: diff-scoped, so unchanged code was not re-run; written after the survivors were known; Windows only.
+
+# Mutation run 6 (the atomic erased forget, 0.3.19)
+
+`cargo mutants --all-features --no-shuffle -j 2 --workspace --in-diff <changes against main bcc27f8>` (Windows). **Diff-scoped, not a
+full run:** only the lines changed by the move to `BatchOp::DeleteErased` and PersistAnt 0.18.21. 41 mutants, 10 minutes: **22
+caught, 6 missed, 13 unviable.** A re-run of the missed functions (9 mutants, 5 minutes) after the kill tests below: 7 caught, 2 missed.
+
+| Missed | What was untested | Kill test |
+|---|---|---|
+| `refuse_erased_batches_for_test -> ()` (store, index) | the fallback tests passed even if the refusal was never simulated | `overwrites_on_forget_for_test` / `overwrites_on_remove_for_test`: a plain `sqlite` store starts out asking for overwriting deletes and after the refusal uses plain ones |
+| `KvTextIndex::open`, `!=` to `==` | the overwrite default on a backend that does not zero | the index at 3 documents is fully overwritten on `sqlite` and `sqlite-full` (it is not with the overwrite off) |
+| `KvTextIndex::batch`, `&&` to `||` | the simulated refusal fired for batches that ask for no overwrite | indexing a document while refusals are simulated still succeeds |
+
+**Still missed, equivalent:** `match guard erased -> true` in `PersistStore::batch` and `KvTextIndex::batch` (two mutants): the fallback arm is
+guarded by "this batch asked for an overwrite"; with the guard always true, a batch that asked for none and failed as unsupported would be
+retried with the same plain operations and fail the same way.
+
+Limits: diff-scoped; kill tests written after the survivors were known; Windows only.

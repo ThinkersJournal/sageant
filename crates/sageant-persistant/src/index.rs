@@ -106,6 +106,12 @@ impl KvTextIndex {
             .store(on, std::sync::atomic::Ordering::SeqCst);
     }
 
+    /// Test only: whether removals still ask for an overwriting delete.
+    #[doc(hidden)]
+    pub fn overwrites_on_remove_for_test(&self) -> bool {
+        self.overwrite.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
     fn open_with(backend_id: &str, endpoint: &Endpoint, overwrite: bool) -> Result<Self, Error> {
         Ok(Self {
             kv: open_kv(backend_id, endpoint)?,
