@@ -4,7 +4,7 @@
 
 use persistant::registry::Endpoint;
 use sageant::{ChunkId, Error, LinkKind, NewChunk, Origin, Reader, Timestamp};
-use sageant_persistant::{KvTextIndex, PersistStore};
+use sageant_persistant::{PersistStore, PersistTextIndex};
 
 fn open(dir: &std::path::Path) -> PersistStore {
     PersistStore::open("sqlite", &Endpoint::Path(dir.join("s.db"))).unwrap()
@@ -25,10 +25,10 @@ fn debug_output_names_the_store_and_never_shows_content() {
         "{shown}"
     );
     assert!(!shown.contains("private"));
-    let kv = KvTextIndex::open("sqlite", &Endpoint::Path(dir.path().join("i.db"))).unwrap();
+    let kv = PersistTextIndex::open("sqlite", &Endpoint::Path(dir.path().join("i.db"))).unwrap();
     let shown = format!("{kv:?}");
     assert!(
-        shown.contains("KvTextIndex") && shown.contains("backend"),
+        shown.contains("PersistTextIndex") && shown.contains("backend"),
         "{shown}"
     );
 }

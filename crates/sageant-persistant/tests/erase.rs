@@ -8,11 +8,8 @@
 //! that shows the test can see).
 
 use persistant::registry::Endpoint;
-use sageant::{Actor, ChunkId, ChunkRef, Error, NewChunk, Origin, Status, Timestamp, Writer};
-use sageant_lexical::TextIndex;
-use sageant_persistant::{
-    Erasure, KvTextIndex, PersistStore, backend_erasure, backend_secure_delete,
-};
+use sageant::{Actor, Error, NewChunk, Origin, Status, Timestamp, Writer};
+use sageant_persistant::{Erasure, PersistStore, backend_erasure, backend_secure_delete};
 
 const ONE: &str = "zqxmarkerversionone";
 const TWO: &str = "zqxmarkerversiontwo";
@@ -126,47 +123,10 @@ fn store_chunks_left(backend: &str, n: usize, erase: bool) -> usize {
         .count()
 }
 
-/// Index `n` documents and remove them all; how many still have their terms in the files?
-fn index_docs_left(backend: &str, n: usize, erase: bool) -> usize {
-    let dir = tempfile::tempdir().unwrap();
-    let endpoint = Endpoint::Path(dir.path().join("i.db"));
-    let mut ix = if erase {
-        KvTextIndex::open(backend, &endpoint).unwrap()
-    } else {
-        KvTextIndex::open_without_erasing_for_test(backend, &endpoint).unwrap()
-    };
-    let ids: Vec<ChunkId> = (0..n)
-        .map(|i| ChunkId::parse(&format!("{:064x}", i + 1)).unwrap())
-        .collect();
-    for (i, id) in ids.iter().enumerate() {
-        ix.index(
-            &ChunkRef {
-                id: id.clone(),
-                version: 1,
-            },
-            &format!("zqxterm{i:03} alpha beta gamma delta"),
-        )
-        .unwrap();
-    }
-    for id in &ids {
-        ix.remove(id).unwrap();
-    }
-    drop(ix);
-    let files = raw(dir.path());
-    (0..n)
-        .filter(|i| contains(&files, &format!("zqxterm{i:03}")))
-        .count()
-}
-
 #[test]
 fn at_scale_the_secure_backend_leaves_no_copy_of_any_forgotten_chunk_or_term() {
     for n in [1, 3, 8, 30] {
         assert_eq!(store_chunks_left("sqlite-secure", n, true), 0, "{n} chunks");
-        assert_eq!(
-            index_docs_left("sqlite-secure", n, true),
-            0,
-            "{n} documents"
-        );
     }
 }
 
@@ -189,10 +149,6 @@ fn plain_and_wal_sqlite_overwrite_a_few_but_keep_stale_fragments_once_several_ar
                 "{backend}: stale fragments remain at {n} chunks, so the word erased is not used"
             );
         }
-        assert!(
-            index_docs_left(backend, 8, true) > 0,
-            "{backend}: index terms can remain too"
-        );
     }
 }
 
@@ -202,10 +158,6 @@ fn with_the_overwrite_switched_off_a_plain_delete_leaves_the_text_so_the_test_ca
         assert!(
             store_chunks_left(backend, 3, false) > 0,
             "{backend}: control: a plain delete leaves the text"
-        );
-        assert!(
-            index_docs_left(backend, 3, false) > 0,
-            "{backend}: control: a plain delete leaves the index terms"
         );
     }
 }
@@ -247,37 +199,6 @@ fn a_backend_that_refuses_erased_batches_still_forgets_and_remembers_not_to_ask_
         p.list(&sageant::Filter::new().include_archived())
             .unwrap()
             .is_empty()
-    );
-
-    let mut ix = KvTextIndex::open("sqlite", &Endpoint::Path(dir.path().join("i.db"))).unwrap();
-    let id = ChunkId::parse(&"ef".repeat(32)).unwrap();
-    ix.index(
-        &ChunkRef {
-            id: id.clone(),
-            version: 1,
-        },
-        "alpha beta",
-    )
-    .unwrap();
-    assert!(ix.overwrites_on_remove_for_test());
-    ix.refuse_erased_batches_for_test(true);
-    // A batch that asks for no overwrite is not refused by the simulation, so indexing still works.
-    let other = ChunkId::parse(&"12".repeat(32)).unwrap();
-    ix.index(
-        &ChunkRef {
-            id: other.clone(),
-            version: 1,
-        },
-        "gamma delta",
-    )
-    .unwrap();
-    ix.remove(&id).unwrap();
-    assert!(!ix.overwrites_on_remove_for_test());
-    assert!(ix.postings("alpha").unwrap().is_empty());
-    assert_eq!(
-        ix.stats().unwrap().docs,
-        1,
-        "only the other document is left"
     );
 }
 

@@ -16,7 +16,7 @@ use sageant::{
 };
 use sageant_lexical::{LexicalRetriever, TextIndex};
 use sageant_mcp::{Grants, McpServer, Tools};
-use sageant_persistant::{KvTextIndex, PersistStore};
+use sageant_persistant::{PersistStore, PersistTextIndex};
 
 /// A failed command.
 #[derive(Debug)]
@@ -208,11 +208,19 @@ fn backend_for(home: &Path) -> Result<(String, Vec<String>), Failure> {
     Ok((id, why))
 }
 
+/// Delete a database file and the journal, WAL and shared-memory files SQLite keeps beside it.
+fn remove_index_files(path: &Path) {
+    let name = path.to_string_lossy().into_owned();
+    for suffix in ["", "-wal", "-shm", "-journal"] {
+        let _ = std::fs::remove_file(format!("{name}{suffix}"));
+    }
+}
+
 struct App {
     home: PathBuf,
     backend: String,
     store: PersistStore,
-    retriever: LexicalRetriever<KvTextIndex>,
+    retriever: LexicalRetriever<PersistTextIndex>,
     actor: Actor,
 }
 
@@ -229,19 +237,35 @@ impl App {
         };
         let store =
             PersistStore::open(&backend, &Endpoint::Path(home.join("store.db"))).map_err(wrong)?;
-        let index =
-            KvTextIndex::open(&backend, &Endpoint::Path(home.join("index.db"))).map_err(wrong)?;
+        // The search index lives in `index2.db` (PersistAnt's text layer). The first open after the upgrade finds the old
+        // `index.db` (or no index at all), rebuilds the index from the store, and only then deletes the old file: it is
+        // derived data, and leaving it would keep the terms of chunks forgotten from now on.
+        let old = home.join("index.db");
+        let new = home.join("index2.db");
+        let rebuild = old.exists() || !new.exists();
+        if old.exists() {
+            remove_index_files(&new);
+        }
+        let index = PersistTextIndex::open(&backend, &Endpoint::Path(new)).map_err(wrong)?;
         let who = ["USER", "USERNAME"]
             .iter()
             .find_map(|k| std::env::var(k).ok().filter(|v| !v.is_empty()))
             .unwrap_or_else(|| "user".to_owned());
-        Ok(Self {
+        let mut app = Self {
             home: home.to_owned(),
             backend,
             store,
             retriever: LexicalRetriever::new(index),
             actor: Actor::new("cli", &who),
-        })
+        };
+        if rebuild {
+            if old.exists() {
+                eprintln!("sageant: rebuilding the search index in the new format (one time)");
+            }
+            app.reindex()?;
+            remove_index_files(&old);
+        }
+        Ok(app)
     }
 
     /// A full id, or the one chunk an id prefix names.
@@ -598,7 +622,7 @@ fn serve(app: App, allow_write: &[String]) -> Result<(), Failure> {
         actor: _,
     } = app;
     // The recorded backend, not a hard-coded one: a forget through MCP must erase the index terms on a secure store too.
-    let index = KvTextIndex::open(&backend, &Endpoint::Path(home.join("index.db")))?;
+    let index = PersistTextIndex::open(&backend, &Endpoint::Path(home.join("index2.db")))?;
     let tools = Tools::new(
         store,
         index,

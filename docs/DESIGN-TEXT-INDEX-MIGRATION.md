@@ -1,6 +1,6 @@
 # Design note: replace `KvTextIndex` with PersistAnt's text index (PM row, approved 2026-11-16)
 
-Status: **design only, nothing built.** Written by the `sageant` lane against `persistant` 0.18.21 (`persistant-kv` 0.18.21,
+Status: **built in 0.3.23** (the design below, with the one deviation in Migration: the old file is deleted right after the rebuild). It was design only when written. Written by the `sageant` lane against `persistant` 0.18.21 (`persistant-kv` 0.18.21,
 `text-index` feature). Gate set by the PM: the replacement lands only if it passes our differential tests and N>=3 raw-file
 read-back tests on `sqlite-secure`, `sqlite` and `sqlite-full`, and BM25 ranking stays **byte-identical** on our corpus.
 
@@ -47,7 +47,7 @@ read-back tests on `sqlite-secure`, `sqlite` and `sqlite-full`, and BM25 ranking
 
 The default home's `index.db` holds the old layout (`x/`, `d/`, `f/`, `m/ix`). The index is **derived** (rebuildable from the store with
 `sageant reindex`), never the source of truth, so migration is rebuild, not translate:
-1. On open, detect the layout: new keys (`tt␟`) present -> new; old `m/ix` present -> old; neither -> new.
+1. (As built: `index.db` present, or `index2.db` absent, means rebuild.) On open, detect the layout: new keys (`tt␟`) present -> new; old `m/ix` present -> old; neither -> new.
 2. Old layout: the CLI says once "rebuilding the search index (old format)", reads the store, writes the new index into a **new file**
    (`index2.db`), then removes `index.db` with the same erased-delete rules as forget (the old index holds text-derived terms of forgotten
    chunks only if they were never removed; it contains no chunk text itself). No in-place mutation, so a crash leaves the old file intact.

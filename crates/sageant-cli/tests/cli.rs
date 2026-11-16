@@ -883,6 +883,75 @@ fn a_listing_cuts_a_long_text_after_sixty_characters_and_only_then() {
 }
 
 #[test]
+fn an_old_format_index_is_rebuilt_once_and_the_old_file_is_deleted() {
+    let home = tempfile::tempdir().unwrap();
+    put(home.path(), "owls hunt at night");
+    put(home.path(), "owls and moles");
+    // Stand in for a home written by 0.3.19 and earlier: an `index.db` beside the store and no `index2.db`.
+    std::fs::remove_file(home.path().join("index2.db")).unwrap();
+    std::fs::write(home.path().join("index.db"), b"old format, never opened").unwrap();
+    let r = run(home.path(), &["search", "owls"]);
+    assert!(r.status.success(), "{}", err(&r));
+    assert_eq!(out(&r).lines().count(), 2, "{}", out(&r));
+    assert!(
+        err(&r).contains("rebuilding the search index"),
+        "{}",
+        err(&r)
+    );
+    assert!(
+        !home.path().join("index.db").exists(),
+        "the old index must be gone"
+    );
+    assert!(home.path().join("index2.db").exists());
+    // The second open does not rebuild or say anything.
+    let again = run(home.path(), &["search", "owls"]);
+    assert_eq!(out(&again), out(&r));
+    assert!(!err(&again).contains("rebuilding"), "{}", err(&again));
+}
+
+#[test]
+fn a_chunk_forgotten_after_the_upgrade_leaves_no_old_index_behind_to_keep_its_terms() {
+    let home = tempfile::tempdir().unwrap();
+    let id = put(home.path(), "zebrafinch secret sentence");
+    std::fs::remove_file(home.path().join("index2.db")).unwrap();
+    std::fs::write(home.path().join("index.db"), b"old").unwrap();
+    assert!(run(home.path(), &["forget", &id[..8]]).status.success());
+    assert!(!home.path().join("index.db").exists());
+    let files: Vec<u8> = std::fs::read_dir(home.path())
+        .unwrap()
+        .flat_map(|e| std::fs::read(e.unwrap().path()).unwrap_or_default())
+        .collect();
+    assert!(
+        !files.windows(9).any(|w| w == b"zebrafinc"),
+        "the forgotten text is still in a file under the home"
+    );
+}
+
+#[test]
+fn a_store_with_no_index_file_at_all_is_indexed_on_the_first_command_not_only_by_a_search() {
+    let home = tempfile::tempdir().unwrap();
+    put(home.path(), "owls hunt at night");
+    std::fs::remove_file(home.path().join("index2.db")).unwrap();
+    // A `put` is the first command: it must rebuild the old chunks too, or a later search would miss them.
+    put(home.path(), "owls and moles");
+    let r = run(home.path(), &["search", "owls"]);
+    assert_eq!(out(&r).lines().count(), 2, "{}", out(&r));
+}
+
+#[test]
+fn an_old_index_beside_a_new_one_means_the_new_one_may_be_half_built_so_it_is_rebuilt() {
+    let home = tempfile::tempdir().unwrap();
+    put(home.path(), "owls hunt at night");
+    // A crash after the new index was started but before the old file was deleted leaves both; the new one is not trusted.
+    std::fs::write(home.path().join("index.db"), b"old").unwrap();
+    let id2 = put(home.path(), "owls and moles");
+    assert!(!home.path().join("index.db").exists());
+    let r = run(home.path(), &["search", "owls"]);
+    assert_eq!(out(&r).lines().count(), 2, "{}", out(&r));
+    assert!(out(&r).contains(&id2), "{}", out(&r));
+}
+
+#[test]
 fn reindex_reports_how_many_versions_it_indexed_and_search_heals_a_missing_index() {
     let home = tempfile::tempdir().unwrap();
     put(home.path(), "one searchable note");
@@ -892,7 +961,7 @@ fn reindex_reports_how_many_versions_it_indexed_and_search_heals_a_missing_index
     assert!(r.status.success(), "{}", err(&r));
     assert!(out(&r).contains("indexed 3 chunk versions"), "{}", out(&r));
     // No index at all: a search rebuilds it from the store.
-    std::fs::remove_file(home.path().join("index.db")).unwrap();
+    std::fs::remove_file(home.path().join("index2.db")).unwrap();
     assert_eq!(
         out(&run(home.path(), &["search", "searchable"]))
             .lines()

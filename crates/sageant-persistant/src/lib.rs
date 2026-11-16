@@ -17,9 +17,9 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-mod index;
+mod text;
 
-pub use index::KvTextIndex;
+pub use text::PersistTextIndex;
 
 use std::collections::BTreeMap;
 use std::time::Duration;
