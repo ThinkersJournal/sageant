@@ -128,7 +128,7 @@ pub fn storage_needs() -> ProviderNeeds {
     .collect();
     // Preferred, never required: a backend that zeroes freed content (PersistAnt 0.18.12 `sqlite-secure`) ranks first, so
     // a forgotten chunk's bytes are gone from the file, not only unretrievable. Others still qualify.
-    let prefer: Vec<CapabilityId> = ["storage.secure_delete", "kv.delete_erased"]
+    let prefer: Vec<CapabilityId> = ["storage.secure_delete"]
         .into_iter()
         .filter_map(|id| CapabilityId::new(id).ok())
         .collect();
@@ -184,20 +184,17 @@ fn chosen_from(listing: &persistant::registry::Listing) -> Chosen {
 
 /// How a backend gets rid of the bytes of a forgotten chunk. Never covers copies a file system, snapshot or backup keeps.
 ///
-/// Only [`Zeroed`](Self::Zeroed) is a guarantee that the text is gone from the database files (it is checked by reading
-/// the files back after forgetting many chunks). [`EraseOnDelete`](Self::EraseOnDelete) is a best effort: the stored copy
-/// is overwritten, but SQLite can leave stale fragments of a record in the pages around it (measured: copies of forgotten
-/// text remain after forgetting three or more chunks), so a chunk forgotten there is unretrievable, not erased.
+/// Only [`Zeroed`](Self::Zeroed) is a guarantee that the text is gone from the database files (checked by reading the
+/// files back after forgetting up to thirty chunks). Every other backend is [`Unretrievable`](Self::Unretrievable): even
+/// where PersistAnt can overwrite a key's stored bytes (`BatchOp::DeleteErased`, which these stores use in the forget
+/// batch as a best effort), SQLite can leave stale fragments of a record in pages it split or rebalanced earlier
+/// (measured), so PersistAnt records `kv.delete_erased` as off there.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Erasure {
     /// The backend has `storage.secure_delete`: content a delete or overwrite frees is zeroed as it is freed.
     Zeroed,
-    /// The backend has `kv.delete_erased` but not `storage.secure_delete`: forgetting overwrites each stored copy with it
-    /// while the key is still live (two steps; an interrupted forget is finished the next time the store is opened). A
-    /// best effort, not a guarantee: see the type's documentation.
-    EraseOnDelete,
-    /// Neither: a forgotten chunk is unretrievable but its freed bytes may stay in the file.
+    /// Otherwise: a forgotten chunk is unretrievable but its bytes may stay in the file.
     Unretrievable,
 }
 
@@ -223,8 +220,6 @@ fn has_secure_delete(listing: &persistant::registry::Listing) -> bool {
 fn erasure_of(listing: &persistant::registry::Listing) -> Erasure {
     if has_secure_delete(listing) {
         Erasure::Zeroed
-    } else if has_capability(listing, "kv.delete_erased") {
-        Erasure::EraseOnDelete
     } else {
         Erasure::Unretrievable
     }
@@ -317,9 +312,11 @@ pub struct PersistStore {
     caps: BTreeMap<String, usize>,
     /// Set while a `Writer` call runs: names the actor on every audit entry that call appends.
     acting: Option<String>,
-    erasure: Erasure,
-    /// Test only: stop a forget after its atomic step, as a crash would, leaving the erasing to the next open.
-    crash_before_erasing: bool,
+    /// Whether the forget batch overwrites content with `BatchOp::DeleteErased` (a best effort on a backend that does not
+    /// zero freed bytes). Switched off for good the first time the backend refuses it.
+    overwrite: std::sync::atomic::AtomicBool,
+    /// Test only: make the next erased batch be refused as unsupported.
+    refuse_erased_for_test: std::sync::atomic::AtomicBool,
 }
 
 impl std::fmt::Debug for PersistStore {
@@ -354,14 +351,11 @@ impl PersistStore {
     /// `Backend` naming what is missing when the backend cannot give those, or cannot be opened.
     pub fn open(backend_id: &str, endpoint: &Endpoint) -> Result<Self, Error> {
         let erasure = backend_erasure(backend_id).unwrap_or(Erasure::Unretrievable);
-        let store = Self::open_with(backend_id, endpoint, erasure)?;
-        // A forget interrupted between its atomic step and the erasing is finished here.
-        store.finish_erasing()?;
-        Ok(store)
+        Self::open_with(backend_id, endpoint, erasure != Erasure::Zeroed)
     }
 
-    /// Open with erasing switched off, so a test can show that the same steps leave the text in the files. Not for
-    /// production use.
+    /// Open with the best-effort overwrite switched off, so a test can show what plain deletes leave in the files. Not
+    /// for production use.
     ///
     /// # Errors
     /// As `open`.
@@ -370,77 +364,32 @@ impl PersistStore {
         backend_id: &str,
         endpoint: &Endpoint,
     ) -> Result<Self, Error> {
-        Self::open_with(backend_id, endpoint, Erasure::Unretrievable)
+        Self::open_with(backend_id, endpoint, false)
     }
 
-    /// Test only: make the next forgets stop after their atomic step, as a crash would.
+    /// Test only: make the next erased batches be refused as unsupported, as a backend that cannot overwrite would.
     #[doc(hidden)]
-    pub fn set_crash_before_erasing_for_test(&mut self, on: bool) {
-        self.crash_before_erasing = on;
+    pub fn refuse_erased_batches_for_test(&self, on: bool) {
+        self.refuse_erased_for_test
+            .store(on, std::sync::atomic::Ordering::SeqCst);
     }
 
-    fn open_with(backend_id: &str, endpoint: &Endpoint, erasure: Erasure) -> Result<Self, Error> {
+    /// Test only: whether forgets still ask for an overwriting delete.
+    #[doc(hidden)]
+    pub fn overwrites_on_forget_for_test(&self) -> bool {
+        self.overwrite.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    fn open_with(backend_id: &str, endpoint: &Endpoint, overwrite: bool) -> Result<Self, Error> {
         let kv = open_kv(backend_id, endpoint)?;
         Ok(Self {
             kv,
             screen: None,
             caps: BTreeMap::new(),
             acting: None,
-            erasure,
-            crash_before_erasing: false,
+            overwrite: std::sync::atomic::AtomicBool::new(overwrite),
+            refuse_erased_for_test: std::sync::atomic::AtomicBool::new(false),
         })
-    }
-
-    /// Every key and value under `prefix`, ascending, across pages.
-    fn scan_entries(&self, prefix: &str) -> Result<Vec<(String, Vec<u8>)>, Error> {
-        let mut out = Vec::new();
-        let mut after: Option<String> = None;
-        loop {
-            let page = self
-                .kv
-                .ordered_scan_values(prefix, after.as_deref(), SCAN_PAGE)
-                .map_err(kv_error)?;
-            out.extend(page.entries);
-            match page.next {
-                Some(cursor) => after = Some(cursor),
-                None => return Ok(out),
-            }
-        }
-    }
-
-    /// Erase each key with `kv.delete_erased` (the stored bytes are overwritten before the key is removed).
-    fn erase_keys(&self, keys: &[String]) -> Result<(), Error> {
-        for key in keys {
-            self.kv.delete_erased(key).map_err(|e| {
-                Error::Backend(format!(
-                    "forgotten, but erasing a stored copy failed ({e}); it is finished the next time the store is opened"
-                ))
-            })?;
-        }
-        Ok(())
-    }
-
-    /// Finish the erasing of any forgotten chunk whose content is still stored (a forget that stopped after its atomic
-    /// step). Returns how many stored copies were erased. Does nothing unless the backend erases on delete.
-    ///
-    /// # Errors
-    /// `Corrupt` or `Backend`.
-    pub fn finish_erasing(&self) -> Result<usize, Error> {
-        if self.erasure != Erasure::EraseOnDelete {
-            return Ok(0);
-        }
-        let mut erased = 0;
-        for bytes in self.scan("t/")? {
-            let tombstone = Tombstone::decode(&bytes)?;
-            let left: Vec<String> = self
-                .scan_entries(&format!("c/{}/", tombstone.id().as_str()))?
-                .into_iter()
-                .map(|(key, _)| key)
-                .collect();
-            self.erase_keys(&left)?;
-            erased += left.len();
-        }
-        Ok(erased)
     }
 
     fn read(&self, key: &str) -> Result<Option<Vec<u8>>, Error> {
@@ -449,7 +398,40 @@ impl PersistStore {
 
     /// Apply `ops` atomically; `Ok(false)` means a `Require` no longer held and nothing was written.
     fn batch(&self, ops: &[BatchOp]) -> Result<bool, Error> {
-        self.kv.batch(ops).map_err(kv_error)
+        use std::sync::atomic::Ordering;
+        let erased = ops
+            .iter()
+            .any(|o| matches!(o, BatchOp::DeleteErased { .. }));
+        let first = if erased && self.refuse_erased_for_test.load(Ordering::SeqCst) {
+            Err(KvError::Unsupported("simulated".to_owned()))
+        } else {
+            self.kv.batch(ops)
+        };
+        match first {
+            // The backend cannot overwrite: it refused the whole batch before changing anything. Use plain deletes from now
+            // on (they still make the chunk unretrievable).
+            Err(KvError::Unsupported(_)) if erased => {
+                self.overwrite.store(false, Ordering::SeqCst);
+                let plain: Vec<BatchOp> = ops
+                    .iter()
+                    .map(|o| match o {
+                        BatchOp::DeleteErased { key } => BatchOp::Delete { key: key.clone() },
+                        other => other.clone(),
+                    })
+                    .collect();
+                self.kv.batch(&plain).map_err(kv_error)
+            }
+            other => other.map_err(kv_error),
+        }
+    }
+
+    /// The delete of a content key in a forget: an overwriting one where the backend allows it.
+    fn content_delete(&self, key: String) -> BatchOp {
+        if self.overwrite.load(std::sync::atomic::Ordering::SeqCst) {
+            BatchOp::DeleteErased { key }
+        } else {
+            BatchOp::Delete { key }
+        }
     }
 
     fn audit_counter(&self) -> Result<u64, Error> {
@@ -817,10 +799,6 @@ impl PersistStore {
     /// # Errors
     /// `NotFound`, `Corrupt` or `Backend`.
     pub fn history(&self, id: &ChunkId) -> Result<Vec<Chunk>, Error> {
-        // Content may still be stored for a chunk that was forgotten but not yet erased: no head, no history.
-        if self.head(id)?.is_none() {
-            return Err(self.missing(id));
-        }
         let versions = self.scan(&format!("c/{}/", id.as_str()))?;
         if versions.is_empty() {
             return Err(self.missing(id));
@@ -864,17 +842,8 @@ impl PersistStore {
     pub fn list(&self, filter: &Filter) -> Result<Vec<ChunkRef>, Error> {
         let wants_confidence = filter.confidence_filter().is_some();
         let mut all: Vec<Chunk> = Vec::new();
-        let live: std::collections::BTreeSet<String> = self
-            .scan_entries("h/")?
-            .into_iter()
-            .map(|(key, _)| key.trim_start_matches("h/").to_owned())
-            .collect();
         for bytes in self.scan("c/")? {
-            let chunk = Chunk::decode(&bytes)?;
-            // A forgotten chunk whose content is not yet erased has no head and is not listed.
-            if live.contains(chunk.id().as_str()) {
-                all.push(chunk);
-            }
+            all.push(Chunk::decode(&bytes)?);
         }
         // Keys ascend by (id, version); regroup so each lineage is newest first.
         let mut out = Vec::new();
@@ -1193,17 +1162,10 @@ impl PersistStore {
 
     /// The operations that remove a lineage: its versions and head, its outgoing links (and their reverse
     /// entries), and a review flag on every chunk derived from it. Links pointing at it stay and read as removed.
-    fn removal_ops(&self, id: &ChunkId) -> Result<(Vec<BatchOp>, Vec<String>), Error> {
+    fn removal_ops(&self, id: &ChunkId) -> Result<Vec<BatchOp>, Error> {
         let mut ops = Vec::new();
-        let mut erase_later = Vec::new();
         for chunk in self.history(id)? {
-            let key = chunk_key(id, chunk.version());
-            if self.erasure == Erasure::EraseOnDelete {
-                // Erased while the key is live, after the atomic step that makes the chunk unreadable.
-                erase_later.push(key);
-            } else {
-                ops.push(BatchOp::Delete { key });
-            }
+            ops.push(self.content_delete(chunk_key(id, chunk.version())));
         }
         ops.push(BatchOp::Delete { key: head_key(id) });
         for link in self.scan_links(&format!("l/{}/", id.as_str()))? {
@@ -1223,7 +1185,7 @@ impl PersistStore {
                 });
             }
         }
-        Ok((ops, erase_later))
+        Ok(ops)
     }
 
     /// Remove a chunk's content (every version), its source, its hash and its outgoing links, leaving a minimal
@@ -1291,8 +1253,7 @@ impl PersistStore {
                     expected: generation,
                 },
             ];
-            let (removal, erase_later) = self.removal_ops(id)?;
-            ops.extend(removal);
+            ops.extend(self.removal_ops(id)?);
             ops.push(BatchOp::Put {
                 key: tombstone_key(id),
                 value: tombstone.encode(),
@@ -1311,9 +1272,6 @@ impl PersistStore {
                 reason,
             );
             if self.apply(&ops, &[event])? {
-                if !self.crash_before_erasing {
-                    self.erase_keys(&erase_later)?;
-                }
                 return Ok(Removed::Unretrievable);
             }
             let found = self.head(id)?.unwrap_or(0);
@@ -1385,11 +1343,8 @@ impl PersistStore {
                 },
                 BatchOp::Delete { key: gen_key(id) },
             ];
-            let mut erase_later = Vec::new();
             if head.is_some() {
-                let (removal, later) = self.removal_ops(id)?;
-                ops.extend(removal);
-                erase_later = later;
+                ops.extend(self.removal_ops(id)?);
             }
             if attempt == 0
                 && let Some(hook) = hook
@@ -1398,9 +1353,6 @@ impl PersistStore {
             }
             let event = AuditEvent::new(at, Action::Purge, Some(id.clone()), authority.how(), "");
             if self.apply(&ops, &[event])? {
-                self.erase_keys(&erase_later)?;
-                // Content a forget left behind (it stopped after its atomic step) goes too.
-                self.finish_erasing()?;
                 return Ok(());
             }
             let found = self.head(id)?.unwrap_or(0);

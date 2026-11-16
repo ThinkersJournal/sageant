@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! Erase-on-forget, read back from the raw files (PersistAnt 0.18.15). "Erased" is claimed only for `sqlite-secure`,
-//! because these tests read every database file after forgetting up to thirty chunks (one of them archived and superseded
-//! first, which rewrites its records) and do not find the text or its search terms. `sqlite` and `sqlite-full` overwrite
-//! the stored copy but measurably leave stale fragments (a test pins that), so they are unretrievable, not erased. The
-//! same steps with erasing switched off DO leave the text in the files (the control that shows the test can see).
+//! Erase-on-forget, read back from the raw files (PersistAnt 0.18.21). "Erased" is claimed only for `sqlite-secure`,
+//! because these tests read every database file after forgetting up to thirty chunks (one of them archived and
+//! superseded first, which rewrites its records) and do not find the text or its search terms. `sqlite` and
+//! `sqlite-full` get a best-effort overwrite (`BatchOp::DeleteErased` in the same atomic batch) which helps for a few
+//! chunks but measurably leaves stale fragments once several are forgotten (a test pins that), so they are
+//! unretrievable, not erased. The same steps with the overwrite switched off DO leave the text in the files (the control
+//! that shows the test can see).
 
 use persistant::registry::Endpoint;
-use sageant::{Actor, ChunkRef, NewChunk, Origin, Status, Timestamp, Writer};
+use sageant::{Actor, ChunkId, ChunkRef, Error, NewChunk, Origin, Status, Timestamp, Writer};
 use sageant_lexical::TextIndex;
 use sageant_persistant::{
     Erasure, KvTextIndex, PersistStore, backend_erasure, backend_secure_delete,
@@ -14,7 +16,6 @@ use sageant_persistant::{
 
 const ONE: &str = "zqxmarkerversionone";
 const TWO: &str = "zqxmarkerversiontwo";
-const BACKENDS: [&str; 3] = ["sqlite-secure", "sqlite", "sqlite-full"];
 
 /// Every byte of every file in `dir` (the database, a journal, a WAL), concatenated.
 fn raw(dir: &std::path::Path) -> Vec<u8> {
@@ -39,9 +40,26 @@ fn filler() -> String {
     "padding ".repeat(80)
 }
 
-/// A chunk with two versions, archived (which rewrites both records), then forgotten. Returns the raw files before
-/// and after.
-fn forget_a_rewritten_chunk(mut p: PersistStore, dir: &std::path::Path) -> (Vec<u8>, Vec<u8>) {
+#[test]
+fn backends_say_how_they_get_rid_of_forgotten_bytes() {
+    assert_eq!(backend_erasure("sqlite-secure").unwrap(), Erasure::Zeroed);
+    assert_eq!(backend_erasure("sqlite").unwrap(), Erasure::Unretrievable);
+    assert_eq!(
+        backend_erasure("sqlite-full").unwrap(),
+        Erasure::Unretrievable
+    );
+    assert!(Erasure::Zeroed.guarantees_erasure());
+    assert!(!Erasure::Unretrievable.guarantees_erasure());
+    assert!(backend_secure_delete("sqlite-secure").unwrap());
+    assert!(!backend_secure_delete("sqlite").unwrap());
+}
+
+#[test]
+fn a_forgotten_chunk_that_was_rewritten_first_is_gone_from_the_files_on_the_backend_that_guarantees_it()
+ {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p =
+        PersistStore::open("sqlite-secure", &Endpoint::Path(dir.path().join("s.db"))).unwrap();
     let r = Writer::put(
         &mut p,
         NewChunk::new("c", "k", &format!("{ONE} {}", filler()), Origin::User, "t"),
@@ -60,48 +78,30 @@ fn forget_a_rewritten_chunk(mut p: PersistStore, dir: &std::path::Path) -> (Vec<
     )
     .unwrap();
     Writer::set_status(&mut p, &r.id, Status::Archived, &who(), "old", Timestamp(3)).unwrap();
-    let before = raw(dir);
+    let before = raw(dir.path());
     Writer::forget(&mut p, &r.id, &who(), "r", None, Timestamp(4)).unwrap();
     drop(p);
-    (before, raw(dir))
-}
-
-#[test]
-fn backends_say_how_they_get_rid_of_forgotten_bytes() {
-    assert_eq!(backend_erasure("sqlite-secure").unwrap(), Erasure::Zeroed);
-    assert_eq!(backend_erasure("sqlite").unwrap(), Erasure::EraseOnDelete);
-    assert_eq!(
-        backend_erasure("sqlite-full").unwrap(),
-        Erasure::EraseOnDelete
-    );
-    assert!(backend_secure_delete("sqlite-secure").unwrap());
-    assert!(!backend_secure_delete("sqlite").unwrap());
-}
-
-#[test]
-fn a_forgotten_chunk_that_was_rewritten_first_is_gone_from_the_files_on_the_backend_that_guarantees_it()
- {
-    let dir = tempfile::tempdir().unwrap();
-    let p = PersistStore::open("sqlite-secure", &Endpoint::Path(dir.path().join("s.db"))).unwrap();
-    let (before, after) = forget_a_rewritten_chunk(p, dir.path());
+    let after = raw(dir.path());
     assert!(
         contains(&before, ONE) || contains(&before, TWO),
         "control: the content is in the files before the forget"
     );
     assert!(
-        !contains(&after, ONE),
-        "version one is still in a file after forget"
-    );
-    assert!(
-        !contains(&after, TWO),
-        "version two is still in a file after forget"
+        !contains(&after, ONE) && !contains(&after, TWO),
+        "the text is still in a file after forget"
     );
 }
 
-/// Forget `n` chunks of about 700 bytes each; how many copies of their markers are still in the files?
-fn copies_left_after_forgetting(backend: &str, n: usize) -> usize {
+/// Forget `n` chunks of about 700 bytes each; how many of them still have text in the files? `erase` is whether the
+/// best-effort overwrite is on.
+fn store_chunks_left(backend: &str, n: usize, erase: bool) -> usize {
     let dir = tempfile::tempdir().unwrap();
-    let mut p = PersistStore::open(backend, &Endpoint::Path(dir.path().join("s.db"))).unwrap();
+    let endpoint = Endpoint::Path(dir.path().join("s.db"));
+    let mut p = if erase {
+        PersistStore::open(backend, &endpoint).unwrap()
+    } else {
+        PersistStore::open_without_erasing_for_test(backend, &endpoint).unwrap()
+    };
     let mut ids = Vec::new();
     for i in 0..n {
         let text = format!("zqxscale{i:03} {}", filler());
@@ -126,161 +126,159 @@ fn copies_left_after_forgetting(backend: &str, n: usize) -> usize {
         .count()
 }
 
-#[test]
-fn at_scale_the_secure_backend_leaves_no_copy_of_any_forgotten_chunk() {
-    for n in [1, 3, 8, 30] {
-        assert_eq!(
-            copies_left_after_forgetting("sqlite-secure", n),
-            0,
-            "{n} chunks"
-        );
-    }
-}
-
-#[test]
-fn plain_and_wal_sqlite_can_keep_stale_fragments_so_they_are_unretrievable_not_erased() {
-    // Measured with PersistAnt 0.18.15: one chunk is fully overwritten, but forgetting several leaves copies of some of
-    // them in pages SQLite split or rebalanced earlier. If this ever reports zero, a better erase exists: re-measure
-    // and only then change the README table.
-    for backend in ["sqlite", "sqlite-full"] {
-        assert_eq!(
-            copies_left_after_forgetting(backend, 1),
-            0,
-            "{backend}: one chunk is fully overwritten"
-        );
-        assert!(
-            copies_left_after_forgetting(backend, 3) > 0,
-            "{backend}: stale fragments remain already at three chunks"
-        );
-        assert!(
-            copies_left_after_forgetting(backend, 8) > 0,
-            "{backend}: stale fragments remain, so the word erased is not used"
-        );
-    }
-}
-
-#[test]
-fn with_erasing_switched_off_the_same_steps_leave_the_text_in_the_files() {
-    for backend in ["sqlite", "sqlite-full"] {
-        let dir = tempfile::tempdir().unwrap();
-        let p = PersistStore::open_without_erasing_for_test(
-            backend,
-            &Endpoint::Path(dir.path().join("s.db")),
-        )
-        .unwrap();
-        let (_, after) = forget_a_rewritten_chunk(p, dir.path());
-        assert!(
-            contains(&after, ONE) || contains(&after, TWO),
-            "{backend}: control: a plain delete leaves the text, so the test can see it"
-        );
-    }
-}
-
-fn index_then_remove(backend: &str, erase: bool) -> (Vec<u8>, Vec<u8>) {
+/// Index `n` documents and remove them all; how many still have their terms in the files?
+fn index_docs_left(backend: &str, n: usize, erase: bool) -> usize {
     let dir = tempfile::tempdir().unwrap();
     let endpoint = Endpoint::Path(dir.path().join("i.db"));
-    let mut i = if erase {
+    let mut ix = if erase {
         KvTextIndex::open(backend, &endpoint).unwrap()
     } else {
         KvTextIndex::open_without_erasing_for_test(backend, &endpoint).unwrap()
     };
-    let id = sageant::ChunkId::parse(&"ab".repeat(32)).unwrap();
-    for version in 1..=2 {
-        let chunk = ChunkRef {
+    let ids: Vec<ChunkId> = (0..n)
+        .map(|i| ChunkId::parse(&format!("{:064x}", i + 1)).unwrap())
+        .collect();
+    for (i, id) in ids.iter().enumerate() {
+        ix.index(
+            &ChunkRef {
+                id: id.clone(),
+                version: 1,
+            },
+            &format!("zqxterm{i:03} alpha beta gamma delta"),
+        )
+        .unwrap();
+    }
+    for id in &ids {
+        ix.remove(id).unwrap();
+    }
+    drop(ix);
+    let files = raw(dir.path());
+    (0..n)
+        .filter(|i| contains(&files, &format!("zqxterm{i:03}")))
+        .count()
+}
+
+#[test]
+fn at_scale_the_secure_backend_leaves_no_copy_of_any_forgotten_chunk_or_term() {
+    for n in [1, 3, 8, 30] {
+        assert_eq!(store_chunks_left("sqlite-secure", n, true), 0, "{n} chunks");
+        assert_eq!(
+            index_docs_left("sqlite-secure", n, true),
+            0,
+            "{n} documents"
+        );
+    }
+}
+
+#[test]
+fn plain_and_wal_sqlite_overwrite_a_few_but_keep_stale_fragments_once_several_are_forgotten() {
+    // Measured with PersistAnt 0.18.21: the overwrite in the forget batch clears the text of one to three chunks, but
+    // forgetting eight or thirty leaves copies of some of them in pages SQLite split or rebalanced earlier. If this ever
+    // reports zero, a better erase exists: re-measure and only then change the README table.
+    for backend in ["sqlite", "sqlite-full"] {
+        for n in [1, 3] {
+            assert_eq!(
+                store_chunks_left(backend, n, true),
+                0,
+                "{backend}: {n} chunks are fully overwritten"
+            );
+        }
+        for n in [8, 30] {
+            assert!(
+                store_chunks_left(backend, n, true) > 0,
+                "{backend}: stale fragments remain at {n} chunks, so the word erased is not used"
+            );
+        }
+        assert!(
+            index_docs_left(backend, 8, true) > 0,
+            "{backend}: index terms can remain too"
+        );
+    }
+}
+
+#[test]
+fn with_the_overwrite_switched_off_a_plain_delete_leaves_the_text_so_the_test_can_see() {
+    for backend in ["sqlite", "sqlite-full"] {
+        assert!(
+            store_chunks_left(backend, 3, false) > 0,
+            "{backend}: control: a plain delete leaves the text"
+        );
+        assert!(
+            index_docs_left(backend, 3, false) > 0,
+            "{backend}: control: a plain delete leaves the index terms"
+        );
+    }
+}
+
+#[test]
+fn a_backend_that_refuses_erased_batches_still_forgets_and_remembers_not_to_ask_again() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p = PersistStore::open("sqlite", &Endpoint::Path(dir.path().join("s.db"))).unwrap();
+    let a = Writer::put(
+        &mut p,
+        NewChunk::new("c", "k", "first chunk text", Origin::User, "t"),
+        &who(),
+        Timestamp(1),
+    )
+    .unwrap();
+    let b = Writer::put(
+        &mut p,
+        NewChunk::new("c", "k", "second chunk text", Origin::User, "t"),
+        &who(),
+        Timestamp(1),
+    )
+    .unwrap();
+    assert!(
+        p.overwrites_on_forget_for_test(),
+        "a plain sqlite store starts out asking for overwriting deletes"
+    );
+    p.refuse_erased_batches_for_test(true);
+    Writer::forget(&mut p, &a.id, &who(), "r", None, Timestamp(2)).unwrap();
+    assert!(
+        !p.overwrites_on_forget_for_test(),
+        "after the refusal it uses plain deletes from now on"
+    );
+    assert_eq!(p.get(&a.id).err(), Some(Error::Forgotten));
+    // It switched itself to plain deletes: the next forget never asks for an erased batch (so the refusal never fires).
+    p.refuse_erased_batches_for_test(false);
+    Writer::forget(&mut p, &b.id, &who(), "r", None, Timestamp(3)).unwrap();
+    assert_eq!(p.get(&b.id).err(), Some(Error::Forgotten));
+    assert!(
+        p.list(&sageant::Filter::new().include_archived())
+            .unwrap()
+            .is_empty()
+    );
+
+    let mut ix = KvTextIndex::open("sqlite", &Endpoint::Path(dir.path().join("i.db"))).unwrap();
+    let id = ChunkId::parse(&"ef".repeat(32)).unwrap();
+    ix.index(
+        &ChunkRef {
             id: id.clone(),
-            version,
-        };
-        i.index(
-            &chunk,
-            &format!("{ONE} and a few more terms to index {version}"),
-        )
-        .unwrap();
-    }
-    let before = raw(dir.path());
-    i.remove(&id).unwrap();
-    drop(i);
-    (before, raw(dir.path()))
-}
-
-#[test]
-fn the_search_terms_of_a_forgotten_chunk_are_gone_from_the_index_files_on_the_backend_that_guarantees_it()
- {
-    for backend in BACKENDS {
-        let (before, after) = index_then_remove(backend, true);
-        assert!(
-            contains(&before, ONE),
-            "{backend}: control: the term is in the index file"
-        );
-        assert!(
-            !contains(&after, ONE),
-            "{backend}: the forgotten chunk's term is still in the index file"
-        );
-    }
-    for backend in ["sqlite", "sqlite-full"] {
-        let (_, after) = index_then_remove(backend, false);
-        assert!(
-            contains(&after, ONE),
-            "{backend}: control: without erasing the term stays"
-        );
-    }
-}
-
-#[test]
-fn a_crash_between_the_forget_and_the_erasing_leaves_nothing_visible_and_the_next_open_finishes_the_job()
- {
-    for backend in ["sqlite", "sqlite-full"] {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("s.db");
-        let mut p = PersistStore::open(backend, &Endpoint::Path(path.clone())).unwrap();
-        p.set_crash_before_erasing_for_test(true);
-        let r = Writer::put(
-            &mut p,
-            NewChunk::new("c", "k", &format!("{ONE} {}", filler()), Origin::User, "t"),
-            &who(),
-            Timestamp(1),
-        )
-        .unwrap();
-        let keep = Writer::put(
-            &mut p,
-            NewChunk::new("c", "k", "an unrelated chunk", Origin::User, "t"),
-            &who(),
-            Timestamp(1),
-        )
-        .unwrap();
-        let _ = Writer::forget(&mut p, &r.id, &who(), "r", None, Timestamp(2));
-        // The chunk is forgotten as far as every read can tell, though its bytes have not been erased yet.
-        assert_eq!(p.get(&r.id).err(), Some(sageant::Error::Forgotten));
-        assert_eq!(
-            p.history(&r.id).err(),
-            Some(sageant::Error::Forgotten),
-            "{backend}"
-        );
-        let listed: Vec<_> = p
-            .list(
-                &sageant::Filter::new()
-                    .include_archived()
-                    .include_superseded(),
-            )
-            .unwrap();
-        assert_eq!(
-            listed.len(),
-            1,
-            "{backend}: only the unrelated chunk is listed"
-        );
-        assert_eq!(listed[0].id, keep.id);
-        assert!(
-            contains(&raw(dir.path()), ONE),
-            "{backend}: control: the bytes are still there before the repair"
-        );
-        drop(p);
-        // The next open sees a tombstone with content left behind and erases it.
-        let p = PersistStore::open(backend, &Endpoint::Path(path)).unwrap();
-        drop(p);
-        assert!(
-            !contains(&raw(dir.path()), ONE),
-            "{backend}: opening again finished the erasing"
-        );
-    }
+            version: 1,
+        },
+        "alpha beta",
+    )
+    .unwrap();
+    assert!(ix.overwrites_on_remove_for_test());
+    ix.refuse_erased_batches_for_test(true);
+    // A batch that asks for no overwrite is not refused by the simulation, so indexing still works.
+    let other = ChunkId::parse(&"12".repeat(32)).unwrap();
+    ix.index(
+        &ChunkRef {
+            id: other.clone(),
+            version: 1,
+        },
+        "gamma delta",
+    )
+    .unwrap();
+    ix.remove(&id).unwrap();
+    assert!(!ix.overwrites_on_remove_for_test());
+    assert!(ix.postings("alpha").unwrap().is_empty());
+    assert_eq!(
+        ix.stats().unwrap().docs,
+        1,
+        "only the other document is left"
+    );
 }
 
 #[test]
@@ -294,83 +292,4 @@ fn a_new_store_is_chosen_with_secure_delete_when_persistant_offers_it() {
     );
     assert!(chosen.secure_delete());
     assert_eq!(chosen.erasure(), Erasure::Zeroed);
-}
-
-// ---- kill tests for mutation run 5 (changed code since run 4); written after the misses ----
-
-#[test]
-fn finishing_an_interrupted_erasing_counts_exactly_what_it_erased_for_the_store() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("s.db");
-    let mut p = PersistStore::open("sqlite", &Endpoint::Path(path.clone())).unwrap();
-    p.set_crash_before_erasing_for_test(true);
-    let mut ids = Vec::new();
-    for i in 0..3 {
-        let r = Writer::put(
-            &mut p,
-            NewChunk::new(
-                "c",
-                "k",
-                &format!("{ONE} chunk {i} {}", filler()),
-                Origin::User,
-                "t",
-            ),
-            &who(),
-            Timestamp(1),
-        )
-        .unwrap();
-        Writer::supersede(
-            &mut p,
-            &r.id,
-            &format!("{TWO} chunk {i} {}", filler()),
-            Origin::User,
-            "t",
-            &who(),
-            Timestamp(2),
-        )
-        .unwrap();
-        ids.push(r.id);
-    }
-    for id in &ids {
-        Writer::forget(&mut p, id, &who(), "r", None, Timestamp(3)).unwrap();
-    }
-    // Three forgotten chunks of two versions each are waiting to be erased.
-    assert_eq!(p.finish_erasing().unwrap(), 6);
-    assert_eq!(p.finish_erasing().unwrap(), 0, "nothing is left to finish");
-}
-
-#[test]
-fn finishing_an_interrupted_index_removal_counts_exactly_what_it_erased_and_only_where_it_applies()
-{
-    let dir = tempfile::tempdir().unwrap();
-    let endpoint = Endpoint::Path(dir.path().join("i.db"));
-    let mut i = KvTextIndex::open("sqlite", &endpoint).unwrap();
-    i.set_crash_before_erasing_for_test(true);
-    let id = sageant::ChunkId::parse(&"cd".repeat(32)).unwrap();
-    for version in 1..=2 {
-        i.index(
-            &ChunkRef {
-                id: id.clone(),
-                version,
-            },
-            &format!("{ONE} alpha beta gamma {version}"),
-        )
-        .unwrap();
-    }
-    i.remove(&id).unwrap();
-    assert!(
-        contains(&raw(dir.path()), ONE),
-        "control: the terms are still in the file after the interrupted removal"
-    );
-    // Each version has the terms zqxmarkerversionone, alpha, beta, gamma and its own number: 5 postings, 2 versions.
-    assert_eq!(i.finish_erasing().unwrap(), 10);
-    assert_eq!(i.finish_erasing().unwrap(), 0);
-    // A backend that zeroes on every delete has nothing to finish and says so.
-    let secure_dir = tempfile::tempdir().unwrap();
-    let secure = KvTextIndex::open(
-        "sqlite-secure",
-        &Endpoint::Path(secure_dir.path().join("i.db")),
-    )
-    .unwrap();
-    assert_eq!(secure.finish_erasing().unwrap(), 0);
 }
