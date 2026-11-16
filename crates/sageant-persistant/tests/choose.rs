@@ -4,7 +4,7 @@
 
 use persistant::registry::Endpoint;
 use sageant::{NewChunk, Origin, Timestamp};
-use sageant_persistant::{KvTextIndex, PersistStore, storage_needs};
+use sageant_persistant::{PersistStore, PersistTextIndex, storage_needs};
 
 #[test]
 fn the_declared_need_names_every_capability_the_store_relies_on() {
@@ -52,7 +52,8 @@ fn a_path_endpoint_opens_the_backend_persistant_ranks_first_and_says_why() {
 #[test]
 fn the_text_index_is_chosen_the_same_way() {
     let dir = tempfile::tempdir().unwrap();
-    let (_i, chosen) = KvTextIndex::open_chosen(&Endpoint::Path(dir.path().join("i.db"))).unwrap();
+    let (_i, chosen) =
+        PersistTextIndex::open_chosen(&Endpoint::Path(dir.path().join("i.db"))).unwrap();
     assert!(!chosen.backend().is_empty());
 }
 
