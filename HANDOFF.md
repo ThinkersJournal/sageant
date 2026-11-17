@@ -11,12 +11,11 @@ Decided model and rows: `ROADMAP.md`. Do not reopen the model without an `[ASK]`
 - persistant 0.18.0 facts: kv.batch_atomic.* leaves recorded only for kv-on-relational (sqlite) not opendal memory/fs; PersistStore needs the 4 leaves + kv.get/put/delete/ordered_scan_values; batch() Ok(false) = a Require failed.
 - PM rulings: no owner-notification on put path (patent US20230063214A1); no entropy detection; say "unretrievable", never "erased", until PersistAnt row 38 passes.
 
-WAIT: nothing blocking: 0.3.24 is published (v0.3.24) and the registry smoke pin is 0.3.24 (#47); row E waits on CireSnave via PM | check: synapse mail | wake: PM mail
 
 ## Next
-1. PUBLISHED: 0.3.19 and 0.3.24 (v0.3.24 = bundle of 0.3.20-0.3.23: threat model, registry smoke CI, design note, text index on PersistAnt 0.18.23, KvTextIndex deleted, rebuild migration to index2.db). main: 0.3.26 (registry smoke pinned to 0.3.24). My clean-CARGO_HOME registry installs of 0.3.19 and 0.3.24 passed on Windows (FINDINGs sent). This PR (#46) is the HANDOFF rewrite, 0.3.27; remove sageant-wt-handoff + docs/handoff-rewrite on merge (git status first).
+1. PUBLISHED: 0.3.19 and 0.3.24 (v0.3.24 = bundle of 0.3.20-0.3.23: threat model, registry smoke CI, design note, text index on PersistAnt 0.18.23, KvTextIndex deleted, rebuild migration to index2.db). main: 0.3.27 (#46 HANDOFF rewrite merged; registry smoke pinned to 0.3.24). My clean-CARGO_HOME registry installs of 0.3.19 and 0.3.24 passed on Windows (FINDINGs sent). #48 CodeRipper pin merged. Open: #49 (this HANDOFF fix). Stale worktree sageant-wt-handoff (if present) can go: git status first.
 2. Known: sqlite/sqlite-full homes keep MORE fragments than before at N>=3 (text index tx posting cell); README unchanged (not erased); sqlite-secure is the answer; persistant told.
-3. Row E (MCP over HTTP): docs/THREAT-MODEL-MCP-HTTP.md; recommendation A; CireSnave decides via PM; build only if B approved. F parked. Idle candidates: CONTRACT D17 wording refresh for the PersistAnt text index; a full (not diff-scoped) mutation run.
+3. Row E DECIDED 2026-11-17 (PM): A, not now; revisit when a consumer asks. Recorded with D17 wording in #50 (awaiting PM gate). F parked. Idle candidate: a full (not diff-scoped) mutation run. One PR per project per day (CLAUDE.md 2026-11-16).
 4. Primary checkout: stay on main, clean; all work in worktrees (I once edited the primary by running a script from the wrong cwd: always `cd` into the worktree in the same command). `supertool` (untracked, 551KB python script dated Jul 20, from the supertool plugin) is not ours: leave it.
 
 ## Licence exclusions
