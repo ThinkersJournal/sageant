@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.30
+
+- Docs only: ROADMAP row E (MCP over HTTP) recorded as decided not-now, with what would reopen it in the threat model; CONTRACT D17 now says the search index is PersistAnt's text index since 0.3.23. No code change.
+
 ## 0.3.29
 
 - Docs only: HANDOFF.md `WAIT:` lines rewritten in the form `lane-restart waits` accepts, and its state refreshed. No code change.
