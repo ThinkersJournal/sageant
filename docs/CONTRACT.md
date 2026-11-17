@@ -141,8 +141,9 @@ are gone**: sqlite has no `secure_delete` or vacuum setting found, fs is an OS u
 **D17. Mapping.** Declare needs (`kv.get`, `kv.put`, `kv.delete`, `kv.batch_atomic.*`, `kv.ordered_scan_values`) and let
 `choose` pick; blob only for bodies above a threshold. A `put` is one `batch` carrying the record, its index postings and
 the audit event, with `Require` on the expected prior version (that is the `Conflict{expected, found}` of D15). Lexical
-search: (a) postings stored as kv rows in this crate (BM25-style, integer arithmetic), (b) a relational backend with FTS.
-Recommend (a): PersistAnt has no text index, and (a) needs only capabilities its certified backends already give. Listing
+search: originally (a) postings stored as kv rows in this crate, or (b) a relational backend with FTS. Since 0.3.23 the
+search index is PersistAnt's text index (`sageant-persistant`), with BM25 scoring in integer arithmetic still in
+`sageant-lexical` behind the `TextIndex` trait; the kv-postings index (`KvTextIndex`) is deleted. Listing
 uses `ordered_scan_values`, never `prefix_list`, so D16 holds. Backends lacking `kv.batch_atomic` are refused at open,
 by PersistAnt, not worked around.
 
@@ -173,8 +174,8 @@ input. No `unsafe`, no `#[ignore]`.
    not define its own. Asked of the redactant lane 2026-11-14; until it answers, `put` takes a caller-supplied screen hook
    whose type is replaced by RedactAnt's.
 3. D12: YES, plan-then-apply.
-4. D17: YES. kv-postings lexical search as an interim behind a trait (`TextIndex`); a text-index capability is a ROADMAP request to
-   the PersistAnt lane (PersistAnt picks backends, no arbitrary limits).
+4. D17: YES. kv-postings lexical search as an interim behind a trait (`TextIndex`); a text-index capability was requested of the
+   PersistAnt lane and has landed (0.3.23: PersistAnt's text index replaced the interim).
 5. D13: CONFIRMED. `purge` is never an MCP tool.
 6. D18: YES. The promise is "unretrievable, not erased" until PersistAnt has a tested secure-delete; requested of the PersistAnt
    lane with the criterion that reading back the freed bytes shows the content absent. **Claims must be earned: the word

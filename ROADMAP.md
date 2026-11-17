@@ -29,7 +29,7 @@ It sits above PersistAnt (storage). Status: pre-1.0, published on crates.io at 0
 | 4 | PersistAnt-backed store, lexical retriever, MCP tool server, CLI; ease gate for a stranger | done (#13 to #25: 0.2.0 to 0.3.4; recorded workspace mutation run in `docs/MUTATION.md`; first run verified from a real `cargo install`; `rmcp` 3.10.0) |
 | 5 | Patent sweep before any release | done (#27: `docs/PATENT-SWEEP.md`, 19 hits read, 18 clear, 1 design-around, 0 needs-review; AI reading, not legal advice) |
 | 6 | First release | done (0.3.8, all five crates on crates.io; 0.3.7 shipped only `sageant`, `sageant-lexical` and `sageant-persistant` because crates.io refused a 22-character keyword, see CHANGELOG) |
-| E | MCP over HTTP | not started: threat-model draft in `docs/THREAT-MODEL-MCP-HTTP.md`, waiting for a CireSnave decision (recommendation: not now) |
+| E | MCP over HTTP | decided 2026-11-17 (PM): not now; revisit when a consumer asks. Stays a threat-model document (`docs/THREAT-MODEL-MCP-HTTP.md`); nothing is built |
 
 ## Constraints
 

@@ -86,7 +86,16 @@ host, because the service exposes only these tools.
 **A now.** If a concrete need appears, **B**, with every control in section 4 treated as a release condition and the refutation tests
 below. **C** only with a stated user, an owner for certificate and token operations, and a separate review.
 
-## 8. Decisions needed from CireSnave
+## 8. Decision, and what would change it
+
+**Decided 2026-11-17 (PM): A, not now.** MCP over HTTP stays this document; nothing is built until a named consumer asks.
+It would be reopened by either of:
+
+- **A named consumer** that cannot use stdio today (a client, who runs it, and why a local process will not do).
+- **A transport we can sandbox**: one whose reach is bounded without new network exposure (a loopback listener behind a tunnel
+  the owner already runs), so that section 4's controls can all be tested as release conditions.
+
+If reopened, the questions below go to CireSnave first.
 
 1. Is there a real client that cannot use stdio today, and which? (This decides whether B is wanted at all.)
 2. If B: may remote clients ever hold a **forget** grant, or only read, write and archive?
