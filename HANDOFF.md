@@ -11,11 +11,10 @@ Decided model and rows: `ROADMAP.md`. Do not reopen the model without an `[ASK]`
 - persistant 0.18.0 facts: kv.batch_atomic.* leaves recorded only for kv-on-relational (sqlite) not opendal memory/fs; PersistStore needs the 4 leaves + kv.get/put/delete/ordered_scan_values; batch() Ok(false) = a Require failed.
 - PM rulings: no owner-notification on put path (patent US20230063214A1); no entropy detection; say "unretrievable", never "erased", until PersistAnt row 38 passes.
 
-WAIT: row E (MCP over HTTP) decision from CireSnave via PM | check: synapse mail | wake: 2026-11-17T12:00:00Z
-WAIT: PR #48 (CodeRipper 0.47.5 pin, 0.3.28) merge by the PM gate | check: gh pr view 48 --json state,mergedAt | wake: 2026-11-16T18:00:00Z
+WAIT: row E (MCP over HTTP) decision from CireSnave via PM | check: synapse mail | wake: 2026-11-18T12:00:00Z
 
 ## Next
-1. PUBLISHED: 0.3.19 and 0.3.24 (v0.3.24 = bundle of 0.3.20-0.3.23: threat model, registry smoke CI, design note, text index on PersistAnt 0.18.23, KvTextIndex deleted, rebuild migration to index2.db). main: 0.3.27 (#46 HANDOFF rewrite merged; registry smoke pinned to 0.3.24). My clean-CARGO_HOME registry installs of 0.3.19 and 0.3.24 passed on Windows (FINDINGs sent). Open: #48 CodeRipper pin (not mine, green). Stale worktree sageant-wt-handoff (if present) can go: git status first.
+1. PUBLISHED: 0.3.19 and 0.3.24 (v0.3.24 = bundle of 0.3.20-0.3.23: threat model, registry smoke CI, design note, text index on PersistAnt 0.18.23, KvTextIndex deleted, rebuild migration to index2.db). main: 0.3.27 (#46 HANDOFF rewrite merged; registry smoke pinned to 0.3.24). My clean-CARGO_HOME registry installs of 0.3.19 and 0.3.24 passed on Windows (FINDINGs sent). #48 CodeRipper pin merged. Open: #49 (this HANDOFF fix). Stale worktree sageant-wt-handoff (if present) can go: git status first.
 2. Known: sqlite/sqlite-full homes keep MORE fragments than before at N>=3 (text index tx posting cell); README unchanged (not erased); sqlite-secure is the answer; persistant told.
 3. Row E (MCP over HTTP): docs/THREAT-MODEL-MCP-HTTP.md; recommendation A; CireSnave decides via PM; build only if B approved. F parked. Idle candidates: CONTRACT D17 wording refresh for the PersistAnt text index; a full (not diff-scoped) mutation run.
 4. Primary checkout: stay on main, clean; all work in worktrees (I once edited the primary by running a script from the wrong cwd: always `cd` into the worktree in the same command). `supertool` (untracked, 551KB python script dated Jul 20, from the supertool plugin) is not ours: leave it.
