@@ -52,6 +52,8 @@ them all.
 - **purge** removes everything about a chunk, tombstone included. It needs you at a terminal to type a confirmation,
   and no MCP tool can do it.
 
+A note on what is shared: `forget` and `purge` act on this store only. Anything you have exported, copied or shared outside it, and anything shared publicly, should be assumed to stay known; anything shared publicly should be assumed to remain among public knowledge forever. What has been communicated cannot be stopped from circulating, and sageant does not try to engineer around that. Today data leave a store through `export`, the commands that print it and the MCP tools you grant; sageant has no public sharing.
+
 ## Use it from an AI client (MCP)
 
 `sageant serve` speaks MCP on standard input and output. It is read-only unless you name collections the client may

@@ -2,7 +2,7 @@
 
 ## 0.3.31
 
-- Docs and crate metadata only: ROADMAP status line no longer names a stale version; the `sageant` and `sageant-persistant` crate descriptions say what each crate is (and point to `sageant-cli`); the patent sweep's "nothing is published" is dated; HANDOFF refreshed; `docs/PROPOSAL-expansion-2026-11-18.md` added (not decided, nothing started). No code change.
+- Docs and crate metadata only: ROADMAP status line no longer names a stale version; the `sageant` and `sageant-persistant` crate descriptions say what each crate is (and point to `sageant-cli`); the patent sweep's "nothing is published" is dated; HANDOFF refreshed; README note that `forget` and `purge` reach this store only and that anything shared publicly stays known; `docs/PROPOSAL-expansion-2026-11-18.md` added (not decided, nothing started). No code change.
 
 ## 0.3.30
 

@@ -204,11 +204,16 @@ refusing to learn.
 (See the PM's reply to CireSnave for the full text; summary kept here.) Phase 1 (worth as a derived signal stored as a separate record
 like embeddings, plus an adaptive-decay Maintainer that archives before it forgets and always plans before it applies) is sound, bounded and
 worth doing. Phases 2 and 3 need a survey first (prior art for federated knowledge graphs and content-addressed replication) and an answer to
-two hazards: (1) replication and "forgetting" conflict (a purge cannot reach copies other minds hold); (2) stubs fetched from other graphs are
-untrusted text.
+one hazard: stubs fetched from other graphs are untrusted text.
 
-CORRECTION, same day (CireSnave): the PM's first draft of this note named a third hazard, a privacy gate in the knowledge base against autonomous
-sharing. CireSnave ruled that unnecessary and withdrawn: private data is never shared directly with an LLM (that is what `with-secret` is for), so
-a second privacy guard inside SageAnt would be redundant and must not be built into it. Sharing is governed only by the mechanisms SageAnt already
-has (entries start private; writing into a shared or public collection needs the existing per-collection write grant); no new guard. The "Ant suite" names in the out-of-scope section (EpistemologicAnt, OnotologAnt, SemanticAnt) overlap the AnalysAnt crate names
+CORRECTIONS, same day (CireSnave), which withdraw two hazards the PM's first draft of this note had named:
+
+1. A privacy gate in the knowledge base against autonomous sharing is unnecessary: private data is never shared directly with an LLM (that is
+   what `with-secret` is for), so a second privacy guard inside SageAnt would be redundant and must not be built into it. Sharing is governed
+   only by the mechanisms SageAnt already has (entries start private; writing into a shared or public collection needs the existing
+   per-collection write grant); no new guard.
+2. "Replication versus forgetting" is not a hazard to engineer around. CireSnave: minds communicate, and once a mind has communicated something
+   there is no way to stop it circulating; that is the nature of communication between minds, and the knowledge base does not fight it. The
+   rule is a NOTE, not a mechanism: **anything shared publicly should be assumed to remain among public knowledge forever.** Forget and purge
+   act on this store only. The "Ant suite" names in the out-of-scope section (EpistemologicAnt, OnotologAnt, SemanticAnt) overlap the AnalysAnt crate names
 (`analysant-epistemic`, `-ontological`, `-semantic`): reconcile before either is built.
