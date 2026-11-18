@@ -2,7 +2,7 @@
 
 Date: 2026-11-15; Run by: lane `sageant`, Claude Sonnet 5.5; Method: AI-assisted search and read; **NOT legal advice; NOT a
 freedom-to-operate opinion.** Covers the version line 0.3.x (crates `sageant`, `sageant-lexical`, `sageant-persistant`,
-`sageant-mcp`, `sageant-cli`) at main 31bd649. Process: `PATENT-SWEEP-PROCESS.md` (portfolio root). Nothing is published yet.
+`sageant-mcp`, `sageant-cli`) at main 31bd649. Process: `PATENT-SWEEP-PROCESS.md` (portfolio root). Nothing was published when this was written (the crates were published afterwards: ROADMAP row 6).
 
 ## Ideas swept
 

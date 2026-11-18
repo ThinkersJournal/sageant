@@ -3,7 +3,7 @@ name = "sageant-persistant"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "A durable sageant store on PersistAnt key-value backends."
+description = "A durable sageant store and search index on PersistAnt key-value backends (SQLite)."
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
@@ -11,8 +11,8 @@ keywords = ["knowledge-base", "persistence", "sqlite", "key-value", "ai-agents"]
 categories = ["database-implementations"]
 
 [dependencies]
-sageant = { path = "../..", version = "0.3.30" }
-sageant-lexical = { path = "../sageant-lexical", version = "0.3.30" }
+sageant = { path = "../..", version = "0.3.31" }
+sageant-lexical = { path = "../sageant-lexical", version = "0.3.31" }
 persistant = { version = "~0.18.23", features = ["registry-sqlite", "text-index"] }
 
 [dev-dependencies]
