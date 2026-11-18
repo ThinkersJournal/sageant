@@ -204,7 +204,11 @@ refusing to learn.
 (See the PM's reply to CireSnave for the full text; summary kept here.) Phase 1 (worth as a derived signal stored as a separate record
 like embeddings, plus an adaptive-decay Maintainer that archives before it forgets and always plans before it applies) is sound, bounded and
 worth doing. Phases 2 and 3 need a survey first (prior art for federated knowledge graphs and content-addressed replication) and an answer to
-three hazards: (1) autonomous sharing into a public graph is a data-exfiltration channel unless the USER keeps a policy gate that defaults to
-private; (2) replication and "forgetting" conflict (a purge cannot reach copies other minds hold); (3) stubs fetched from other graphs are
-untrusted text. The "Ant suite" names in the out-of-scope section (EpistemologicAnt, OnotologAnt, SemanticAnt) overlap the AnalysAnt crate names
+two hazards: (1) replication and "forgetting" conflict (a purge cannot reach copies other minds hold); (2) stubs fetched from other graphs are
+untrusted text.
+
+CORRECTION, same day (CireSnave): the PM's first draft of this note named a third hazard, a privacy gate in the knowledge base against autonomous
+sharing. CireSnave ruled that unnecessary and withdrawn: private data is never shared directly with an LLM (that is what `with-secret` is for), so
+a second privacy guard inside SageAnt would be redundant and must not be built into it. Sharing is governed only by the mechanisms SageAnt already
+has (entries start private; writing into a shared or public collection needs the existing per-collection write grant); no new guard. The "Ant suite" names in the out-of-scope section (EpistemologicAnt, OnotologAnt, SemanticAnt) overlap the AnalysAnt crate names
 (`analysant-epistemic`, `-ontological`, `-semantic`): reconcile before either is built.
