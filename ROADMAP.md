@@ -2,7 +2,7 @@
 
 SageAnt is the Knowledge Store: a storable, organised collection of annotated, sorted, retrievable
 knowledge chunks, with manual retrieval tooling and pluggable interfaces for automated retrieval.
-It sits above PersistAnt (storage). Status: pre-1.0, published on crates.io at 0.3.8; rows 0 to 6 are done (the crates: `sageant`, `sageant-lexical`, `sageant-persistant`, `sageant-mcp`, `sageant-cli`).
+It sits above PersistAnt (storage). Status: pre-1.0, published on crates.io (see the crates' pages for the current version); rows 0 to 6 are done (the crates: `sageant`, `sageant-lexical`, `sageant-persistant`, `sageant-mcp`, `sageant-cli`).
 
 ## Decided model (changes need an `[ASK]`)
 
@@ -40,3 +40,7 @@ It sits above PersistAnt (storage). Status: pre-1.0, published on crates.io at 0
 - SortAnt (rank fusion) and TokenAnt (chunk sizing) are not released. Define the small trait needed, with a
   plain default (score descending, then input order), so each can be swapped in later.
 - crates.io dependencies only; no `unsafe`; no `#[ignore]`.
+
+## Proposals (not decided)
+
+- `docs/PROPOSAL-expansion-2026-11-18.md`: the per-mind graph in a self-hyperlinking multi-graph (Pip's proposal, with the PM's review at its end). Nothing in it is started; Phase 1 waits for CireSnave's word.

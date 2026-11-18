@@ -4,18 +4,17 @@ You are the `sageant` lane (cwd `C:\Projects\sageant`, repo `ThinkersJournal/sag
 Charter: `C:\Projects\.lane-state\newlane\sageant.md`; concept: `C:\Projects\KNOWLEDGE-STORE-CONCEPT.md` 10b/10c.
 Decided model and rows: `ROADMAP.md`. Do not reopen the model without an `[ASK]`.
 
-## State (2026-11-16)
-- Rows 0-3 DONE (#4-#12). Row 4 in progress. Merged: #13 0.1.0 (Reader owned, BREAKING), #14 0.1.1 (workspace, MSRV 94, sageant-lexical), #15 0.1.2 (records), #16 8042d4a 0.1.3 (sageant-persistant chunks over sqlite kv).
-  PM claimed crate names sageant-lexical/-persistant/-mcp/-cli at 0.0.0 on crates.io; real releases publish over them.
-- #17 cd8dd74 0.1.4 MERGED (persistant links+confidence; core derive_confidence/closes_cycle). Cleaned up.
+## State (2026-11-18)
+- Rows 0-6 DONE (ROADMAP); row E decided not-now (2026-11-17). All five crates are on crates.io (max read 2026-11-18: 0.3.24); main is 0.3.31 once the docs-correction PR merges.
+- Proposals (not decided): `docs/PROPOSAL-expansion-2026-11-18.md`; nothing started, Phase 1 waits for CireSnave.
 - persistant 0.18.0 facts: kv.batch_atomic.* leaves recorded only for kv-on-relational (sqlite) not opendal memory/fs; PersistStore needs the 4 leaves + kv.get/put/delete/ordered_scan_values; batch() Ok(false) = a Require failed.
 - PM rulings: no owner-notification on put path (patent US20230063214A1); no entropy detection; say "unretrievable", never "erased", until PersistAnt row 38 passes.
 
 
 ## Next
-1. PUBLISHED: 0.3.19 and 0.3.24 (v0.3.24 = bundle of 0.3.20-0.3.23: threat model, registry smoke CI, design note, text index on PersistAnt 0.18.23, KvTextIndex deleted, rebuild migration to index2.db). main: 0.3.27 (#46 HANDOFF rewrite merged; registry smoke pinned to 0.3.24). My clean-CARGO_HOME registry installs of 0.3.19 and 0.3.24 passed on Windows (FINDINGs sent). #48 CodeRipper pin merged. Open: #49 (this HANDOFF fix). Stale worktree sageant-wt-handoff (if present) can go: git status first.
+1. PUBLISHED: 0.3.19 and 0.3.24 (v0.3.24 = bundle of 0.3.20-0.3.23: threat model, registry smoke CI, design note, text index on PersistAnt 0.18.23, KvTextIndex deleted, rebuild migration to index2.db). My clean-CARGO_HOME registry installs of 0.3.19 and 0.3.24 passed on Windows (FINDINGs sent). Registry smoke is pinned to 0.3.24.
 2. Known: sqlite/sqlite-full homes keep MORE fragments than before at N>=3 (text index tx posting cell); README unchanged (not erased); sqlite-secure is the answer; persistant told.
-3. Row E DECIDED 2026-11-17 (PM): A, not now; revisit when a consumer asks. Recorded with D17 wording in #50 (awaiting PM gate). F parked. Idle candidate: a full (not diff-scoped) mutation run. One PR per project per day (CLAUDE.md 2026-11-16).
+3. Row E DECIDED 2026-11-17 (PM): A, not now; revisit when a consumer asks. Recorded in #50 (merged) with the D17 wording. F parked. Idle candidate: a full (not diff-scoped) mutation run. One PR per project per day (CLAUDE.md 2026-11-16).
 4. Primary checkout: stay on main, clean; all work in worktrees (I once edited the primary by running a script from the wrong cwd: always `cd` into the worktree in the same command). `supertool` (untracked, 551KB python script dated Jul 20, from the supertool plugin) is not ours: leave it.
 
 ## Licence exclusions
