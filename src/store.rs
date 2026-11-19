@@ -11,6 +11,7 @@ use crate::model::{
 };
 use crate::reader::{Filter, Reader};
 use crate::screen::SecretScreen;
+use crate::worth::{WORTH_MODEL, Worth, WorthSnapshot, WorthStore};
 use crate::writer::Writer;
 
 /// The in-memory reference store. Ordered maps only, so no hash order can reach any output (CONTRACT D16).
@@ -22,6 +23,8 @@ pub struct MemoryStore {
     caps: BTreeMap<String, usize>,
     tombstones: BTreeMap<ChunkId, Tombstone>,
     review: BTreeSet<ChunkId>,
+    /// Derived worth snapshots by (chunk, version, model); removed with the chunk.
+    worth: BTreeMap<(ChunkId, u32, String), WorthSnapshot>,
     audit: Vec<AuditEvent>,
     /// Set while a `Writer` call runs: names the actor on every entry that call appends.
     acting: Option<String>,
@@ -166,8 +169,8 @@ impl MemoryStore {
     #[must_use]
     pub fn dump_all_text(&self) -> String {
         format!(
-            "{:?}{:?}{:?}{:?}{:?}",
-            self.lineages, self.links, self.tombstones, self.review, self.audit
+            "{:?}{:?}{:?}{:?}{:?}{:?}",
+            self.lineages, self.links, self.tombstones, self.review, self.worth, self.audit
         )
     }
 
@@ -226,6 +229,7 @@ impl MemoryStore {
         };
         self.lineages.remove(id);
         self.links.remove(id);
+        self.worth.retain(|(chunk, _, _), _| chunk != id);
         self.flag_derived_from(id);
         self.tombstones.insert(id.clone(), tombstone);
         self.record(at, Action::Forget, Some(id), actor, reason);
@@ -258,6 +262,7 @@ impl MemoryStore {
         }
         self.lineages.remove(id);
         self.links.remove(id);
+        self.worth.retain(|(chunk, _, _), _| chunk != id);
         self.flag_derived_from(id);
         self.tombstones.remove(id);
         self.record(at, Action::Purge, Some(id), authority.how(), "");
@@ -689,5 +694,35 @@ impl Writer for MemoryStore {
         at: Timestamp,
     ) -> Result<(), Error> {
         Self::purge(self, id, authority, at)
+    }
+}
+
+impl WorthStore for MemoryStore {
+    fn record_worth(
+        &mut self,
+        id: &ChunkId,
+        worth: &Worth,
+        now: Timestamp,
+    ) -> Result<WorthSnapshot, Error> {
+        let head = self.lineage(id)?.last().ok_or(Error::NotFound)?.version;
+        if worth.version() == 0 || worth.version() > head {
+            return Err(Error::Invalid("worth version"));
+        }
+        let snapshot = WorthSnapshot::new(id, worth, now);
+        self.worth.insert(
+            (id.clone(), worth.version(), WORTH_MODEL.to_owned()),
+            snapshot.clone(),
+        );
+        Ok(snapshot)
+    }
+
+    fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {
+        self.lineage(id)?;
+        Ok(self
+            .worth
+            .iter()
+            .filter(|((chunk, _, _), _)| chunk == id)
+            .map(|(_, snapshot)| snapshot.clone())
+            .collect())
     }
 }

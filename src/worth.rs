@@ -58,9 +58,9 @@ impl WorthParams {
 /// One signal's contribution to a score.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Component {
-    name: &'static str,
-    raw: u64,
-    bp: u32,
+    pub(crate) name: &'static str,
+    pub(crate) raw: u64,
+    pub(crate) bp: u32,
 }
 
 impl Component {
@@ -86,6 +86,8 @@ impl Component {
 pub struct Worth {
     score_bp: u32,
     components: [Component; 4],
+    version: u32,
+    half_life: u64,
 }
 
 impl Worth {
@@ -99,6 +101,105 @@ impl Worth {
     pub fn components(&self) -> &[Component; 4] {
         &self.components
     }
+    /// The version of the chunk this worth was computed for.
+    #[must_use]
+    pub fn version(&self) -> u32 {
+        self.version
+    }
+    /// The half-life, in the caller's time unit, it was computed with.
+    #[must_use]
+    pub fn half_life(&self) -> u64 {
+        self.half_life
+    }
+    /// Rebuild a worth from stored parts. The caller (the decoder) has already checked the sum and the names.
+    pub(crate) fn from_parts(
+        score_bp: u32,
+        components: [Component; 4],
+        version: u32,
+        half_life: u64,
+    ) -> Self {
+        Self {
+            score_bp,
+            components,
+            version,
+            half_life,
+        }
+    }
+}
+
+/// The four component names, in the order a [`Worth`] holds them.
+pub(crate) const COMPONENT_NAMES: [&str; 4] =
+    ["structural_links", "loose_links", "recency", "stability"];
+
+/// A [`Worth`] filed against a chunk: the derived numbers and when they were computed, keyed by
+/// `(chunk id, version, model id)`. Numbers only, never content; recomputable, so losing one loses only time.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorthSnapshot {
+    pub(crate) id: ChunkId,
+    pub(crate) model_id: String,
+    pub(crate) computed_at: Timestamp,
+    pub(crate) worth: Worth,
+}
+
+impl WorthSnapshot {
+    /// The snapshot of `worth` for `id` computed at `computed_at`, under the model [`WORTH_MODEL`]. Building one stores
+    /// nothing; see [`WorthStore`].
+    #[must_use]
+    pub fn new(id: &ChunkId, worth: &Worth, computed_at: Timestamp) -> Self {
+        Self {
+            id: id.clone(),
+            model_id: WORTH_MODEL.to_owned(),
+            computed_at,
+            worth: worth.clone(),
+        }
+    }
+    /// The chunk it is about.
+    #[must_use]
+    pub fn id(&self) -> &ChunkId {
+        &self.id
+    }
+    /// The chunk version it was computed for.
+    #[must_use]
+    pub fn version(&self) -> u32 {
+        self.worth.version
+    }
+    /// The formula that produced it, such as `worth-v1`.
+    #[must_use]
+    pub fn model_id(&self) -> &str {
+        &self.model_id
+    }
+    /// When it was computed, in the caller's time.
+    #[must_use]
+    pub fn computed_at(&self) -> Timestamp {
+        self.computed_at
+    }
+    /// The score and its components.
+    #[must_use]
+    pub fn worth(&self) -> &Worth {
+        &self.worth
+    }
+}
+
+/// Reading and writing worth snapshots. A snapshot is derived data: recording one is not an audited write, changes no
+/// chunk, and is removed with the chunk by `forget` and `purge`.
+pub trait WorthStore {
+    /// File `worth` (computed by [`worth_of`]) as the snapshot for `id` at the version it was computed for, replacing
+    /// any snapshot in that slot.
+    ///
+    /// # Errors
+    /// `NotFound` or `Forgotten`; `Invalid("worth version")` when the worth is for a version the chunk has not
+    /// reached; `Conflict` if the chunk changed while recording; `Backend` or `Corrupt`.
+    fn record_worth(
+        &mut self,
+        id: &ChunkId,
+        worth: &Worth,
+        now: Timestamp,
+    ) -> Result<WorthSnapshot, Error>;
+    /// Every snapshot of `id`, ordered by version then model id.
+    ///
+    /// # Errors
+    /// `NotFound` or `Forgotten`; `Backend` or `Corrupt`.
+    fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error>;
 }
 
 /// Narrow a basis-point value that is at most 10 000 by construction.
@@ -169,5 +270,7 @@ pub fn worth_of(
     Ok(Worth {
         score_bp,
         components,
+        version: current.version(),
+        half_life: h,
     })
 }

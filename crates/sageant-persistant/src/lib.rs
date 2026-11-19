@@ -33,7 +33,8 @@ use persistant::registry::Endpoint;
 use sageant::{
     Action, Actor, AuditEvent, Chunk, ChunkId, ChunkRef, Confidence, Error, Filter, Link, LinkKind,
     LinkTarget, NewChunk, Origin, PersonAuthority, Removed, SecretOverride, SecretScreen, Status,
-    Timestamp, Tombstone, Writer, closes_cycle, derive_confidence,
+    Timestamp, Tombstone, WORTH_MODEL, Worth, WorthSnapshot, WorthStore, Writer, closes_cycle,
+    derive_confidence,
 };
 
 pub(crate) const SCAN_PAGE: usize = 256;
@@ -67,11 +68,16 @@ fn review_key(id: &ChunkId) -> String {
     format!("v/{}", id.as_str())
 }
 
+/// A worth snapshot: `w/<id>/<version, 10 digits>/<model id>`.
+fn worth_key(id: &ChunkId, version: u32, model_id: &str) -> String {
+    format!("w/{}/{version:010}/{model_id}", id.as_str())
+}
+
 fn audit_key(seq: u64) -> String {
     format!("a/{seq:020}")
 }
 
-/// Per-chunk link generation: `n/<id>` counts the links ever added from or to the chunk. A writer that read links
+/// Per-chunk write generation: `n/<id>` counts the links ever added from or to the chunk, and the worth snapshots written for it. A writer that read links
 /// (a cycle check, a forget) requires the counters it read to be unchanged when it commits, so a link that lands in
 /// between makes it retry on fresh state instead of acting on stale reads.
 fn gen_key(id: &ChunkId) -> String {
@@ -817,6 +823,23 @@ impl PersistStore {
             .collect()
     }
 
+    /// Every key under `prefix`, ascending, across pages.
+    fn scan_keys(&self, prefix: &str) -> Result<Vec<String>, Error> {
+        let mut out = Vec::new();
+        let mut after: Option<String> = None;
+        loop {
+            let page = self
+                .kv
+                .ordered_scan_values(prefix, after.as_deref(), SCAN_PAGE)
+                .map_err(kv_error)?;
+            out.extend(page.entries.into_iter().map(|(key, _)| key));
+            match page.next {
+                Some(cursor) => after = Some(cursor),
+                None => return Ok(out),
+            }
+        }
+    }
+
     /// Every value under `prefix`, ascending by key, across pages.
     fn scan(&self, prefix: &str) -> Result<Vec<Vec<u8>>, Error> {
         let mut out = Vec::new();
@@ -1185,6 +1208,9 @@ impl PersistStore {
                 });
             }
         }
+        for key in self.scan_keys(&format!("w/{}/", id.as_str()))? {
+            ops.push(self.content_delete(key));
+        }
         Ok(ops)
     }
 
@@ -1364,6 +1390,111 @@ impl PersistStore {
             }
         }
         Err(Error::Backend("purge contention".to_owned()))
+    }
+
+    /// File `worth` as the snapshot for `id` at the version it was computed for, replacing any in that slot. Derived
+    /// data: not audited, and it changes no chunk. The write requires the chunk's head and link generation unchanged and
+    /// bumps the generation, so a `forget` that read the snapshot keys before this landed retries and removes it.
+    ///
+    /// # Errors
+    /// `NotFound` or `Forgotten`; `Invalid("worth version")` for a version the chunk has not reached; `Corrupt` or
+    /// `Backend`.
+    pub fn record_worth(
+        &self,
+        id: &ChunkId,
+        worth: &Worth,
+        now: Timestamp,
+    ) -> Result<WorthSnapshot, Error> {
+        self.record_worth_inner(id, worth, now, None)
+    }
+
+    /// [`record_worth`](Self::record_worth), running `hook` once after the reads and before the commit. Test only.
+    #[doc(hidden)]
+    pub fn record_worth_with_hook_for_test(
+        &self,
+        id: &ChunkId,
+        worth: &Worth,
+        now: Timestamp,
+        hook: &dyn Fn(),
+    ) -> Result<WorthSnapshot, Error> {
+        self.record_worth_inner(id, worth, now, Some(hook))
+    }
+
+    fn record_worth_inner(
+        &self,
+        id: &ChunkId,
+        worth: &Worth,
+        now: Timestamp,
+        hook: Option<&dyn Fn()>,
+    ) -> Result<WorthSnapshot, Error> {
+        let snapshot = WorthSnapshot::new(id, worth, now);
+        for attempt in 0..GEN_RETRIES {
+            let head = self.head(id)?.ok_or_else(|| self.missing(id))?;
+            if worth.version() == 0 || worth.version() > head {
+                return Err(Error::Invalid("worth version"));
+            }
+            let generation = self.read(&gen_key(id))?;
+            let ops = vec![
+                BatchOp::Require {
+                    key: head_key(id),
+                    expected: Some(head.to_string().into_bytes()),
+                },
+                BatchOp::Require {
+                    key: gen_key(id),
+                    expected: generation.clone(),
+                },
+                BatchOp::Put {
+                    key: gen_key(id),
+                    value: bumped(generation.as_ref())?,
+                    ttl: NO_TTL,
+                },
+                BatchOp::Put {
+                    key: worth_key(id, worth.version(), WORTH_MODEL),
+                    value: snapshot.encode(),
+                    ttl: NO_TTL,
+                },
+            ];
+            if attempt == 0
+                && let Some(hook) = hook
+            {
+                hook();
+            }
+            if self.apply(&ops, &[])? {
+                return Ok(snapshot);
+            }
+            // A failed require means the head or the generation moved: read again (a forgotten chunk now says so).
+        }
+        Err(Error::Backend("worth contention".to_owned()))
+    }
+
+    /// Every worth snapshot of `id`, ordered by version then model id.
+    ///
+    /// # Errors
+    /// `NotFound` or `Forgotten`; `Corrupt` for a record that is not the one its key names; `Backend`.
+    pub fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {
+        self.head(id)?.ok_or_else(|| self.missing(id))?;
+        let prefix = format!("w/{}/", id.as_str());
+        let mut out = Vec::new();
+        let mut after: Option<String> = None;
+        loop {
+            let page = self
+                .kv
+                .ordered_scan_values(&prefix, after.as_deref(), SCAN_PAGE)
+                .map_err(kv_error)?;
+            for (key, value) in page.entries {
+                let snapshot = WorthSnapshot::decode(&value)?;
+                if snapshot.id() != id
+                    || key != worth_key(id, snapshot.version(), snapshot.model_id())
+                {
+                    return Err(Error::Corrupt("key does not match record"));
+                }
+                out.push(snapshot);
+            }
+            match page.next {
+                Some(cursor) => after = Some(cursor),
+                None => return Ok(out),
+            }
+        }
     }
 
     /// The tombstone of a forgotten lineage, if it is currently forgotten.
@@ -1619,5 +1750,19 @@ mod tests {
             Err(Error::Corrupt(_))
         ));
         assert!(matches!(bumped(Some(&vec![0xff])), Err(Error::Corrupt(_))));
+    }
+}
+
+impl WorthStore for PersistStore {
+    fn record_worth(
+        &mut self,
+        id: &ChunkId,
+        worth: &Worth,
+        now: Timestamp,
+    ) -> Result<WorthSnapshot, Error> {
+        Self::record_worth(self, id, worth, now)
+    }
+    fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {
+        Self::worth_snapshots(self, id)
     }
 }

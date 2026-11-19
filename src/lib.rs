@@ -44,5 +44,5 @@ pub use screen::RegisteredSecrets;
 pub use screen::SecretScreen;
 pub use sha256::sha256_hex;
 pub use store::MemoryStore;
-pub use worth::{Component, WORTH_MODEL, Worth, WorthParams, worth_of};
+pub use worth::{Component, WORTH_MODEL, Worth, WorthParams, WorthSnapshot, WorthStore, worth_of};
 pub use writer::Writer;

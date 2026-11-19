@@ -11,6 +11,7 @@ use crate::lifecycle::{Action, AuditEvent, Tombstone};
 use crate::model::{Chunk, ChunkId, Confidence, Link, LinkKind, Origin, Status, Timestamp};
 use crate::sha256::sha256_hex;
 use crate::store::check_text;
+use crate::worth::{COMPONENT_NAMES, Component, Worth, WorthSnapshot};
 
 const CHUNK_HEADER: &str = "sageant-chunk/1\n";
 const LINK_HEADER: &str = "sageant-link/1\n";
@@ -324,5 +325,99 @@ impl Tombstone {
             return Err(Error::Corrupt("not canonical"));
         }
         Ok(tombstone)
+    }
+}
+
+const WORTH_HEADER: &str = "sageant-worth/1\n";
+
+/// A model id is part of a storage key, so it may not hold a `/` or anything that could confuse a prefix scan.
+fn model_id_ok(text: &str) -> bool {
+    !text.is_empty()
+        && text
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
+}
+
+impl WorthSnapshot {
+    /// The canonical stored form of this snapshot: numbers only, never content.
+    #[must_use]
+    pub fn encode(&self) -> Vec<u8> {
+        let mut out = WORTH_HEADER.as_bytes().to_vec();
+        put_field(&mut out, "id", self.id.as_str().as_bytes());
+        put_field(
+            &mut out,
+            "version",
+            self.worth.version().to_string().as_bytes(),
+        );
+        put_field(&mut out, "model", self.model_id.as_bytes());
+        put_field(
+            &mut out,
+            "half_life",
+            self.worth.half_life().to_string().as_bytes(),
+        );
+        put_field(
+            &mut out,
+            "computed_at",
+            self.computed_at.0.to_string().as_bytes(),
+        );
+        put_field(
+            &mut out,
+            "score_bp",
+            self.worth.score_bp().to_string().as_bytes(),
+        );
+        for c in self.worth.components() {
+            put_field(
+                &mut out,
+                c.name(),
+                format!("{} {}", c.raw(), c.bp()).as_bytes(),
+            );
+        }
+        out
+    }
+
+    /// Read a stored snapshot back, verifying it.
+    ///
+    /// # Errors
+    /// `Corrupt` for anything that is not exactly what `encode` writes, a score that is not the sum of its
+    /// components, a zero version or half-life, or a model id that is not safe in a key.
+    pub fn decode(bytes: &[u8]) -> Result<Self, Error> {
+        let mut cur = Cursor { rest: bytes };
+        cur.header(WORTH_HEADER)?;
+        let chunk_id = id(cur.field("id")?)?;
+        let version: u32 = number(cur.field("version")?)?;
+        let model_id = cur.field("model")?.to_owned();
+        let half_life: u64 = number(cur.field("half_life")?)?;
+        let computed_at = Timestamp(number(cur.field("computed_at")?)?);
+        let score_bp: u32 = number(cur.field("score_bp")?)?;
+        let mut parts = Vec::with_capacity(4);
+        for name in COMPONENT_NAMES {
+            let value = cur.field(name)?;
+            let (raw, bp) = value.split_once(' ').ok_or(Error::Corrupt("component"))?;
+            parts.push(Component {
+                name,
+                raw: number(raw)?,
+                bp: number(bp)?,
+            });
+        }
+        cur.finish()?;
+        if version == 0 || half_life == 0 || !model_id_ok(&model_id) {
+            return Err(Error::Corrupt("fields"));
+        }
+        let components: [Component; 4] =
+            parts.try_into().map_err(|_| Error::Corrupt("component"))?;
+        let sum: u64 = components.iter().map(|c| u64::from(c.bp)).sum();
+        if sum != u64::from(score_bp) {
+            return Err(Error::Corrupt("score"));
+        }
+        let snapshot = Self {
+            id: chunk_id,
+            model_id,
+            computed_at,
+            worth: Worth::from_parts(score_bp, components, version, half_life),
+        };
+        if snapshot.encode() != bytes {
+            return Err(Error::Corrupt("not canonical"));
+        }
+        Ok(snapshot)
     }
 }
