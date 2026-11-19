@@ -1,0 +1,53 @@
+src/record.rs:345:9: replace WorthSnapshot::encode -> Vec<u8> with vec![]
+src/record.rs:345:9: replace WorthSnapshot::encode -> Vec<u8> with vec![0]
+src/record.rs:345:9: replace WorthSnapshot::encode -> Vec<u8> with vec![1]
+src/record.rs:403:43: replace || with && in WorthSnapshot::decode
+src/record.rs:403:25: replace || with && in WorthSnapshot::decode
+src/record.rs:403:20: replace == with != in WorthSnapshot::decode
+src/record.rs:403:38: replace == with != in WorthSnapshot::decode
+src/record.rs:403:46: delete ! in WorthSnapshot::decode
+src/record.rs:409:16: replace != with == in WorthSnapshot::decode
+src/record.rs:418:30: replace != with == in WorthSnapshot::decode
+src/store.rs:708:33: replace || with && in <impl WorthStore for MemoryStore>::record_worth
+src/store.rs:708:28: replace == with != in <impl WorthStore for MemoryStore>::record_worth
+src/store.rs:708:52: replace > with == in <impl WorthStore for MemoryStore>::record_worth
+src/store.rs:708:52: replace > with < in <impl WorthStore for MemoryStore>::record_worth
+src/store.rs:708:52: replace > with >= in <impl WorthStore for MemoryStore>::record_worth
+src/store.rs:720:9: replace <impl WorthStore for MemoryStore>::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])
+src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 0
+src/store.rs:724:48: replace == with != in <impl WorthStore for MemoryStore>::worth_snapshots
+src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 1
+src/worth.rs:70:9: replace Component::name -> &'static str with ""
+src/worth.rs:70:9: replace Component::name -> &'static str with "xyzzy"
+src/worth.rs:75:9: replace Component::raw -> u64 with 0
+src/worth.rs:75:9: replace Component::raw -> u64 with 1
+src/worth.rs:80:9: replace Component::bp -> u32 with 0
+src/worth.rs:80:9: replace Component::bp -> u32 with 1
+src/worth.rs:97:9: replace Worth::score_bp -> u32 with 0
+src/worth.rs:97:9: replace Worth::score_bp -> u32 with 1
+src/worth.rs:107:9: replace Worth::version -> u32 with 0
+src/worth.rs:107:9: replace Worth::version -> u32 with 1
+src/worth.rs:112:9: replace Worth::half_life -> u64 with 0
+src/worth.rs:112:9: replace Worth::half_life -> u64 with 1
+src/worth.rs:164:9: replace WorthSnapshot::version -> u32 with 0
+src/worth.rs:164:9: replace WorthSnapshot::version -> u32 with 1
+src/worth.rs:169:9: replace WorthSnapshot::model_id -> &str with ""
+src/worth.rs:169:9: replace WorthSnapshot::model_id -> &str with "xyzzy"
+src/worth.rs:207:5: replace bp32 -> u32 with 0
+src/worth.rs:207:5: replace bp32 -> u32 with 1
+src/worth.rs:230:13: delete match arm LinkKind::PartOf | LinkKind::DerivedFrom in worth_of
+src/worth.rs:231:13: delete match arm LinkKind::Cites | LinkKind::Related in worth_of
+src/worth.rs:230:68: replace += with -= in worth_of
+src/worth.rs:230:68: replace += with *= in worth_of
+src/worth.rs:231:58: replace += with -= in worth_of
+src/worth.rs:231:58: replace += with *= in worth_of
+src/worth.rs:243:52: replace / with % in worth_of
+src/worth.rs:243:52: replace / with * in worth_of
+src/worth.rs:243:36: replace * with + in worth_of
+src/worth.rs:243:36: replace * with / in worth_of
+src/worth.rs:243:69: replace + with - in worth_of
+src/worth.rs:243:69: replace + with * in worth_of
+src/worth.rs:246:49: replace * with / in worth_of
+src/worth.rs:246:49: replace * with + in worth_of
+src/worth.rs:246:89: replace - with + in worth_of
+src/worth.rs:246:89: replace - with / in worth_of

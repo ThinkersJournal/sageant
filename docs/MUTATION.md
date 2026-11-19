@@ -214,3 +214,18 @@ as loose, structural cap removed, a changed weight, link touches ignored, a chan
 failed at least one test. No kill tests were needed afterwards.
 
 Limits: file-scoped; Windows only; the 2 unviable mutants did not compile and say nothing about the tests.
+
+# Mutation run 9 (worth snapshots, X1 slice 2)
+
+Two filtered runs (Windows, branch `work/phase1-design`), `-j 2`, `--no-shuffle`, **not full runs**:
+- `cargo mutants -p sageant --all-features --re '(?i)worth'`: 62 mutants, 7 minutes: **53 caught, 0 missed, 9 unviable**.
+- `cargo mutants -p sageant-persistant --all-features --re '(?i)worth|scan_keys|removal_ops'`: 26 mutants, 15 minutes: **18 caught, 0 missed, 8 unviable**.
+
+The tests (`tests/worth_store.rs`, `crates/sageant-persistant/tests/worth.rs`) were written before the code; they failed to compile
+without it, which is a weaker red than a failing assertion. Five hand sabotages were each caught: `forget` leaving the `w/` keys, the
+generation write removed from `record_worth` (a first attempt that rewrote the same value did not change state and was not caught; it
+was a bad sabotage, redone), the `record_worth` head requirement removed, `MemoryStore::forget` keeping snapshots, and the key-versus-record
+check removed. No kill tests were needed afterwards.
+
+Limits: regex-filtered by mutant name, so code that does not carry "worth" in its name (the shared codec helpers, `scan_keys` aside) is not
+covered here; Windows only; the unviable mutants did not compile and say nothing about the tests.

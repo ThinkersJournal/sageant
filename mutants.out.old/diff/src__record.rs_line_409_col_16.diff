@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace != with == in WorthSnapshot::decode
+@@ -401,17 +401,17 @@
+         }
+         cur.finish()?;
+         if version == 0 || half_life == 0 || !model_id_ok(&model_id) {
+             return Err(Error::Corrupt("fields"));
+         }
+         let components: [Component; 4] =
+             parts.try_into().map_err(|_| Error::Corrupt("component"))?;
+         let sum: u64 = components.iter().map(|c| u64::from(c.bp)).sum();
+-        if sum != u64::from(score_bp) {
++        if sum == /* ~ changed by cargo-mutants ~ */ u64::from(score_bp) {
+             return Err(Error::Corrupt("score"));
+         }
+         let snapshot = Self {
+             id: chunk_id,
+             model_id,
+             computed_at,
+             worth: Worth::from_parts(score_bp, components, version, half_life),
+         };

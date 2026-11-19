@@ -1,0 +1,33 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![String::new()])
+@@ -820,29 +820,17 @@
+                 }
+                 Ok(chunk)
+             })
+             .collect()
+     }
+ 
+     /// Every key under `prefix`, ascending, across pages.
+     fn scan_keys(&self, prefix: &str) -> Result<Vec<String>, Error> {
+-        let mut out = Vec::new();
+-        let mut after: Option<String> = None;
+-        loop {
+-            let page = self
+-                .kv
+-                .ordered_scan_values(prefix, after.as_deref(), SCAN_PAGE)
+-                .map_err(kv_error)?;
+-            out.extend(page.entries.into_iter().map(|(key, _)| key));
+-            match page.next {
+-                Some(cursor) => after = Some(cursor),
+-                None => return Ok(out),
+-            }
+-        }
++        Ok(vec![String::new()]) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Every value under `prefix`, ascending by key, across pages.
+     fn scan(&self, prefix: &str) -> Result<Vec<Vec<u8>>, Error> {
+         let mut out = Vec::new();
+         let mut after: Option<String> = None;
+         loop {
+             let page = self

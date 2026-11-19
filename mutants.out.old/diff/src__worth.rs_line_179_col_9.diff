@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace WorthSnapshot::worth -> &Worth with Box::leak(Box::new(Default::default()))
+@@ -171,17 +171,17 @@
+     /// When it was computed, in the caller's time.
+     #[must_use]
+     pub fn computed_at(&self) -> Timestamp {
+         self.computed_at
+     }
+     /// The score and its components.
+     #[must_use]
+     pub fn worth(&self) -> &Worth {
+-        &self.worth
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// Reading and writing worth snapshots. A snapshot is derived data: recording one is not an audited write, changes no
+ /// chunk, and is removed with the chunk by `forget` and `purge`.
+ pub trait WorthStore {
+     /// File `worth` (computed by [`worth_of`]) as the snapshot for `id` at the version it was computed for, replacing
+     /// any snapshot in that slot.

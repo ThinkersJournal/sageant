@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace == with != in WorthSnapshot::decode
+@@ -395,17 +395,17 @@
+             let (raw, bp) = value.split_once(' ').ok_or(Error::Corrupt("component"))?;
+             parts.push(Component {
+                 name,
+                 raw: number(raw)?,
+                 bp: number(bp)?,
+             });
+         }
+         cur.finish()?;
+-        if version == 0 || half_life == 0 || !model_id_ok(&model_id) {
++        if version != /* ~ changed by cargo-mutants ~ */ 0 || half_life == 0 || !model_id_ok(&model_id) {
+             return Err(Error::Corrupt("fields"));
+         }
+         let components: [Component; 4] =
+             parts.try_into().map_err(|_| Error::Corrupt("component"))?;
+         let sum: u64 = components.iter().map(|c| u64::from(c.bp)).sum();
+         if sum != u64::from(score_bp) {
+             return Err(Error::Corrupt("score"));
+         }

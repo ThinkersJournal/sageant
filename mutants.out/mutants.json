@@ -1,961 +1,833 @@
 [
   {
-    "diff": "--- src/worth.rs\n+++ replace WorthParams::half_life -> u64 with 0\n@@ -46,17 +46,17 @@\n         Self {\n             half_life: half_life.max(1),\n         }\n     }\n \n     /// The half-life in use (at least one).\n     #[must_use]\n     pub fn half_life(&self) -> u64 {\n-        self.half_life\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// One signal's contribution to a score.\n #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n pub struct Component {\n     name: &'static str,\n     raw: u64,\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace worth_key -> String with String::new()\n@@ -65,17 +65,17 @@\n }\n \n fn review_key(id: &ChunkId) -> String {\n     format!(\"v/{}\", id.as_str())\n }\n \n /// A worth snapshot: `w/<id>/<version, 10 digits>/<model id>`.\n fn worth_key(id: &ChunkId, version: u32, model_id: &str) -> String {\n-    format!(\"w/{}/{version:010}/{model_id}\", id.as_str())\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n fn audit_key(seq: u64) -> String {\n     format!(\"a/{seq:020}\")\n }\n \n /// Per-chunk write generation: `n/<id>` counts the links ever added from or to the chunk, and the worth snapshots written for it. A writer that read links\n /// (a cycle check, a forget) requires the counters it read to be unchanged when it commits, so a link that lands in\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "WorthParams::half_life",
-      "return_type": "-> u64",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 55
-        },
-        "start": {
-          "column": 5,
-          "line": 51
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 0",
-    "package": "sageant",
-    "replacement": "0",
-    "span": {
-      "end": {
-        "column": 23,
-        "line": 54
-      },
-      "start": {
-        "column": 9,
-        "line": 54
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace WorthParams::half_life -> u64 with 1\n@@ -46,17 +46,17 @@\n         Self {\n             half_life: half_life.max(1),\n         }\n     }\n \n     /// The half-life in use (at least one).\n     #[must_use]\n     pub fn half_life(&self) -> u64 {\n-        self.half_life\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// One signal's contribution to a score.\n #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n pub struct Component {\n     name: &'static str,\n     raw: u64,\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "WorthParams::half_life",
-      "return_type": "-> u64",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 55
-        },
-        "start": {
-          "column": 5,
-          "line": 51
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 1",
-    "package": "sageant",
-    "replacement": "1",
-    "span": {
-      "end": {
-        "column": 23,
-        "line": 54
-      },
-      "start": {
-        "column": 9,
-        "line": 54
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace Component::name -> &'static str with \"\"\n@@ -62,17 +62,17 @@\n     raw: u64,\n     bp: u32,\n }\n \n impl Component {\n     /// The signal's name: `structural_links`, `loose_links`, `recency` or `stability`.\n     #[must_use]\n     pub fn name(&self) -> &'static str {\n-        self.name\n+        \"\" /* ~ changed by cargo-mutants ~ */\n     }\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n         self.raw\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "Component::name",
-      "return_type": "-> &'static str",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 71
-        },
-        "start": {
-          "column": 5,
-          "line": 67
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:70:9: replace Component::name -> &'static str with \"\"",
-    "package": "sageant",
-    "replacement": "\"\"",
-    "span": {
-      "end": {
-        "column": 18,
-        "line": 70
-      },
-      "start": {
-        "column": 9,
-        "line": 70
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace Component::name -> &'static str with \"xyzzy\"\n@@ -62,17 +62,17 @@\n     raw: u64,\n     bp: u32,\n }\n \n impl Component {\n     /// The signal's name: `structural_links`, `loose_links`, `recency` or `stability`.\n     #[must_use]\n     pub fn name(&self) -> &'static str {\n-        self.name\n+        \"xyzzy\" /* ~ changed by cargo-mutants ~ */\n     }\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n         self.raw\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "Component::name",
-      "return_type": "-> &'static str",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 71
-        },
-        "start": {
-          "column": 5,
-          "line": 67
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:70:9: replace Component::name -> &'static str with \"xyzzy\"",
-    "package": "sageant",
-    "replacement": "\"xyzzy\"",
-    "span": {
-      "end": {
-        "column": 18,
-        "line": 70
-      },
-      "start": {
-        "column": 9,
-        "line": 70
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace Component::raw -> u64 with 0\n@@ -67,17 +67,17 @@\n     /// The signal's name: `structural_links`, `loose_links`, `recency` or `stability`.\n     #[must_use]\n     pub fn name(&self) -> &'static str {\n         self.name\n     }\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n-        self.raw\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n     pub fn bp(&self) -> u32 {\n         self.bp\n     }\n }\n \n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "Component::raw",
-      "return_type": "-> u64",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 76
-        },
-        "start": {
-          "column": 5,
-          "line": 72
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:75:9: replace Component::raw -> u64 with 0",
-    "package": "sageant",
-    "replacement": "0",
-    "span": {
-      "end": {
-        "column": 17,
-        "line": 75
-      },
-      "start": {
-        "column": 9,
-        "line": 75
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace Component::raw -> u64 with 1\n@@ -67,17 +67,17 @@\n     /// The signal's name: `structural_links`, `loose_links`, `recency` or `stability`.\n     #[must_use]\n     pub fn name(&self) -> &'static str {\n         self.name\n     }\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n-        self.raw\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n     pub fn bp(&self) -> u32 {\n         self.bp\n     }\n }\n \n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "Component::raw",
-      "return_type": "-> u64",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 76
-        },
-        "start": {
-          "column": 5,
-          "line": 72
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:75:9: replace Component::raw -> u64 with 1",
-    "package": "sageant",
-    "replacement": "1",
-    "span": {
-      "end": {
-        "column": 17,
-        "line": 75
-      },
-      "start": {
-        "column": 9,
-        "line": 75
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace Component::bp -> u32 with 0\n@@ -72,17 +72,17 @@\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n         self.raw\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n     pub fn bp(&self) -> u32 {\n-        self.bp\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// A derived worth: the score and the four components that sum to it, in a fixed order.\n #[derive(Debug, Clone, PartialEq, Eq)]\n pub struct Worth {\n     score_bp: u32,\n     components: [Component; 4],\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "Component::bp",
-      "return_type": "-> u32",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 81
-        },
-        "start": {
-          "column": 5,
-          "line": 77
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:80:9: replace Component::bp -> u32 with 0",
-    "package": "sageant",
-    "replacement": "0",
-    "span": {
-      "end": {
-        "column": 16,
-        "line": 80
-      },
-      "start": {
-        "column": 9,
-        "line": 80
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace Component::bp -> u32 with 1\n@@ -72,17 +72,17 @@\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n         self.raw\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n     pub fn bp(&self) -> u32 {\n-        self.bp\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// A derived worth: the score and the four components that sum to it, in a fixed order.\n #[derive(Debug, Clone, PartialEq, Eq)]\n pub struct Worth {\n     score_bp: u32,\n     components: [Component; 4],\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "Component::bp",
-      "return_type": "-> u32",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 81
-        },
-        "start": {
-          "column": 5,
-          "line": 77
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:80:9: replace Component::bp -> u32 with 1",
-    "package": "sageant",
-    "replacement": "1",
-    "span": {
-      "end": {
-        "column": 16,
-        "line": 80
-      },
-      "start": {
-        "column": 9,
-        "line": 80
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace Worth::score_bp -> u32 with 0\n@@ -87,17 +87,17 @@\n     score_bp: u32,\n     components: [Component; 4],\n }\n \n impl Worth {\n     /// The score in basis points, 0 to 10 000.\n     #[must_use]\n     pub fn score_bp(&self) -> u32 {\n-        self.score_bp\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n     /// The components: structural links, loose links, recency, stability, in that order.\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n         &self.components\n     }\n }\n \n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "Worth::score_bp",
-      "return_type": "-> u32",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 96
-        },
-        "start": {
-          "column": 5,
-          "line": 92
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:95:9: replace Worth::score_bp -> u32 with 0",
-    "package": "sageant",
-    "replacement": "0",
-    "span": {
-      "end": {
-        "column": 22,
-        "line": 95
-      },
-      "start": {
-        "column": 9,
-        "line": 95
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace Worth::score_bp -> u32 with 1\n@@ -87,17 +87,17 @@\n     score_bp: u32,\n     components: [Component; 4],\n }\n \n impl Worth {\n     /// The score in basis points, 0 to 10 000.\n     #[must_use]\n     pub fn score_bp(&self) -> u32 {\n-        self.score_bp\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n     /// The components: structural links, loose links, recency, stability, in that order.\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n         &self.components\n     }\n }\n \n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "Worth::score_bp",
-      "return_type": "-> u32",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 96
-        },
-        "start": {
-          "column": 5,
-          "line": 92
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:95:9: replace Worth::score_bp -> u32 with 1",
-    "package": "sageant",
-    "replacement": "1",
-    "span": {
-      "end": {
-        "column": 22,
-        "line": 95
-      },
-      "start": {
-        "column": 9,
-        "line": 95
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace Worth::components -> &[Component; 4] with Box::leak(Box::new([Default::default(); 4]))\n@@ -92,17 +92,17 @@\n     /// The score in basis points, 0 to 10 000.\n     #[must_use]\n     pub fn score_bp(&self) -> u32 {\n         self.score_bp\n     }\n     /// The components: structural links, loose links, recency, stability, in that order.\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n-        &self.components\n+        Box::leak(Box::new([Default::default(); 4])) /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// Narrow a basis-point value that is at most 10 000 by construction.\n fn bp32(v: u64) -> u32 {\n     u32::try_from(v).unwrap_or(u32::MAX)\n }\n \n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "Worth::components",
-      "return_type": "-> &[Component; 4]",
-      "span": {
-        "end": {
-          "column": 6,
-          "line": 101
-        },
-        "start": {
-          "column": 5,
-          "line": 97
-        }
-      }
-    },
-    "genre": "FnValue",
-    "name": "src/worth.rs:100:9: replace Worth::components -> &[Component; 4] with Box::leak(Box::new([Default::default(); 4]))",
-    "package": "sageant",
-    "replacement": "Box::leak(Box::new([Default::default(); 4]))",
-    "span": {
-      "end": {
-        "column": 25,
-        "line": 100
-      },
-      "start": {
-        "column": 9,
-        "line": 100
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace bp32 -> u32 with 0\n@@ -98,17 +98,17 @@\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n         &self.components\n     }\n }\n \n /// Narrow a basis-point value that is at most 10 000 by construction.\n fn bp32(v: u64) -> u32 {\n-    u32::try_from(v).unwrap_or(u32::MAX)\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n /// The worth of the current version of `id` at time `now`. Reads only; nothing is written and nothing about the chunk\n /// changes.\n ///\n /// # Errors\n /// `NotFound` or `Forgotten` for an unknown or removed chunk, or whatever the reader reports.\n pub fn worth_of(\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "bp32",
-      "return_type": "-> u32",
+      "function_name": "worth_key",
+      "return_type": "-> String",
       "span": {
         "end": {
           "column": 2,
-          "line": 107
+          "line": 74
         },
         "start": {
           "column": 1,
-          "line": 104
+          "line": 71
         }
       }
     },
     "genre": "FnValue",
-    "name": "src/worth.rs:106:5: replace bp32 -> u32 with 0",
-    "package": "sageant",
-    "replacement": "0",
+    "name": "crates/sageant-persistant/src/lib.rs:73:5: replace worth_key -> String with String::new()",
+    "package": "sageant-persistant",
+    "replacement": "String::new()",
     "span": {
       "end": {
-        "column": 41,
-        "line": 106
+        "column": 58,
+        "line": 73
       },
       "start": {
         "column": 5,
-        "line": 106
+        "line": 73
       }
     }
   },
   {
-    "diff": "--- src/worth.rs\n+++ replace bp32 -> u32 with 1\n@@ -98,17 +98,17 @@\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n         &self.components\n     }\n }\n \n /// Narrow a basis-point value that is at most 10 000 by construction.\n fn bp32(v: u64) -> u32 {\n-    u32::try_from(v).unwrap_or(u32::MAX)\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n /// The worth of the current version of `id` at time `now`. Reads only; nothing is written and nothing about the chunk\n /// changes.\n ///\n /// # Errors\n /// `NotFound` or `Forgotten` for an unknown or removed chunk, or whatever the reader reports.\n pub fn worth_of(\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace worth_key -> String with \"xyzzy\".into()\n@@ -65,17 +65,17 @@\n }\n \n fn review_key(id: &ChunkId) -> String {\n     format!(\"v/{}\", id.as_str())\n }\n \n /// A worth snapshot: `w/<id>/<version, 10 digits>/<model id>`.\n fn worth_key(id: &ChunkId, version: u32, model_id: &str) -> String {\n-    format!(\"w/{}/{version:010}/{model_id}\", id.as_str())\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n fn audit_key(seq: u64) -> String {\n     format!(\"a/{seq:020}\")\n }\n \n /// Per-chunk write generation: `n/<id>` counts the links ever added from or to the chunk, and the worth snapshots written for it. A writer that read links\n /// (a cycle check, a forget) requires the counters it read to be unchanged when it commits, so a link that lands in\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "bp32",
-      "return_type": "-> u32",
+      "function_name": "worth_key",
+      "return_type": "-> String",
       "span": {
         "end": {
           "column": 2,
-          "line": 107
+          "line": 74
         },
         "start": {
           "column": 1,
-          "line": 104
+          "line": 71
         }
       }
     },
     "genre": "FnValue",
-    "name": "src/worth.rs:106:5: replace bp32 -> u32 with 1",
-    "package": "sageant",
-    "replacement": "1",
+    "name": "crates/sageant-persistant/src/lib.rs:73:5: replace worth_key -> String with \"xyzzy\".into()",
+    "package": "sageant-persistant",
+    "replacement": "\"xyzzy\".into()",
     "span": {
       "end": {
-        "column": 41,
-        "line": 106
+        "column": 58,
+        "line": 73
       },
       "start": {
         "column": 5,
-        "line": 106
+        "line": 73
       }
     }
   },
   {
-    "diff": "--- src/worth.rs\n+++ replace worth_of -> Result<Worth, Error> with Ok(Default::default())\n@@ -112,62 +112,10 @@\n /// # Errors\n /// `NotFound` or `Forgotten` for an unknown or removed chunk, or whatever the reader reports.\n pub fn worth_of(\n     reader: &dyn Reader,\n     id: &ChunkId,\n     now: Timestamp,\n     params: &WorthParams,\n ) -> Result<Worth, Error> {\n-    let current = reader.get(id)?;\n-    let versions = u64::from(current.version());\n-    let mut newest = current.created_at().0;\n-    let mut structural = 0u64;\n-    let mut loose = 0u64;\n-    let outgoing = reader.links_from(id)?;\n-    let incoming = reader.links_to(id)?;\n-    for link in outgoing.iter().chain(incoming.iter()) {\n-        match link.kind() {\n-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n-            LinkKind::Cites | LinkKind::Related => loose += 1,\n-            // Evidence belongs to trust: not a neighbour, not a touch.\n-            _ => continue,\n-        }\n-        newest = newest.max(link.created_at().0);\n-    }\n-    let age = now.0.saturating_sub(newest);\n-    let h = params.half_life();\n-    let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n-    let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n-    // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n-    let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n-    )\n-    .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n-    let components = [\n-        Component {\n-            name: \"structural_links\",\n-            raw: structural,\n-            bp: bp32(structural_bp),\n-        },\n-        Component {\n-            name: \"loose_links\",\n-            raw: loose,\n-            bp: bp32(loose_bp),\n-        },\n-        Component {\n-            name: \"recency\",\n-            raw: age,\n-            bp: bp32(recency_bp),\n-        },\n-        Component {\n-            name: \"stability\",\n-            raw: versions,\n-            bp: bp32(stability_bp),\n-        },\n-    ];\n-    let score_bp = components.iter().map(|c| c.bp).sum();\n-    Ok(Worth {\n-        score_bp,\n-        components,\n-    })\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![])\n@@ -820,29 +820,17 @@\n                 }\n                 Ok(chunk)\n             })\n             .collect()\n     }\n \n     /// Every key under `prefix`, ascending, across pages.\n     fn scan_keys(&self, prefix: &str) -> Result<Vec<String>, Error> {\n-        let mut out = Vec::new();\n-        let mut after: Option<String> = None;\n-        loop {\n-            let page = self\n-                .kv\n-                .ordered_scan_values(prefix, after.as_deref(), SCAN_PAGE)\n-                .map_err(kv_error)?;\n-            out.extend(page.entries.into_iter().map(|(key, _)| key));\n-            match page.next {\n-                Some(cursor) => after = Some(cursor),\n-                None => return Ok(out),\n-            }\n-        }\n+        Ok(vec![]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// Every value under `prefix`, ascending by key, across pages.\n     fn scan(&self, prefix: &str) -> Result<Vec<Vec<u8>>, Error> {\n         let mut out = Vec::new();\n         let mut after: Option<String> = None;\n         loop {\n             let page = self\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
+      "function_name": "PersistStore::scan_keys",
+      "return_type": "-> Result<Vec<String>, Error>",
       "span": {
         "end": {
-          "column": 2,
-          "line": 173
+          "column": 6,
+          "line": 841
         },
         "start": {
-          "column": 1,
-          "line": 109
+          "column": 5,
+          "line": 826
         }
       }
     },
     "genre": "FnValue",
-    "name": "src/worth.rs:120:5: replace worth_of -> Result<Worth, Error> with Ok(Default::default())",
-    "package": "sageant",
+    "name": "crates/sageant-persistant/src/lib.rs:828:9: replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![])",
+    "package": "sageant-persistant",
+    "replacement": "Ok(vec![])",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 840
+      },
+      "start": {
+        "column": 9,
+        "line": 828
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![String::new()])\n@@ -820,29 +820,17 @@\n                 }\n                 Ok(chunk)\n             })\n             .collect()\n     }\n \n     /// Every key under `prefix`, ascending, across pages.\n     fn scan_keys(&self, prefix: &str) -> Result<Vec<String>, Error> {\n-        let mut out = Vec::new();\n-        let mut after: Option<String> = None;\n-        loop {\n-            let page = self\n-                .kv\n-                .ordered_scan_values(prefix, after.as_deref(), SCAN_PAGE)\n-                .map_err(kv_error)?;\n-            out.extend(page.entries.into_iter().map(|(key, _)| key));\n-            match page.next {\n-                Some(cursor) => after = Some(cursor),\n-                None => return Ok(out),\n-            }\n-        }\n+        Ok(vec![String::new()]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// Every value under `prefix`, ascending by key, across pages.\n     fn scan(&self, prefix: &str) -> Result<Vec<Vec<u8>>, Error> {\n         let mut out = Vec::new();\n         let mut after: Option<String> = None;\n         loop {\n             let page = self\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::scan_keys",
+      "return_type": "-> Result<Vec<String>, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 841
+        },
+        "start": {
+          "column": 5,
+          "line": 826
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:828:9: replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![String::new()])",
+    "package": "sageant-persistant",
+    "replacement": "Ok(vec![String::new()])",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 840
+      },
+      "start": {
+        "column": 9,
+        "line": 828
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![\"xyzzy\".into()])\n@@ -820,29 +820,17 @@\n                 }\n                 Ok(chunk)\n             })\n             .collect()\n     }\n \n     /// Every key under `prefix`, ascending, across pages.\n     fn scan_keys(&self, prefix: &str) -> Result<Vec<String>, Error> {\n-        let mut out = Vec::new();\n-        let mut after: Option<String> = None;\n-        loop {\n-            let page = self\n-                .kv\n-                .ordered_scan_values(prefix, after.as_deref(), SCAN_PAGE)\n-                .map_err(kv_error)?;\n-            out.extend(page.entries.into_iter().map(|(key, _)| key));\n-            match page.next {\n-                Some(cursor) => after = Some(cursor),\n-                None => return Ok(out),\n-            }\n-        }\n+        Ok(vec![\"xyzzy\".into()]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// Every value under `prefix`, ascending by key, across pages.\n     fn scan(&self, prefix: &str) -> Result<Vec<Vec<u8>>, Error> {\n         let mut out = Vec::new();\n         let mut after: Option<String> = None;\n         loop {\n             let page = self\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::scan_keys",
+      "return_type": "-> Result<Vec<String>, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 841
+        },
+        "start": {
+          "column": 5,
+          "line": 826
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:828:9: replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![\"xyzzy\".into()])",
+    "package": "sageant-persistant",
+    "replacement": "Ok(vec![\"xyzzy\".into()])",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 840
+      },
+      "start": {
+        "column": 9,
+        "line": 828
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::removal_ops -> Result<Vec<BatchOp>, Error> with Ok(vec![])\n@@ -1181,42 +1181,17 @@\n         let event = AuditEvent::new(at, Action::Note, Some(id.clone()), &self.who(actor), reason);\n         self.apply(&[], &[event])?;\n         Ok(())\n     }\n \n     /// The operations that remove a lineage: its versions and head, its outgoing links (and their reverse\n     /// entries), and a review flag on every chunk derived from it. Links pointing at it stay and read as removed.\n     fn removal_ops(&self, id: &ChunkId) -> Result<Vec<BatchOp>, Error> {\n-        let mut ops = Vec::new();\n-        for chunk in self.history(id)? {\n-            ops.push(self.content_delete(chunk_key(id, chunk.version())));\n-        }\n-        ops.push(BatchOp::Delete { key: head_key(id) });\n-        for link in self.scan_links(&format!(\"l/{}/\", id.as_str()))? {\n-            ops.push(BatchOp::Delete {\n-                key: link_key(link.from(), link.kind(), link.to()),\n-            });\n-            ops.push(BatchOp::Delete {\n-                key: reverse_key(link.from(), link.kind(), link.to()),\n-            });\n-        }\n-        for link in self.scan_links(&format!(\"r/{}/\", id.as_str()))? {\n-            if link.kind() == LinkKind::DerivedFrom {\n-                ops.push(BatchOp::Put {\n-                    key: review_key(link.from()),\n-                    value: b\"1\".to_vec(),\n-                    ttl: NO_TTL,\n-                });\n-            }\n-        }\n-        for key in self.scan_keys(&format!(\"w/{}/\", id.as_str()))? {\n-            ops.push(self.content_delete(key));\n-        }\n-        Ok(ops)\n+        Ok(vec![]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// Remove a chunk's content (every version), its source, its hash and its outgoing links, leaving a minimal\n     /// tombstone. Links pointing at it stay and read as removed; chunks derived from it are flagged for review.\n     /// \"Unretrievable\", not \"erased\": a backend may keep old pages until it is compacted.\n     ///\n     /// # Errors\n     /// `NotFound`, `Forgotten` if it is already forgotten, `Conflict` if another writer changed the chunk\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::removal_ops",
+      "return_type": "-> Result<Vec<BatchOp>, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1215
+        },
+        "start": {
+          "column": 5,
+          "line": 1186
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1189:9: replace PersistStore::removal_ops -> Result<Vec<BatchOp>, Error> with Ok(vec![])",
+    "package": "sageant-persistant",
+    "replacement": "Ok(vec![])",
+    "span": {
+      "end": {
+        "column": 16,
+        "line": 1214
+      },
+      "start": {
+        "column": 9,
+        "line": 1189
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::removal_ops -> Result<Vec<BatchOp>, Error> with Ok(vec![Default::default()])\n@@ -1181,42 +1181,17 @@\n         let event = AuditEvent::new(at, Action::Note, Some(id.clone()), &self.who(actor), reason);\n         self.apply(&[], &[event])?;\n         Ok(())\n     }\n \n     /// The operations that remove a lineage: its versions and head, its outgoing links (and their reverse\n     /// entries), and a review flag on every chunk derived from it. Links pointing at it stay and read as removed.\n     fn removal_ops(&self, id: &ChunkId) -> Result<Vec<BatchOp>, Error> {\n-        let mut ops = Vec::new();\n-        for chunk in self.history(id)? {\n-            ops.push(self.content_delete(chunk_key(id, chunk.version())));\n-        }\n-        ops.push(BatchOp::Delete { key: head_key(id) });\n-        for link in self.scan_links(&format!(\"l/{}/\", id.as_str()))? {\n-            ops.push(BatchOp::Delete {\n-                key: link_key(link.from(), link.kind(), link.to()),\n-            });\n-            ops.push(BatchOp::Delete {\n-                key: reverse_key(link.from(), link.kind(), link.to()),\n-            });\n-        }\n-        for link in self.scan_links(&format!(\"r/{}/\", id.as_str()))? {\n-            if link.kind() == LinkKind::DerivedFrom {\n-                ops.push(BatchOp::Put {\n-                    key: review_key(link.from()),\n-                    value: b\"1\".to_vec(),\n-                    ttl: NO_TTL,\n-                });\n-            }\n-        }\n-        for key in self.scan_keys(&format!(\"w/{}/\", id.as_str()))? {\n-            ops.push(self.content_delete(key));\n-        }\n-        Ok(ops)\n+        Ok(vec![Default::default()]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// Remove a chunk's content (every version), its source, its hash and its outgoing links, leaving a minimal\n     /// tombstone. Links pointing at it stay and read as removed; chunks derived from it are flagged for review.\n     /// \"Unretrievable\", not \"erased\": a backend may keep old pages until it is compacted.\n     ///\n     /// # Errors\n     /// `NotFound`, `Forgotten` if it is already forgotten, `Conflict` if another writer changed the chunk\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::removal_ops",
+      "return_type": "-> Result<Vec<BatchOp>, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1215
+        },
+        "start": {
+          "column": 5,
+          "line": 1186
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1189:9: replace PersistStore::removal_ops -> Result<Vec<BatchOp>, Error> with Ok(vec![Default::default()])",
+    "package": "sageant-persistant",
+    "replacement": "Ok(vec![Default::default()])",
+    "span": {
+      "end": {
+        "column": 16,
+        "line": 1214
+      },
+      "start": {
+        "column": 9,
+        "line": 1189
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace == with != in PersistStore::removal_ops\n@@ -1195,17 +1195,17 @@\n             ops.push(BatchOp::Delete {\n                 key: link_key(link.from(), link.kind(), link.to()),\n             });\n             ops.push(BatchOp::Delete {\n                 key: reverse_key(link.from(), link.kind(), link.to()),\n             });\n         }\n         for link in self.scan_links(&format!(\"r/{}/\", id.as_str()))? {\n-            if link.kind() == LinkKind::DerivedFrom {\n+            if link.kind() != /* ~ changed by cargo-mutants ~ */ LinkKind::DerivedFrom {\n                 ops.push(BatchOp::Put {\n                     key: review_key(link.from()),\n                     value: b\"1\".to_vec(),\n                     ttl: NO_TTL,\n                 });\n             }\n         }\n         for key in self.scan_keys(&format!(\"w/{}/\", id.as_str()))? {\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::removal_ops",
+      "return_type": "-> Result<Vec<BatchOp>, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1215
+        },
+        "start": {
+          "column": 5,
+          "line": 1186
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/sageant-persistant/src/lib.rs:1203:28: replace == with != in PersistStore::removal_ops",
+    "package": "sageant-persistant",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 1203
+      },
+      "start": {
+        "column": 28,
+        "line": 1203
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::record_worth -> Result<WorthSnapshot, Error> with Ok(Default::default())\n@@ -1400,17 +1400,17 @@\n     /// `NotFound` or `Forgotten`; `Invalid(\"worth version\")` for a version the chunk has not reached; `Corrupt` or\n     /// `Backend`.\n     pub fn record_worth(\n         &self,\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n     ) -> Result<WorthSnapshot, Error> {\n-        self.record_worth_inner(id, worth, now, None)\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// [`record_worth`](Self::record_worth), running `hook` once after the reads and before the commit. Test only.\n     #[doc(hidden)]\n     pub fn record_worth_with_hook_for_test(\n         &self,\n         id: &ChunkId,\n         worth: &Worth,\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::record_worth",
+      "return_type": "-> Result<WorthSnapshot, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1409
+        },
+        "start": {
+          "column": 5,
+          "line": 1395
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1408:9: replace PersistStore::record_worth -> Result<WorthSnapshot, Error> with Ok(Default::default())",
+    "package": "sageant-persistant",
     "replacement": "Ok(Default::default())",
     "span": {
       "end": {
-        "column": 7,
-        "line": 172
+        "column": 54,
+        "line": 1408
       },
       "start": {
-        "column": 5,
-        "line": 120
+        "column": 9,
+        "line": 1408
       }
     }
   },
   {
-    "diff": "--- src/worth.rs\n+++ delete match arm LinkKind::PartOf | LinkKind::DerivedFrom in worth_of\n@@ -121,17 +121,17 @@\n     let versions = u64::from(current.version());\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n+             /* ~ changed by cargo-mutants ~ */\n             LinkKind::Cites | LinkKind::Related => loose += 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::record_worth_with_hook_for_test -> Result<WorthSnapshot, Error> with Ok(Default::default())\n@@ -1412,17 +1412,17 @@\n     #[doc(hidden)]\n     pub fn record_worth_with_hook_for_test(\n         &self,\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n         hook: &dyn Fn(),\n     ) -> Result<WorthSnapshot, Error> {\n-        self.record_worth_inner(id, worth, now, Some(hook))\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     fn record_worth_inner(\n         &self,\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n         hook: Option<&dyn Fn()>,\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
+      "function_name": "PersistStore::record_worth_with_hook_for_test",
+      "return_type": "-> Result<WorthSnapshot, Error>",
       "span": {
         "end": {
-          "column": 2,
-          "line": 173
+          "column": 6,
+          "line": 1421
         },
         "start": {
-          "column": 1,
-          "line": 109
+          "column": 5,
+          "line": 1411
         }
       }
     },
-    "genre": "MatchArm",
-    "name": "src/worth.rs:129:13: delete match arm LinkKind::PartOf | LinkKind::DerivedFrom in worth_of",
-    "package": "sageant",
-    "replacement": "",
-    "span": {
-      "end": {
-        "column": 73,
-        "line": 129
-      },
-      "start": {
-        "column": 13,
-        "line": 129
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ delete match arm LinkKind::Cites | LinkKind::Related in worth_of\n@@ -122,17 +122,17 @@\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n             LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n-            LinkKind::Cites | LinkKind::Related => loose += 1,\n+             /* ~ changed by cargo-mutants ~ */\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 173
-        },
-        "start": {
-          "column": 1,
-          "line": 109
-        }
-      }
-    },
-    "genre": "MatchArm",
-    "name": "src/worth.rs:130:13: delete match arm LinkKind::Cites | LinkKind::Related in worth_of",
-    "package": "sageant",
-    "replacement": "",
-    "span": {
-      "end": {
-        "column": 63,
-        "line": 130
-      },
-      "start": {
-        "column": 13,
-        "line": 130
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace += with -= in worth_of\n@@ -121,17 +121,17 @@\n     let versions = u64::from(current.version());\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n+            LinkKind::PartOf | LinkKind::DerivedFrom => structural -= /* ~ changed by cargo-mutants ~ */ 1,\n             LinkKind::Cites | LinkKind::Related => loose += 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 173
-        },
-        "start": {
-          "column": 1,
-          "line": 109
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:129:68: replace += with -= in worth_of",
-    "package": "sageant",
-    "replacement": "-=",
-    "span": {
-      "end": {
-        "column": 70,
-        "line": 129
-      },
-      "start": {
-        "column": 68,
-        "line": 129
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace += with *= in worth_of\n@@ -121,17 +121,17 @@\n     let versions = u64::from(current.version());\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n+            LinkKind::PartOf | LinkKind::DerivedFrom => structural *= /* ~ changed by cargo-mutants ~ */ 1,\n             LinkKind::Cites | LinkKind::Related => loose += 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 173
-        },
-        "start": {
-          "column": 1,
-          "line": 109
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:129:68: replace += with *= in worth_of",
-    "package": "sageant",
-    "replacement": "*=",
-    "span": {
-      "end": {
-        "column": 70,
-        "line": 129
-      },
-      "start": {
-        "column": 68,
-        "line": 129
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace += with -= in worth_of\n@@ -122,17 +122,17 @@\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n             LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n-            LinkKind::Cites | LinkKind::Related => loose += 1,\n+            LinkKind::Cites | LinkKind::Related => loose -= /* ~ changed by cargo-mutants ~ */ 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 173
-        },
-        "start": {
-          "column": 1,
-          "line": 109
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:130:58: replace += with -= in worth_of",
-    "package": "sageant",
-    "replacement": "-=",
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1420:9: replace PersistStore::record_worth_with_hook_for_test -> Result<WorthSnapshot, Error> with Ok(Default::default())",
+    "package": "sageant-persistant",
+    "replacement": "Ok(Default::default())",
     "span": {
       "end": {
         "column": 60,
-        "line": 130
+        "line": 1420
       },
       "start": {
-        "column": 58,
-        "line": 130
+        "column": 9,
+        "line": 1420
       }
     }
   },
   {
-    "diff": "--- src/worth.rs\n+++ replace += with *= in worth_of\n@@ -122,17 +122,17 @@\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n             LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n-            LinkKind::Cites | LinkKind::Related => loose += 1,\n+            LinkKind::Cites | LinkKind::Related => loose *= /* ~ changed by cargo-mutants ~ */ 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::record_worth_inner -> Result<WorthSnapshot, Error> with Ok(Default::default())\n@@ -1422,54 +1422,17 @@\n \n     fn record_worth_inner(\n         &self,\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n         hook: Option<&dyn Fn()>,\n     ) -> Result<WorthSnapshot, Error> {\n-        let snapshot = WorthSnapshot::new(id, worth, now);\n-        for attempt in 0..GEN_RETRIES {\n-            let head = self.head(id)?.ok_or_else(|| self.missing(id))?;\n-            if worth.version() == 0 || worth.version() > head {\n-                return Err(Error::Invalid(\"worth version\"));\n-            }\n-            let generation = self.read(&gen_key(id))?;\n-            let ops = vec![\n-                BatchOp::Require {\n-                    key: head_key(id),\n-                    expected: Some(head.to_string().into_bytes()),\n-                },\n-                BatchOp::Require {\n-                    key: gen_key(id),\n-                    expected: generation.clone(),\n-                },\n-                BatchOp::Put {\n-                    key: gen_key(id),\n-                    value: bumped(generation.as_ref())?,\n-                    ttl: NO_TTL,\n-                },\n-                BatchOp::Put {\n-                    key: worth_key(id, worth.version(), WORTH_MODEL),\n-                    value: snapshot.encode(),\n-                    ttl: NO_TTL,\n-                },\n-            ];\n-            if attempt == 0\n-                && let Some(hook) = hook\n-            {\n-                hook();\n-            }\n-            if self.apply(&ops, &[])? {\n-                return Ok(snapshot);\n-            }\n-            // A failed require means the head or the generation moved: read again (a forgotten chunk now says so).\n-        }\n-        Err(Error::Backend(\"worth contention\".to_owned()))\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// Every worth snapshot of `id`, ordered by version then model id.\n     ///\n     /// # Errors\n     /// `NotFound` or `Forgotten`; `Corrupt` for a record that is not the one its key names; `Backend`.\n     pub fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {\n         self.head(id)?.ok_or_else(|| self.missing(id))?;\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
+      "function_name": "PersistStore::record_worth_inner",
+      "return_type": "-> Result<WorthSnapshot, Error>",
       "span": {
         "end": {
-          "column": 2,
-          "line": 173
+          "column": 6,
+          "line": 1468
         },
         "start": {
-          "column": 1,
-          "line": 109
+          "column": 5,
+          "line": 1423
         }
       }
     },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:130:58: replace += with *= in worth_of",
-    "package": "sageant",
-    "replacement": "*=",
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1430:9: replace PersistStore::record_worth_inner -> Result<WorthSnapshot, Error> with Ok(Default::default())",
+    "package": "sageant-persistant",
+    "replacement": "Ok(Default::default())",
     "span": {
       "end": {
-        "column": 60,
-        "line": 130
+        "column": 59,
+        "line": 1467
       },
       "start": {
-        "column": 58,
-        "line": 130
+        "column": 9,
+        "line": 1430
       }
     }
   },
   {
-    "diff": "--- src/worth.rs\n+++ replace / with % in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) * u128::from(h) % /* ~ changed by cargo-mutants ~ */ (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace || with && in PersistStore::record_worth_inner\n@@ -1425,17 +1425,17 @@\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n         hook: Option<&dyn Fn()>,\n     ) -> Result<WorthSnapshot, Error> {\n         let snapshot = WorthSnapshot::new(id, worth, now);\n         for attempt in 0..GEN_RETRIES {\n             let head = self.head(id)?.ok_or_else(|| self.missing(id))?;\n-            if worth.version() == 0 || worth.version() > head {\n+            if worth.version() == 0 && /* ~ changed by cargo-mutants ~ */ worth.version() > head {\n                 return Err(Error::Invalid(\"worth version\"));\n             }\n             let generation = self.read(&gen_key(id))?;\n             let ops = vec![\n                 BatchOp::Require {\n                     key: head_key(id),\n                     expected: Some(head.to_string().into_bytes()),\n                 },\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
+      "function_name": "PersistStore::record_worth_inner",
+      "return_type": "-> Result<WorthSnapshot, Error>",
       "span": {
         "end": {
-          "column": 2,
-          "line": 173
+          "column": 6,
+          "line": 1468
         },
         "start": {
-          "column": 1,
-          "line": 109
+          "column": 5,
+          "line": 1423
         }
       }
     },
     "genre": "BinaryOperator",
-    "name": "src/worth.rs:142:52: replace / with % in worth_of",
-    "package": "sageant",
-    "replacement": "%",
+    "name": "crates/sageant-persistant/src/lib.rs:1433:37: replace || with && in PersistStore::record_worth_inner",
+    "package": "sageant-persistant",
+    "replacement": "&&",
     "span": {
       "end": {
-        "column": 53,
-        "line": 142
+        "column": 39,
+        "line": 1433
       },
       "start": {
-        "column": 52,
-        "line": 142
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace / with * in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) * u128::from(h) * /* ~ changed by cargo-mutants ~ */ (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 173
-        },
-        "start": {
-          "column": 1,
-          "line": 109
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:142:52: replace / with * in worth_of",
-    "package": "sageant",
-    "replacement": "*",
-    "span": {
-      "end": {
-        "column": 53,
-        "line": 142
-      },
-      "start": {
-        "column": 52,
-        "line": 142
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace * with + in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) + /* ~ changed by cargo-mutants ~ */ u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 173
-        },
-        "start": {
-          "column": 1,
-          "line": 109
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:142:36: replace * with + in worth_of",
-    "package": "sageant",
-    "replacement": "+",
-    "span": {
-      "end": {
         "column": 37,
-        "line": 142
+        "line": 1433
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace == with != in PersistStore::record_worth_inner\n@@ -1425,17 +1425,17 @@\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n         hook: Option<&dyn Fn()>,\n     ) -> Result<WorthSnapshot, Error> {\n         let snapshot = WorthSnapshot::new(id, worth, now);\n         for attempt in 0..GEN_RETRIES {\n             let head = self.head(id)?.ok_or_else(|| self.missing(id))?;\n-            if worth.version() == 0 || worth.version() > head {\n+            if worth.version() != /* ~ changed by cargo-mutants ~ */ 0 || worth.version() > head {\n                 return Err(Error::Invalid(\"worth version\"));\n             }\n             let generation = self.read(&gen_key(id))?;\n             let ops = vec![\n                 BatchOp::Require {\n                     key: head_key(id),\n                     expected: Some(head.to_string().into_bytes()),\n                 },\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::record_worth_inner",
+      "return_type": "-> Result<WorthSnapshot, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1468
+        },
+        "start": {
+          "column": 5,
+          "line": 1423
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/sageant-persistant/src/lib.rs:1433:32: replace == with != in PersistStore::record_worth_inner",
+    "package": "sageant-persistant",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 34,
+        "line": 1433
       },
       "start": {
+        "column": 32,
+        "line": 1433
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace > with == in PersistStore::record_worth_inner\n@@ -1425,17 +1425,17 @@\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n         hook: Option<&dyn Fn()>,\n     ) -> Result<WorthSnapshot, Error> {\n         let snapshot = WorthSnapshot::new(id, worth, now);\n         for attempt in 0..GEN_RETRIES {\n             let head = self.head(id)?.ok_or_else(|| self.missing(id))?;\n-            if worth.version() == 0 || worth.version() > head {\n+            if worth.version() == 0 || worth.version() == /* ~ changed by cargo-mutants ~ */ head {\n                 return Err(Error::Invalid(\"worth version\"));\n             }\n             let generation = self.read(&gen_key(id))?;\n             let ops = vec![\n                 BatchOp::Require {\n                     key: head_key(id),\n                     expected: Some(head.to_string().into_bytes()),\n                 },\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::record_worth_inner",
+      "return_type": "-> Result<WorthSnapshot, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1468
+        },
+        "start": {
+          "column": 5,
+          "line": 1423
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/sageant-persistant/src/lib.rs:1433:56: replace > with == in PersistStore::record_worth_inner",
+    "package": "sageant-persistant",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 57,
+        "line": 1433
+      },
+      "start": {
+        "column": 56,
+        "line": 1433
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace > with < in PersistStore::record_worth_inner\n@@ -1425,17 +1425,17 @@\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n         hook: Option<&dyn Fn()>,\n     ) -> Result<WorthSnapshot, Error> {\n         let snapshot = WorthSnapshot::new(id, worth, now);\n         for attempt in 0..GEN_RETRIES {\n             let head = self.head(id)?.ok_or_else(|| self.missing(id))?;\n-            if worth.version() == 0 || worth.version() > head {\n+            if worth.version() == 0 || worth.version() < /* ~ changed by cargo-mutants ~ */ head {\n                 return Err(Error::Invalid(\"worth version\"));\n             }\n             let generation = self.read(&gen_key(id))?;\n             let ops = vec![\n                 BatchOp::Require {\n                     key: head_key(id),\n                     expected: Some(head.to_string().into_bytes()),\n                 },\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::record_worth_inner",
+      "return_type": "-> Result<WorthSnapshot, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1468
+        },
+        "start": {
+          "column": 5,
+          "line": 1423
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/sageant-persistant/src/lib.rs:1433:56: replace > with < in PersistStore::record_worth_inner",
+    "package": "sageant-persistant",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 57,
+        "line": 1433
+      },
+      "start": {
+        "column": 56,
+        "line": 1433
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace > with >= in PersistStore::record_worth_inner\n@@ -1425,17 +1425,17 @@\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n         hook: Option<&dyn Fn()>,\n     ) -> Result<WorthSnapshot, Error> {\n         let snapshot = WorthSnapshot::new(id, worth, now);\n         for attempt in 0..GEN_RETRIES {\n             let head = self.head(id)?.ok_or_else(|| self.missing(id))?;\n-            if worth.version() == 0 || worth.version() > head {\n+            if worth.version() == 0 || worth.version() >= /* ~ changed by cargo-mutants ~ */ head {\n                 return Err(Error::Invalid(\"worth version\"));\n             }\n             let generation = self.read(&gen_key(id))?;\n             let ops = vec![\n                 BatchOp::Require {\n                     key: head_key(id),\n                     expected: Some(head.to_string().into_bytes()),\n                 },\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::record_worth_inner",
+      "return_type": "-> Result<WorthSnapshot, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1468
+        },
+        "start": {
+          "column": 5,
+          "line": 1423
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/sageant-persistant/src/lib.rs:1433:56: replace > with >= in PersistStore::record_worth_inner",
+    "package": "sageant-persistant",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 57,
+        "line": 1433
+      },
+      "start": {
+        "column": 56,
+        "line": 1433
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace && with || in PersistStore::record_worth_inner\n@@ -1450,17 +1450,17 @@\n                 },\n                 BatchOp::Put {\n                     key: worth_key(id, worth.version(), WORTH_MODEL),\n                     value: snapshot.encode(),\n                     ttl: NO_TTL,\n                 },\n             ];\n             if attempt == 0\n-                && let Some(hook) = hook\n+                || /* ~ changed by cargo-mutants ~ */ let Some(hook) = hook\n             {\n                 hook();\n             }\n             if self.apply(&ops, &[])? {\n                 return Ok(snapshot);\n             }\n             // A failed require means the head or the generation moved: read again (a forgotten chunk now says so).\n         }\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::record_worth_inner",
+      "return_type": "-> Result<WorthSnapshot, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1468
+        },
+        "start": {
+          "column": 5,
+          "line": 1423
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/sageant-persistant/src/lib.rs:1458:17: replace && with || in PersistStore::record_worth_inner",
+    "package": "sageant-persistant",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 1458
+      },
+      "start": {
+        "column": 17,
+        "line": 1458
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace == with != in PersistStore::record_worth_inner\n@@ -1449,17 +1449,17 @@\n                     ttl: NO_TTL,\n                 },\n                 BatchOp::Put {\n                     key: worth_key(id, worth.version(), WORTH_MODEL),\n                     value: snapshot.encode(),\n                     ttl: NO_TTL,\n                 },\n             ];\n-            if attempt == 0\n+            if attempt != /* ~ changed by cargo-mutants ~ */ 0\n                 && let Some(hook) = hook\n             {\n                 hook();\n             }\n             if self.apply(&ops, &[])? {\n                 return Ok(snapshot);\n             }\n             // A failed require means the head or the generation moved: read again (a forgotten chunk now says so).\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::record_worth_inner",
+      "return_type": "-> Result<WorthSnapshot, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1468
+        },
+        "start": {
+          "column": 5,
+          "line": 1423
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/sageant-persistant/src/lib.rs:1457:24: replace == with != in PersistStore::record_worth_inner",
+    "package": "sageant-persistant",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 1457
+      },
+      "start": {
+        "column": 24,
+        "line": 1457
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])\n@@ -1467,39 +1467,17 @@\n         Err(Error::Backend(\"worth contention\".to_owned()))\n     }\n \n     /// Every worth snapshot of `id`, ordered by version then model id.\n     ///\n     /// # Errors\n     /// `NotFound` or `Forgotten`; `Corrupt` for a record that is not the one its key names; `Backend`.\n     pub fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {\n-        self.head(id)?.ok_or_else(|| self.missing(id))?;\n-        let prefix = format!(\"w/{}/\", id.as_str());\n-        let mut out = Vec::new();\n-        let mut after: Option<String> = None;\n-        loop {\n-            let page = self\n-                .kv\n-                .ordered_scan_values(&prefix, after.as_deref(), SCAN_PAGE)\n-                .map_err(kv_error)?;\n-            for (key, value) in page.entries {\n-                let snapshot = WorthSnapshot::decode(&value)?;\n-                if snapshot.id() != id\n-                    || key != worth_key(id, snapshot.version(), snapshot.model_id())\n-                {\n-                    return Err(Error::Corrupt(\"key does not match record\"));\n-                }\n-                out.push(snapshot);\n-            }\n-            match page.next {\n-                Some(cursor) => after = Some(cursor),\n-                None => return Ok(out),\n-            }\n-        }\n+        Ok(vec![]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// The tombstone of a forgotten lineage, if it is currently forgotten.\n     ///\n     /// # Errors\n     /// `Corrupt` or `Backend`.\n     pub fn tombstone(&self, id: &ChunkId) -> Result<Option<Tombstone>, Error> {\n         let Some(bytes) = self.read(&tombstone_key(id))? else {\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::worth_snapshots",
+      "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1498
+        },
+        "start": {
+          "column": 5,
+          "line": 1470
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1475:9: replace PersistStore::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])",
+    "package": "sageant-persistant",
+    "replacement": "Ok(vec![])",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 1497
+      },
+      "start": {
+        "column": 9,
+        "line": 1475
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace PersistStore::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![Default::default()])\n@@ -1467,39 +1467,17 @@\n         Err(Error::Backend(\"worth contention\".to_owned()))\n     }\n \n     /// Every worth snapshot of `id`, ordered by version then model id.\n     ///\n     /// # Errors\n     /// `NotFound` or `Forgotten`; `Corrupt` for a record that is not the one its key names; `Backend`.\n     pub fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {\n-        self.head(id)?.ok_or_else(|| self.missing(id))?;\n-        let prefix = format!(\"w/{}/\", id.as_str());\n-        let mut out = Vec::new();\n-        let mut after: Option<String> = None;\n-        loop {\n-            let page = self\n-                .kv\n-                .ordered_scan_values(&prefix, after.as_deref(), SCAN_PAGE)\n-                .map_err(kv_error)?;\n-            for (key, value) in page.entries {\n-                let snapshot = WorthSnapshot::decode(&value)?;\n-                if snapshot.id() != id\n-                    || key != worth_key(id, snapshot.version(), snapshot.model_id())\n-                {\n-                    return Err(Error::Corrupt(\"key does not match record\"));\n-                }\n-                out.push(snapshot);\n-            }\n-            match page.next {\n-                Some(cursor) => after = Some(cursor),\n-                None => return Ok(out),\n-            }\n-        }\n+        Ok(vec![Default::default()]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// The tombstone of a forgotten lineage, if it is currently forgotten.\n     ///\n     /// # Errors\n     /// `Corrupt` or `Backend`.\n     pub fn tombstone(&self, id: &ChunkId) -> Result<Option<Tombstone>, Error> {\n         let Some(bytes) = self.read(&tombstone_key(id))? else {\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::worth_snapshots",
+      "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1498
+        },
+        "start": {
+          "column": 5,
+          "line": 1470
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1475:9: replace PersistStore::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![Default::default()])",
+    "package": "sageant-persistant",
+    "replacement": "Ok(vec![Default::default()])",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 1497
+      },
+      "start": {
+        "column": 9,
+        "line": 1475
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace || with && in PersistStore::worth_snapshots\n@@ -1479,17 +1479,17 @@\n         loop {\n             let page = self\n                 .kv\n                 .ordered_scan_values(&prefix, after.as_deref(), SCAN_PAGE)\n                 .map_err(kv_error)?;\n             for (key, value) in page.entries {\n                 let snapshot = WorthSnapshot::decode(&value)?;\n                 if snapshot.id() != id\n-                    || key != worth_key(id, snapshot.version(), snapshot.model_id())\n+                    && /* ~ changed by cargo-mutants ~ */ key != worth_key(id, snapshot.version(), snapshot.model_id())\n                 {\n                     return Err(Error::Corrupt(\"key does not match record\"));\n                 }\n                 out.push(snapshot);\n             }\n             match page.next {\n                 Some(cursor) => after = Some(cursor),\n                 None => return Ok(out),\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::worth_snapshots",
+      "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1498
+        },
+        "start": {
+          "column": 5,
+          "line": 1470
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/sageant-persistant/src/lib.rs:1487:21: replace || with && in PersistStore::worth_snapshots",
+    "package": "sageant-persistant",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 1487
+      },
+      "start": {
+        "column": 21,
+        "line": 1487
+      }
+    }
+  },
+  {
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace != with == in PersistStore::worth_snapshots\n@@ -1478,17 +1478,17 @@\n         let mut after: Option<String> = None;\n         loop {\n             let page = self\n                 .kv\n                 .ordered_scan_values(&prefix, after.as_deref(), SCAN_PAGE)\n                 .map_err(kv_error)?;\n             for (key, value) in page.entries {\n                 let snapshot = WorthSnapshot::decode(&value)?;\n-                if snapshot.id() != id\n+                if snapshot.id() == /* ~ changed by cargo-mutants ~ */ id\n                     || key != worth_key(id, snapshot.version(), snapshot.model_id())\n                 {\n                     return Err(Error::Corrupt(\"key does not match record\"));\n                 }\n                 out.push(snapshot);\n             }\n             match page.next {\n                 Some(cursor) => after = Some(cursor),\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
+    "function": {
+      "function_name": "PersistStore::worth_snapshots",
+      "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 1498
+        },
+        "start": {
+          "column": 5,
+          "line": 1470
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/sageant-persistant/src/lib.rs:1486:34: replace != with == in PersistStore::worth_snapshots",
+    "package": "sageant-persistant",
+    "replacement": "==",
+    "span": {
+      "end": {
         "column": 36,
-        "line": 142
+        "line": 1486
+      },
+      "start": {
+        "column": 34,
+        "line": 1486
       }
     }
   },
   {
-    "diff": "--- src/worth.rs\n+++ replace * with / in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) / /* ~ changed by cargo-mutants ~ */ u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace != with == in PersistStore::worth_snapshots\n@@ -1479,17 +1479,17 @@\n         loop {\n             let page = self\n                 .kv\n                 .ordered_scan_values(&prefix, after.as_deref(), SCAN_PAGE)\n                 .map_err(kv_error)?;\n             for (key, value) in page.entries {\n                 let snapshot = WorthSnapshot::decode(&value)?;\n                 if snapshot.id() != id\n-                    || key != worth_key(id, snapshot.version(), snapshot.model_id())\n+                    || key == /* ~ changed by cargo-mutants ~ */ worth_key(id, snapshot.version(), snapshot.model_id())\n                 {\n                     return Err(Error::Corrupt(\"key does not match record\"));\n                 }\n                 out.push(snapshot);\n             }\n             match page.next {\n                 Some(cursor) => after = Some(cursor),\n                 None => return Ok(out),\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
+      "function_name": "PersistStore::worth_snapshots",
+      "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
       "span": {
         "end": {
-          "column": 2,
-          "line": 173
+          "column": 6,
+          "line": 1498
         },
         "start": {
-          "column": 1,
-          "line": 109
+          "column": 5,
+          "line": 1470
         }
       }
     },
     "genre": "BinaryOperator",
-    "name": "src/worth.rs:142:36: replace * with / in worth_of",
-    "package": "sageant",
-    "replacement": "/",
+    "name": "crates/sageant-persistant/src/lib.rs:1487:28: replace != with == in PersistStore::worth_snapshots",
+    "package": "sageant-persistant",
+    "replacement": "==",
     "span": {
       "end": {
-        "column": 37,
-        "line": 142
+        "column": 30,
+        "line": 1487
       },
       "start": {
-        "column": 36,
-        "line": 142
+        "column": 28,
+        "line": 1487
       }
     }
   },
   {
-    "diff": "--- src/worth.rs\n+++ replace + with - in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) - /* ~ changed by cargo-mutants ~ */ u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace <impl WorthStore for PersistStore>::record_worth -> Result<WorthSnapshot, Error> with Ok(Default::default())\n@@ -1684,17 +1684,17 @@\n \n impl WorthStore for PersistStore {\n     fn record_worth(\n         &mut self,\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n     ) -> Result<WorthSnapshot, Error> {\n-        Self::record_worth(self, id, worth, now)\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n     fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {\n         Self::worth_snapshots(self, id)\n     }\n }\n \n #[cfg(test)]\n mod tests {\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
+      "function_name": "<impl WorthStore for PersistStore>::record_worth",
+      "return_type": "-> Result<WorthSnapshot, Error>",
       "span": {
         "end": {
-          "column": 2,
-          "line": 173
+          "column": 6,
+          "line": 1693
         },
         "start": {
-          "column": 1,
-          "line": 109
+          "column": 5,
+          "line": 1686
         }
       }
     },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:142:69: replace + with - in worth_of",
-    "package": "sageant",
-    "replacement": "-",
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1692:9: replace <impl WorthStore for PersistStore>::record_worth -> Result<WorthSnapshot, Error> with Ok(Default::default())",
+    "package": "sageant-persistant",
+    "replacement": "Ok(Default::default())",
     "span": {
       "end": {
-        "column": 70,
-        "line": 142
-      },
-      "start": {
-        "column": 69,
-        "line": 142
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace + with * in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) * /* ~ changed by cargo-mutants ~ */ u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 173
-        },
-        "start": {
-          "column": 1,
-          "line": 109
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:142:69: replace + with * in worth_of",
-    "package": "sageant",
-    "replacement": "*",
-    "span": {
-      "end": {
-        "column": 70,
-        "line": 142
-      },
-      "start": {
-        "column": 69,
-        "line": 142
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace * with + in worth_of\n@@ -137,17 +137,17 @@\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n         u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n+    let stability_bp = STABILITY_BP_PER_VERSION + /* ~ changed by cargo-mutants ~ */ (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n         },\n         Component {\n             name: \"loose_links\",\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 173
-        },
-        "start": {
-          "column": 1,
-          "line": 109
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:145:49: replace * with + in worth_of",
-    "package": "sageant",
-    "replacement": "+",
-    "span": {
-      "end": {
-        "column": 50,
-        "line": 145
-      },
-      "start": {
         "column": 49,
-        "line": 145
+        "line": 1692
+      },
+      "start": {
+        "column": 9,
+        "line": 1692
       }
     }
   },
   {
-    "diff": "--- src/worth.rs\n+++ replace * with / in worth_of\n@@ -137,17 +137,17 @@\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n         u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n+    let stability_bp = STABILITY_BP_PER_VERSION / /* ~ changed by cargo-mutants ~ */ (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n         },\n         Component {\n             name: \"loose_links\",\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace <impl WorthStore for PersistStore>::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])\n@@ -1687,17 +1687,17 @@\n         &mut self,\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n     ) -> Result<WorthSnapshot, Error> {\n         Self::record_worth(self, id, worth, now)\n     }\n     fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {\n-        Self::worth_snapshots(self, id)\n+        Ok(vec![]) /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn listing(id: &str) -> persistant::registry::Listing {\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
+      "function_name": "<impl WorthStore for PersistStore>::worth_snapshots",
+      "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
       "span": {
         "end": {
-          "column": 2,
-          "line": 173
+          "column": 6,
+          "line": 1696
         },
         "start": {
-          "column": 1,
-          "line": 109
+          "column": 5,
+          "line": 1694
         }
       }
     },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:145:49: replace * with / in worth_of",
-    "package": "sageant",
-    "replacement": "/",
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1695:9: replace <impl WorthStore for PersistStore>::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])",
+    "package": "sageant-persistant",
+    "replacement": "Ok(vec![])",
     "span": {
       "end": {
-        "column": 50,
-        "line": 145
+        "column": 40,
+        "line": 1695
       },
       "start": {
-        "column": 49,
-        "line": 145
+        "column": 9,
+        "line": 1695
       }
     }
   },
   {
-    "diff": "--- src/worth.rs\n+++ replace - with + in worth_of\n@@ -137,17 +137,17 @@\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n         u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n+    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) + /* ~ changed by cargo-mutants ~ */ 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n         },\n         Component {\n             name: \"loose_links\",\n",
-    "file": "src/worth.rs",
+    "diff": "--- crates/sageant-persistant/src/lib.rs\n+++ replace <impl WorthStore for PersistStore>::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![Default::default()])\n@@ -1687,17 +1687,17 @@\n         &mut self,\n         id: &ChunkId,\n         worth: &Worth,\n         now: Timestamp,\n     ) -> Result<WorthSnapshot, Error> {\n         Self::record_worth(self, id, worth, now)\n     }\n     fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {\n-        Self::worth_snapshots(self, id)\n+        Ok(vec![Default::default()]) /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn listing(id: &str) -> persistant::registry::Listing {\n",
+    "file": "crates/sageant-persistant/src/lib.rs",
     "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
+      "function_name": "<impl WorthStore for PersistStore>::worth_snapshots",
+      "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
       "span": {
         "end": {
-          "column": 2,
-          "line": 173
+          "column": 6,
+          "line": 1696
         },
         "start": {
-          "column": 1,
-          "line": 109
+          "column": 5,
+          "line": 1694
         }
       }
     },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:145:89: replace - with + in worth_of",
-    "package": "sageant",
-    "replacement": "+",
+    "genre": "FnValue",
+    "name": "crates/sageant-persistant/src/lib.rs:1695:9: replace <impl WorthStore for PersistStore>::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![Default::default()])",
+    "package": "sageant-persistant",
+    "replacement": "Ok(vec![Default::default()])",
     "span": {
       "end": {
-        "column": 90,
-        "line": 145
+        "column": 40,
+        "line": 1695
       },
       "start": {
-        "column": 89,
-        "line": 145
-      }
-    }
-  },
-  {
-    "diff": "--- src/worth.rs\n+++ replace - with / in worth_of\n@@ -137,17 +137,17 @@\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n         u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n+    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) / /* ~ changed by cargo-mutants ~ */ 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n         },\n         Component {\n             name: \"loose_links\",\n",
-    "file": "src/worth.rs",
-    "function": {
-      "function_name": "worth_of",
-      "return_type": "-> Result<Worth, Error>",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 173
-        },
-        "start": {
-          "column": 1,
-          "line": 109
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "name": "src/worth.rs:145:89: replace - with / in worth_of",
-    "package": "sageant",
-    "replacement": "/",
-    "span": {
-      "end": {
-        "column": 90,
-        "line": 145
-      },
-      "start": {
-        "column": 89,
-        "line": 145
+        "column": 9,
+        "line": 1695
       }
     }
   }

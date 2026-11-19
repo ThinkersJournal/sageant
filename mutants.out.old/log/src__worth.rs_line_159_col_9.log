@@ -1,0 +1,77 @@
+
+*** src/worth.rs:159:9: replace WorthSnapshot::id -> &ChunkId with Box::leak(Box::new(Default::default()))
+
+*** mutation diff:
+--- src/worth.rs
++++ replace WorthSnapshot::id -> &ChunkId with Box::leak(Box::new(Default::default()))
+@@ -151,17 +151,17 @@
+             model_id: WORTH_MODEL.to_owned(),
+             computed_at,
+             worth: worth.clone(),
+         }
+     }
+     /// The chunk it is about.
+     #[must_use]
+     pub fn id(&self) -> &ChunkId {
+-        &self.id
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+     /// The chunk version it was computed for.
+     #[must_use]
+     pub fn version(&self) -> u32 {
+         self.worth.version
+     }
+     /// The formula that produced it, such as `worth-v1`.
+     #[must_use]
+
+
+*** C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe test --no-run --verbose --package=sageant@0.3.32 --all-features
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+       Fresh typenum v1.20.1
+       Fresh hybrid-array v0.4.15
+       Fresh cmov v0.5.4
+       Fresh const-oid v0.10.3
+       Fresh cfg-if v1.0.5
+       Fresh cpufeatures v0.3.1
+       Fresh tinyvec v1.13.3
+       Fresh zeroize v1.9.1
+       Fresh block-buffer v0.12.1
+       Fresh crypto-common v0.2.2
+       Fresh ctutils v0.4.8
+       Fresh unicode-normalization v0.1.26
+       Fresh digest v0.11.3
+       Fresh hmac v0.13.0
+       Fresh sha2 v0.11.1
+       Fresh redactant v0.1.2
+       Dirty sageant v0.3.32 (C:\Users\cires\AppData\Local\Temp\cargo-mutants-sageant-wt-phase1-d6UmnC.tmp): couldn't read metadata for file `C:/cb/7d\5d2bfcd3ed1839\debug\build\sageant/486ae2d61be8f8b1\out\libsageant-486ae2d61be8f8b1.rlib`
+   Compiling sageant v0.3.32 (C:\Users\cires\AppData\Local\Temp\cargo-mutants-sageant-wt-phase1-d6UmnC.tmp)
+     Running `C:\Users\cires\AppData\Local\Microsoft\WinGet\Links\sccache 'C:\rust\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe' --crate-name sageant --edition=2024 'src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 --cfg 'feature="nfc"' --cfg 'feature="redactant"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("nfc", "redactant"))' -C metadata=b1e9ba8c1e99441a -C extra-filename=-486ae2d61be8f8b1 --out-dir 'C:/cb/7d\5d2bfcd3ed1839\debug\build\sageant/486ae2d61be8f8b1\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\block-buffer/21563e730d4fb2d3\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cfg-if/c8bd55c15862100f\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cmov/c516e79ccc1f033c\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\const-oid/3f8c8a4d9714f63a\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cpufeatures/feac0efd605099d5\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\crypto-common/edbca1e7d7959bc5\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\ctutils/e612cbbb51615f9a\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\digest/ad3adfe261d1f356\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\hmac/fe712b48c0a00b7c\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\hybrid-array/99c3851797025f91\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\sha2/fa44ef2facc0e967\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\tinyvec/91a6bf89fbd0d4aa\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\typenum/e4d374bfb478db2e\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\zeroize/ef2d939e05cb1603\out' --extern 'redactant=C:/cb/7d\5d2bfcd3ed1839\debug\build\redactant/7cde3a615af14ac6\out\libredactant-7cde3a615af14ac6.rmeta' --extern 'unicode_normalization=C:/cb/7d\5d2bfcd3ed1839\debug\build\unicode-normalization/91ade507608f7401\out\libunicode_normalization-91ade507608f7401.rmeta' --force-warn=unused_crate_dependencies`
+     Running `C:\Users\cires\AppData\Local\Microsoft\WinGet\Links\sccache 'C:\rust\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe' --crate-name sageant --edition=2024 'src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --test --cfg 'feature="nfc"' --cfg 'feature="redactant"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("nfc", "redactant"))' -C metadata=76269b694c1e44aa -C extra-filename=-99b9109e302fc873 --out-dir 'C:/cb/7d\5d2bfcd3ed1839\debug\build\sageant/99b9109e302fc873\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\block-buffer/21563e730d4fb2d3\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cfg-if/c8bd55c15862100f\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cmov/c516e79ccc1f033c\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\const-oid/3f8c8a4d9714f63a\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cpufeatures/feac0efd605099d5\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\crypto-common/edbca1e7d7959bc5\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\ctutils/e612cbbb51615f9a\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\digest/ad3adfe261d1f356\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\hmac/fe712b48c0a00b7c\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\hybrid-array/99c3851797025f91\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\sha2/fa44ef2facc0e967\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\tinyvec/91a6bf89fbd0d4aa\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\typenum/e4d374bfb478db2e\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\zeroize/ef2d939e05cb1603\out' --extern 'redactant=C:/cb/7d\5d2bfcd3ed1839\debug\build\redactant/7cde3a615af14ac6\out\libredactant-7cde3a615af14ac6.rlib' --extern 'unicode_normalization=C:/cb/7d\5d2bfcd3ed1839\debug\build\unicode-normalization/91ade507608f7401\out\libunicode_normalization-91ade507608f7401.rlib' --force-warn=unused_crate_dependencies`
+error[E0277]: the trait bound `ChunkId: Default` is not satisfied
+   --> src\worth.rs:159:28
+    |
+159 |         Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+    |                            ^^^^^^^^^^^^^^^^^^ the trait `Default` is not implemented for `ChunkId`
+    |
+help: consider annotating `ChunkId` with `#[derive(Default)]`
+   --> src\model.rs:48:1
+    |
+ 48 + #[derive(Default)]
+ 49 | pub struct ChunkId(pub(crate) String);
+    |
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `sageant` (lib test) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `C:\Users\cires\AppData\Local\Microsoft\WinGet\Links\sccache 'C:\rust\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe' --crate-name sageant --edition=2024 'src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --test --cfg 'feature="nfc"' --cfg 'feature="redactant"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("nfc", "redactant"))' -C metadata=76269b694c1e44aa -C extra-filename=-99b9109e302fc873 --out-dir 'C:/cb/7d\5d2bfcd3ed1839\debug\build\sageant/99b9109e302fc873\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\block-buffer/21563e730d4fb2d3\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cfg-if/c8bd55c15862100f\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cmov/c516e79ccc1f033c\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\const-oid/3f8c8a4d9714f63a\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cpufeatures/feac0efd605099d5\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\crypto-common/edbca1e7d7959bc5\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\ctutils/e612cbbb51615f9a\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\digest/ad3adfe261d1f356\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\hmac/fe712b48c0a00b7c\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\hybrid-array/99c3851797025f91\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\sha2/fa44ef2facc0e967\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\tinyvec/91a6bf89fbd0d4aa\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\typenum/e4d374bfb478db2e\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\zeroize/ef2d939e05cb1603\out' --extern 'redactant=C:/cb/7d\5d2bfcd3ed1839\debug\build\redactant/7cde3a615af14ac6\out\libredactant-7cde3a615af14ac6.rlib' --extern 'unicode_normalization=C:/cb/7d\5d2bfcd3ed1839\debug\build\unicode-normalization/91ade507608f7401\out\libunicode_normalization-91ade507608f7401.rlib' --force-warn=unused_crate_dependencies` (exit code: 1)
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `sageant` (lib) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `C:\Users\cires\AppData\Local\Microsoft\WinGet\Links\sccache 'C:\rust\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe' --crate-name sageant --edition=2024 'src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 --cfg 'feature="nfc"' --cfg 'feature="redactant"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("nfc", "redactant"))' -C metadata=b1e9ba8c1e99441a -C extra-filename=-486ae2d61be8f8b1 --out-dir 'C:/cb/7d\5d2bfcd3ed1839\debug\build\sageant/486ae2d61be8f8b1\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\block-buffer/21563e730d4fb2d3\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cfg-if/c8bd55c15862100f\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cmov/c516e79ccc1f033c\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\const-oid/3f8c8a4d9714f63a\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\cpufeatures/feac0efd605099d5\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\crypto-common/edbca1e7d7959bc5\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\ctutils/e612cbbb51615f9a\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\digest/ad3adfe261d1f356\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\hmac/fe712b48c0a00b7c\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\hybrid-array/99c3851797025f91\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\sha2/fa44ef2facc0e967\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\tinyvec/91a6bf89fbd0d4aa\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\typenum/e4d374bfb478db2e\out' -L 'dependency=C:/cb/7d\5d2bfcd3ed1839\debug\build\zeroize/ef2d939e05cb1603\out' --extern 'redactant=C:/cb/7d\5d2bfcd3ed1839\debug\build\redactant/7cde3a615af14ac6\out\libredactant-7cde3a615af14ac6.rmeta' --extern 'unicode_normalization=C:/cb/7d\5d2bfcd3ed1839\debug\build\unicode-normalization/91ade507608f7401\out\libunicode_normalization-91ade507608f7401.rmeta' --force-warn=unused_crate_dependencies` (exit code: 1)
+
+*** result: Failure(101)

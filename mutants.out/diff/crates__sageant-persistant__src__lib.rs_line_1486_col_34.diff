@@ -1,0 +1,21 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace != with == in PersistStore::worth_snapshots
+@@ -1478,17 +1478,17 @@
+         let mut after: Option<String> = None;
+         loop {
+             let page = self
+                 .kv
+                 .ordered_scan_values(&prefix, after.as_deref(), SCAN_PAGE)
+                 .map_err(kv_error)?;
+             for (key, value) in page.entries {
+                 let snapshot = WorthSnapshot::decode(&value)?;
+-                if snapshot.id() != id
++                if snapshot.id() == /* ~ changed by cargo-mutants ~ */ id
+                     || key != worth_key(id, snapshot.version(), snapshot.model_id())
+                 {
+                     return Err(Error::Corrupt("key does not match record"));
+                 }
+                 out.push(snapshot);
+             }
+             match page.next {
+                 Some(cursor) => after = Some(cursor),

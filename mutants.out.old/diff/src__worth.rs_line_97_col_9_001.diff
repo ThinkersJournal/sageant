@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace Worth::score_bp -> u32 with 1
+@@ -89,17 +89,17 @@
+     version: u32,
+     half_life: u64,
+ }
+ 
+ impl Worth {
+     /// The score in basis points, 0 to 10 000.
+     #[must_use]
+     pub fn score_bp(&self) -> u32 {
+-        self.score_bp
++        1 /* ~ changed by cargo-mutants ~ */
+     }
+     /// The components: structural links, loose links, recency, stability, in that order.
+     #[must_use]
+     pub fn components(&self) -> &[Component; 4] {
+         &self.components
+     }
+     /// The version of the chunk this worth was computed for.
+     #[must_use]

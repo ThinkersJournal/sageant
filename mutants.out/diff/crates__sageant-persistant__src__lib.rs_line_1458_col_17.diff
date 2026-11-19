@@ -1,0 +1,21 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace && with || in PersistStore::record_worth_inner
+@@ -1450,17 +1450,17 @@
+                 },
+                 BatchOp::Put {
+                     key: worth_key(id, worth.version(), WORTH_MODEL),
+                     value: snapshot.encode(),
+                     ttl: NO_TTL,
+                 },
+             ];
+             if attempt == 0
+-                && let Some(hook) = hook
++                || /* ~ changed by cargo-mutants ~ */ let Some(hook) = hook
+             {
+                 hook();
+             }
+             if self.apply(&ops, &[])? {
+                 return Ok(snapshot);
+             }
+             // A failed require means the head or the generation moved: read again (a forgotten chunk now says so).
+         }

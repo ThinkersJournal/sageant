@@ -1,0 +1,26 @@
+--- src/worth.rs
++++ replace Worth::from_parts -> Self with Default::default()
+@@ -113,22 +113,17 @@
+     }
+     /// Rebuild a worth from stored parts. The caller (the decoder) has already checked the sum and the names.
+     pub(crate) fn from_parts(
+         score_bp: u32,
+         components: [Component; 4],
+         version: u32,
+         half_life: u64,
+     ) -> Self {
+-        Self {
+-            score_bp,
+-            components,
+-            version,
+-            half_life,
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// The four component names, in the order a [`Worth`] holds them.
+ pub(crate) const COMPONENT_NAMES: [&str; 4] =
+     ["structural_links", "loose_links", "recency", "stability"];
+ 
+ /// A [`Worth`] filed against a chunk: the derived numbers and when they were computed, keyed by

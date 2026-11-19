@@ -1,0 +1,46 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace PersistStore::removal_ops -> Result<Vec<BatchOp>, Error> with Ok(vec![])
+@@ -1181,42 +1181,17 @@
+         let event = AuditEvent::new(at, Action::Note, Some(id.clone()), &self.who(actor), reason);
+         self.apply(&[], &[event])?;
+         Ok(())
+     }
+ 
+     /// The operations that remove a lineage: its versions and head, its outgoing links (and their reverse
+     /// entries), and a review flag on every chunk derived from it. Links pointing at it stay and read as removed.
+     fn removal_ops(&self, id: &ChunkId) -> Result<Vec<BatchOp>, Error> {
+-        let mut ops = Vec::new();
+-        for chunk in self.history(id)? {
+-            ops.push(self.content_delete(chunk_key(id, chunk.version())));
+-        }
+-        ops.push(BatchOp::Delete { key: head_key(id) });
+-        for link in self.scan_links(&format!("l/{}/", id.as_str()))? {
+-            ops.push(BatchOp::Delete {
+-                key: link_key(link.from(), link.kind(), link.to()),
+-            });
+-            ops.push(BatchOp::Delete {
+-                key: reverse_key(link.from(), link.kind(), link.to()),
+-            });
+-        }
+-        for link in self.scan_links(&format!("r/{}/", id.as_str()))? {
+-            if link.kind() == LinkKind::DerivedFrom {
+-                ops.push(BatchOp::Put {
+-                    key: review_key(link.from()),
+-                    value: b"1".to_vec(),
+-                    ttl: NO_TTL,
+-                });
+-            }
+-        }
+-        for key in self.scan_keys(&format!("w/{}/", id.as_str()))? {
+-            ops.push(self.content_delete(key));
+-        }
+-        Ok(ops)
++        Ok(vec![]) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Remove a chunk's content (every version), its source, its hash and its outgoing links, leaving a minimal
+     /// tombstone. Links pointing at it stay and read as removed; chunks derived from it are flagged for review.
+     /// "Unretrievable", not "erased": a backend may keep old pages until it is compacted.
+     ///
+     /// # Errors
+     /// `NotFound`, `Forgotten` if it is already forgotten, `Conflict` if another writer changed the chunk
