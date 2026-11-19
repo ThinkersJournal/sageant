@@ -11,7 +11,7 @@ Decided model and rows: `ROADMAP.md`. Do not reopen the model without an `[ASK]`
 - PM rulings: no owner-notification on put path (patent US20230063214A1); no entropy detection; "unretrievable", never "erased", except `sqlite-secure` (tested).
 - Known: sqlite/sqlite-full homes keep MORE fragments at N>=3 (text index tx cell); sqlite-secure is the answer; README table stands.
 
-WAIT: nothing blocking: publish waits on this PR's merge (PM publishes); check below | check: gh pr view docs/roadmap-expansion --json state,mergedAt | wake: 2026-11-20T16:00:00Z
+WAIT: PR #52 merge (then the PM publishes) | check: gh pr view 52 --json state,mergedAt | wake: 2026-11-20T16:00:00Z
 
 ## Next (order from the PM, 2026-11-18)
 1. After this merges: [MERGED] to PM; registry install after publish.
