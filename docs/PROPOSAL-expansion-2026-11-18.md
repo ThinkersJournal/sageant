@@ -215,5 +215,9 @@ CORRECTIONS, same day (CireSnave), which withdraw two hazards the PM's first dra
 2. "Replication versus forgetting" is not a hazard to engineer around. CireSnave: minds communicate, and once a mind has communicated something
    there is no way to stop it circulating; that is the nature of communication between minds, and the knowledge base does not fight it. The
    rule is a NOTE, not a mechanism: **anything shared publicly should be assumed to remain among public knowledge forever.** Forget and purge
-   act on this store only. The "Ant suite" names in the out-of-scope section (EpistemologicAnt, OnotologAnt, SemanticAnt) overlap the AnalysAnt crate names
-(`analysant-epistemic`, `-ontological`, `-semantic`): reconcile before either is built.
+   act on this store only.
+3. The "Ant suite" names in the out-of-scope section are NOT an overlap with AnalysAnt (the PM's first draft said they were). CireSnave: the
+   AnalysAnt lenses are what spawned the idea, but the suite libraries (EpistemologicAnt, OntologAnt, SemanticAnt; names not final, possibly
+   EpistemAnt and SemAnt) are comprehensive tool libraries, each covering a whole field (for example epistemology and epistemological
+   analysis), and are likely to be toolsets that AnalysAnt's lenses USE, not the same thing as the lenses. They are concepts only today: no
+   repo, no lane, no crates.io claim.
