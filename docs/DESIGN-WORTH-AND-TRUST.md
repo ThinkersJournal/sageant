@@ -173,6 +173,28 @@ level and reason for each; a sabotage test that makes the mapper treat two chunk
 display test that the MCP envelope carries the level and reasons but never changes `content`; a forget test that no trust record of
 a forgotten chunk survives in any file.
 
+**4.5 Fixture inputs for `epistemologicant` (asked by pm-ants 2026-11-19, for shaping fixtures only, never its API).** These are what
+sageant will pass today. They are **proposed starting values**, not approved defaults: the owner approves defaults when X3 code lands,
+and `epistemologicant` is free to name and shape its own types.
+1. **Reliability inputs per source, per topic** (the topic is an opaque label; absent means "overall"): a list of *outcomes*, each
+   `(source id, topic, outcome, at)` where the outcome is exactly one of `supported` or `contradicted`, meaning a claim this source
+   made was later supported or contradicted by an *independent* source. Time is an integer in the caller's unit (sageant passes its
+   own `Timestamp`s unchanged and the tool never reads a clock). Parameters: `half_life` in that unit (sageant's proposal is 180 days
+   expressed in the store's unit; fixtures may use any value, such as 100, as the worth fixtures do), `baseline` for an unknown source
+   as pseudo-counts (proposal: 2 supported, 2 contradicted, so an empty record sits in the middle) and `shrinkage` as the number of
+   pseudo-observations the baseline is worth (proposal: 4). A configured prior for a named source is an extra count of `supported`
+   marked "configured" (the owner: +1), never earned.
+2. **Ordinal level names** (low to high), plus one value outside the order: `unrated` (too little evidence), then
+   `low` < `doubtful` < `unproven` < `corroborated` < `well-corroborated`. A claim's level is derived from its sources' ratings and its
+   independent evidence; a prior alone can reach at most `unproven`, so only independent corroboration reaches `corroborated`. `unrated`
+   is returned instead of a guess. (`confidence`, the stored three-state belief, is separate and unchanged.)
+3. **Corroboration the tool must refuse** (counts nothing, and the output says why): (a) a source corroborating its own claim, directly
+   or through another claim it also made; (b) two supporters that share a source, counted once; (c) supporters that cite each other in
+   a cycle, counted once; (d) a later version of the same claim as support for an earlier one; (e) evidence whose asserting source or time is missing; (f) evidence from
+   a claim the consumer says no longer exists (forgotten or purged); (g) an imported rating offered as a level instead of as evidence
+   with its own source (section 4.1, item 9); (h) a contradiction by the claim's own source, which is a revision and not a
+   contradiction. Fixtures should include one case for each, each asserting level and reason.
+
 ## 5. Order, survey and decisions
 
 - **Survey before build** (portfolio rule): X1 and X2 need a short prior-art read (decay and eviction policies in caches and in

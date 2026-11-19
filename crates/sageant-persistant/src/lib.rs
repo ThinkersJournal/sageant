@@ -1682,6 +1682,20 @@ impl Writer for PersistStore {
     }
 }
 
+impl WorthStore for PersistStore {
+    fn record_worth(
+        &mut self,
+        id: &ChunkId,
+        worth: &Worth,
+        now: Timestamp,
+    ) -> Result<WorthSnapshot, Error> {
+        Self::record_worth(self, id, worth, now)
+    }
+    fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {
+        Self::worth_snapshots(self, id)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1750,19 +1764,5 @@ mod tests {
             Err(Error::Corrupt(_))
         ));
         assert!(matches!(bumped(Some(&vec![0xff])), Err(Error::Corrupt(_))));
-    }
-}
-
-impl WorthStore for PersistStore {
-    fn record_worth(
-        &mut self,
-        id: &ChunkId,
-        worth: &Worth,
-        now: Timestamp,
-    ) -> Result<WorthSnapshot, Error> {
-        Self::record_worth(self, id, worth, now)
-    }
-    fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {
-        Self::worth_snapshots(self, id)
     }
 }
