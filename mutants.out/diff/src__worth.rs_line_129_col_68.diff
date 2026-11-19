@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace += with -= in worth_of
+@@ -121,17 +121,17 @@
+     let versions = u64::from(current.version());
+     let mut newest = current.created_at().0;
+     let mut structural = 0u64;
+     let mut loose = 0u64;
+     let outgoing = reader.links_from(id)?;
+     let incoming = reader.links_to(id)?;
+     for link in outgoing.iter().chain(incoming.iter()) {
+         match link.kind() {
+-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,
++            LinkKind::PartOf | LinkKind::DerivedFrom => structural -= /* ~ changed by cargo-mutants ~ */ 1,
+             LinkKind::Cites | LinkKind::Related => loose += 1,
+             // Evidence belongs to trust: not a neighbour, not a touch.
+             _ => continue,
+         }
+         newest = newest.max(link.created_at().0);
+     }
+     let age = now.0.saturating_sub(newest);
+     let h = params.half_life();

@@ -1,0 +1,2032 @@
+{
+  "outcomes": [
+    {
+      "scenario": "Baseline",
+      "summary": "Success",
+      "log_path": "log/baseline.log",
+      "diff_path": null,
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 88.8727774,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 27.6001599,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 0",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "WorthParams::half_life",
+            "return_type": "-> u64",
+            "span": {
+              "start": {
+                "line": 51,
+                "column": 5
+              },
+              "end": {
+                "line": 55,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 54,
+              "column": 9
+            },
+            "end": {
+              "line": 54,
+              "column": 23
+            }
+          },
+          "replacement": "0",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_54_col_9.log",
+      "diff_path": "diff/src__worth.rs_line_54_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 33.5052708,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 27.4742996,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 1",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "WorthParams::half_life",
+            "return_type": "-> u64",
+            "span": {
+              "start": {
+                "line": 51,
+                "column": 5
+              },
+              "end": {
+                "line": 55,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 54,
+              "column": 9
+            },
+            "end": {
+              "line": 54,
+              "column": 23
+            }
+          },
+          "replacement": "1",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_54_col_9_001.log",
+      "diff_path": "diff/src__worth.rs_line_54_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 62.4887544,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 28.5068659,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:70:9: replace Component::name -> &'static str with \"\"",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "Component::name",
+            "return_type": "-> &'static str",
+            "span": {
+              "start": {
+                "line": 67,
+                "column": 5
+              },
+              "end": {
+                "line": 71,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 70,
+              "column": 9
+            },
+            "end": {
+              "line": 70,
+              "column": 18
+            }
+          },
+          "replacement": "\"\"",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_70_col_9.log",
+      "diff_path": "diff/src__worth.rs_line_70_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 28.6651919,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 28.1842153,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:70:9: replace Component::name -> &'static str with \"xyzzy\"",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "Component::name",
+            "return_type": "-> &'static str",
+            "span": {
+              "start": {
+                "line": 67,
+                "column": 5
+              },
+              "end": {
+                "line": 71,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 70,
+              "column": 9
+            },
+            "end": {
+              "line": 70,
+              "column": 18
+            }
+          },
+          "replacement": "\"xyzzy\"",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_70_col_9_001.log",
+      "diff_path": "diff/src__worth.rs_line_70_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 56.331862,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 58.3421403,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:75:9: replace Component::raw -> u64 with 0",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "Component::raw",
+            "return_type": "-> u64",
+            "span": {
+              "start": {
+                "line": 72,
+                "column": 5
+              },
+              "end": {
+                "line": 76,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 75,
+              "column": 9
+            },
+            "end": {
+              "line": 75,
+              "column": 17
+            }
+          },
+          "replacement": "0",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_75_col_9.log",
+      "diff_path": "diff/src__worth.rs_line_75_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 49.9212232,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 41.902188,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:75:9: replace Component::raw -> u64 with 1",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "Component::raw",
+            "return_type": "-> u64",
+            "span": {
+              "start": {
+                "line": 72,
+                "column": 5
+              },
+              "end": {
+                "line": 76,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 75,
+              "column": 9
+            },
+            "end": {
+              "line": 75,
+              "column": 17
+            }
+          },
+          "replacement": "1",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_75_col_9_001.log",
+      "diff_path": "diff/src__worth.rs_line_75_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 34.133956,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 72.8098825,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:80:9: replace Component::bp -> u32 with 0",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "Component::bp",
+            "return_type": "-> u32",
+            "span": {
+              "start": {
+                "line": 77,
+                "column": 5
+              },
+              "end": {
+                "line": 81,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 80,
+              "column": 9
+            },
+            "end": {
+              "line": 80,
+              "column": 16
+            }
+          },
+          "replacement": "0",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_80_col_9.log",
+      "diff_path": "diff/src__worth.rs_line_80_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 30.4792433,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 75.673383,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:80:9: replace Component::bp -> u32 with 1",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "Component::bp",
+            "return_type": "-> u32",
+            "span": {
+              "start": {
+                "line": 77,
+                "column": 5
+              },
+              "end": {
+                "line": 81,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 80,
+              "column": 9
+            },
+            "end": {
+              "line": 80,
+              "column": 16
+            }
+          },
+          "replacement": "1",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_80_col_9_001.log",
+      "diff_path": "diff/src__worth.rs_line_80_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 51.8787322,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 66.1499289,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:95:9: replace Worth::score_bp -> u32 with 0",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "Worth::score_bp",
+            "return_type": "-> u32",
+            "span": {
+              "start": {
+                "line": 92,
+                "column": 5
+              },
+              "end": {
+                "line": 96,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 95,
+              "column": 9
+            },
+            "end": {
+              "line": 95,
+              "column": 22
+            }
+          },
+          "replacement": "0",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_95_col_9.log",
+      "diff_path": "diff/src__worth.rs_line_95_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 49.1045168,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 67.9186022,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:100:9: replace Worth::components -> &[Component; 4] with Box::leak(Box::new([Default::default(); 4]))",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "Worth::components",
+            "return_type": "-> &[Component; 4]",
+            "span": {
+              "start": {
+                "line": 97,
+                "column": 5
+              },
+              "end": {
+                "line": 101,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 100,
+              "column": 9
+            },
+            "end": {
+              "line": 100,
+              "column": 25
+            }
+          },
+          "replacement": "Box::leak(Box::new([Default::default(); 4]))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__worth.rs_line_100_col_9.log",
+      "diff_path": "diff/src__worth.rs_line_100_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 19.1952415,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:95:9: replace Worth::score_bp -> u32 with 1",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "Worth::score_bp",
+            "return_type": "-> u32",
+            "span": {
+              "start": {
+                "line": 92,
+                "column": 5
+              },
+              "end": {
+                "line": 96,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 95,
+              "column": 9
+            },
+            "end": {
+              "line": 95,
+              "column": 22
+            }
+          },
+          "replacement": "1",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_95_col_9_001.log",
+      "diff_path": "diff/src__worth.rs_line_95_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 41.404569,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 28.680317,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:106:5: replace bp32 -> u32 with 0",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "bp32",
+            "return_type": "-> u32",
+            "span": {
+              "start": {
+                "line": 104,
+                "column": 1
+              },
+              "end": {
+                "line": 107,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 106,
+              "column": 5
+            },
+            "end": {
+              "line": 106,
+              "column": 41
+            }
+          },
+          "replacement": "0",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_106_col_5.log",
+      "diff_path": "diff/src__worth.rs_line_106_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 35.9599221,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 25.002979,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:120:5: replace worth_of -> Result<Worth, Error> with Ok(Default::default())",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 120,
+              "column": 5
+            },
+            "end": {
+              "line": 172,
+              "column": 7
+            }
+          },
+          "replacement": "Ok(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__worth.rs_line_120_col_5.log",
+      "diff_path": "diff/src__worth.rs_line_120_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 13.0967146,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:106:5: replace bp32 -> u32 with 1",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "bp32",
+            "return_type": "-> u32",
+            "span": {
+              "start": {
+                "line": 104,
+                "column": 1
+              },
+              "end": {
+                "line": 107,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 106,
+              "column": 5
+            },
+            "end": {
+              "line": 106,
+              "column": 41
+            }
+          },
+          "replacement": "1",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_106_col_5_001.log",
+      "diff_path": "diff/src__worth.rs_line_106_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 32.9440255,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 25.0752765,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:129:13: delete match arm LinkKind::PartOf | LinkKind::DerivedFrom in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 129,
+              "column": 13
+            },
+            "end": {
+              "line": 129,
+              "column": 73
+            }
+          },
+          "replacement": "",
+          "genre": "MatchArm"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_129_col_13.log",
+      "diff_path": "diff/src__worth.rs_line_129_col_13.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 21.84267,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 37.2775139,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:130:13: delete match arm LinkKind::Cites | LinkKind::Related in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 130,
+              "column": 13
+            },
+            "end": {
+              "line": 130,
+              "column": 63
+            }
+          },
+          "replacement": "",
+          "genre": "MatchArm"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_130_col_13.log",
+      "diff_path": "diff/src__worth.rs_line_130_col_13.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 32.6185021,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 18.8840046,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:129:68: replace += with *= in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 129,
+              "column": 68
+            },
+            "end": {
+              "line": 129,
+              "column": 70
+            }
+          },
+          "replacement": "*=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_129_col_68_001.log",
+      "diff_path": "diff/src__worth.rs_line_129_col_68_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 21.8143344,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 38.6860158,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:129:68: replace += with -= in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 129,
+              "column": 68
+            },
+            "end": {
+              "line": 129,
+              "column": 70
+            }
+          },
+          "replacement": "-=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_129_col_68.log",
+      "diff_path": "diff/src__worth.rs_line_129_col_68.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 43.7854856,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 46.5917868,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:130:58: replace += with -= in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 130,
+              "column": 58
+            },
+            "end": {
+              "line": 130,
+              "column": 60
+            }
+          },
+          "replacement": "-=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_130_col_58.log",
+      "diff_path": "diff/src__worth.rs_line_130_col_58.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 43.5731438,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 15.8676401,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:130:58: replace += with *= in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 130,
+              "column": 58
+            },
+            "end": {
+              "line": 130,
+              "column": 60
+            }
+          },
+          "replacement": "*=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_130_col_58_001.log",
+      "diff_path": "diff/src__worth.rs_line_130_col_58_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 60.2854363,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 22.2319549,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:142:52: replace / with % in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 142,
+              "column": 52
+            },
+            "end": {
+              "line": 142,
+              "column": 53
+            }
+          },
+          "replacement": "%",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_142_col_52.log",
+      "diff_path": "diff/src__worth.rs_line_142_col_52.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 34.8092281,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 30.8796601,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:142:52: replace / with * in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 142,
+              "column": 52
+            },
+            "end": {
+              "line": 142,
+              "column": 53
+            }
+          },
+          "replacement": "*",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_142_col_52_001.log",
+      "diff_path": "diff/src__worth.rs_line_142_col_52_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 54.7060145,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 39.1624474,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:142:36: replace * with + in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 142,
+              "column": 36
+            },
+            "end": {
+              "line": 142,
+              "column": 37
+            }
+          },
+          "replacement": "+",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_142_col_36.log",
+      "diff_path": "diff/src__worth.rs_line_142_col_36.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 60.9717486,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 23.2646935,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:142:36: replace * with / in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 142,
+              "column": 36
+            },
+            "end": {
+              "line": 142,
+              "column": 37
+            }
+          },
+          "replacement": "/",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_142_col_36_001.log",
+      "diff_path": "diff/src__worth.rs_line_142_col_36_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 41.1802171,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 61.7179417,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:142:69: replace + with - in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 142,
+              "column": 69
+            },
+            "end": {
+              "line": 142,
+              "column": 70
+            }
+          },
+          "replacement": "-",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_142_col_69.log",
+      "diff_path": "diff/src__worth.rs_line_142_col_69.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 89.1062199,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 41.5227638,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:142:69: replace + with * in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 142,
+              "column": 69
+            },
+            "end": {
+              "line": 142,
+              "column": 70
+            }
+          },
+          "replacement": "*",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_142_col_69_001.log",
+      "diff_path": "diff/src__worth.rs_line_142_col_69_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 53.3755158,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 29.4513915,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:145:49: replace * with / in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 145,
+              "column": 49
+            },
+            "end": {
+              "line": 145,
+              "column": 50
+            }
+          },
+          "replacement": "/",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_145_col_49_001.log",
+      "diff_path": "diff/src__worth.rs_line_145_col_49_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 148.2146847,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 93.8683744,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:145:49: replace * with + in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 145,
+              "column": 49
+            },
+            "end": {
+              "line": 145,
+              "column": 50
+            }
+          },
+          "replacement": "+",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_145_col_49.log",
+      "diff_path": "diff/src__worth.rs_line_145_col_49.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 141.879579,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 137.2828018,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:145:89: replace - with + in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 145,
+              "column": 89
+            },
+            "end": {
+              "line": 145,
+              "column": 90
+            }
+          },
+          "replacement": "+",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_145_col_89.log",
+      "diff_path": "diff/src__worth.rs_line_145_col_89.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 54.8980251,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 55.0384681,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "src/worth.rs:145:89: replace - with / in worth_of",
+          "package": "sageant",
+          "file": "src/worth.rs",
+          "function": {
+            "function_name": "worth_of",
+            "return_type": "-> Result<Worth, Error>",
+            "span": {
+              "start": {
+                "line": 109,
+                "column": 1
+              },
+              "end": {
+                "line": 173,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 145,
+              "column": 89
+            },
+            "end": {
+              "line": 145,
+              "column": 90
+            }
+          },
+          "replacement": "/",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__worth.rs_line_145_col_89_001.log",
+      "diff_path": "diff/src__worth.rs_line_145_col_89_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 51.8541517,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 55.1483993,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    }
+  ],
+  "total_mutants": 30,
+  "missed": 0,
+  "caught": 28,
+  "timeout": 0,
+  "unviable": 2,
+  "success": 0,
+  "start_time": "2026-11-19T16:44:08.680835Z",
+  "end_time": "2026-11-19T17:09:25.4343893Z",
+  "cargo_mutants_version": "27.1.0"
+}

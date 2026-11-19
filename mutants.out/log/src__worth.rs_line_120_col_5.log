@@ -1,0 +1,127 @@
+
+*** src/worth.rs:120:5: replace worth_of -> Result<Worth, Error> with Ok(Default::default())
+
+*** mutation diff:
+--- src/worth.rs
++++ replace worth_of -> Result<Worth, Error> with Ok(Default::default())
+@@ -112,62 +112,10 @@
+ /// # Errors
+ /// `NotFound` or `Forgotten` for an unknown or removed chunk, or whatever the reader reports.
+ pub fn worth_of(
+     reader: &dyn Reader,
+     id: &ChunkId,
+     now: Timestamp,
+     params: &WorthParams,
+ ) -> Result<Worth, Error> {
+-    let current = reader.get(id)?;
+-    let versions = u64::from(current.version());
+-    let mut newest = current.created_at().0;
+-    let mut structural = 0u64;
+-    let mut loose = 0u64;
+-    let outgoing = reader.links_from(id)?;
+-    let incoming = reader.links_to(id)?;
+-    for link in outgoing.iter().chain(incoming.iter()) {
+-        match link.kind() {
+-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,
+-            LinkKind::Cites | LinkKind::Related => loose += 1,
+-            // Evidence belongs to trust: not a neighbour, not a touch.
+-            _ => continue,
+-        }
+-        newest = newest.max(link.created_at().0);
+-    }
+-    let age = now.0.saturating_sub(newest);
+-    let h = params.half_life();
+-    let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);
+-    let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);
+-    // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.
+-    let recency_bp = u64::try_from(
+-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),
+-    )
+-    .unwrap_or(0);
+-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);
+-    let components = [
+-        Component {
+-            name: "structural_links",
+-            raw: structural,
+-            bp: bp32(structural_bp),
+-        },
+-        Component {
+-            name: "loose_links",
+-            raw: loose,
+-            bp: bp32(loose_bp),
+-        },
+-        Component {
+-            name: "recency",
+-            raw: age,
+-            bp: bp32(recency_bp),
+-        },
+-        Component {
+-            name: "stability",
+-            raw: versions,
+-            bp: bp32(stability_bp),
+-        },
+-    ];
+-    let score_bp = components.iter().map(|c| c.bp).sum();
+-    Ok(Worth {
+-        score_bp,
+-        components,
+-    })
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+
+
+*** C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe test --no-run --verbose --package=sageant@0.3.32 --all-features
+       Fresh typenum v1.20.1
+       Fresh hybrid-array v0.4.15
+       Fresh cmov v0.5.4
+       Fresh ctutils v0.4.8
+       Fresh block-buffer v0.12.1
+       Fresh crypto-common v0.2.2
+       Fresh const-oid v0.10.3
+       Fresh cpufeatures v0.3.1
+       Fresh cfg-if v1.0.5
+       Fresh zeroize v1.9.1
+       Fresh tinyvec v1.13.3
+       Fresh digest v0.11.3
+       Fresh unicode-normalization v0.1.26
+       Fresh sha2 v0.11.1
+       Fresh hmac v0.13.0
+       Fresh redactant v0.1.2
+       Dirty sageant v0.3.32 (C:\Users\cires\AppData\Local\Temp\cargo-mutants-sageant-wt-phase1-9tgwDs.tmp): the file `src\worth.rs` has changed (13439580880.699307300s, 55s after last build at 13439580825.443992800s)
+   Compiling sageant v0.3.32 (C:\Users\cires\AppData\Local\Temp\cargo-mutants-sageant-wt-phase1-9tgwDs.tmp)
+     Running `C:\Users\cires\AppData\Local\Microsoft\WinGet\Links\sccache 'C:\rust\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe' --crate-name sageant --edition=2024 'src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 --cfg 'feature="nfc"' --cfg 'feature="redactant"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("nfc", "redactant"))' -C metadata=b1e9ba8c1e99441a -C extra-filename=-486ae2d61be8f8b1 --out-dir 'C:/cb/22\c93221b1eb273c\debug\build\sageant/486ae2d61be8f8b1\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\block-buffer/21563e730d4fb2d3\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cfg-if/c8bd55c15862100f\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cmov/c516e79ccc1f033c\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\const-oid/3f8c8a4d9714f63a\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cpufeatures/feac0efd605099d5\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\crypto-common/edbca1e7d7959bc5\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\ctutils/e612cbbb51615f9a\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\digest/ad3adfe261d1f356\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\hmac/fe712b48c0a00b7c\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\hybrid-array/99c3851797025f91\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\sha2/fa44ef2facc0e967\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\tinyvec/91a6bf89fbd0d4aa\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\typenum/e4d374bfb478db2e\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\zeroize/ef2d939e05cb1603\out' --extern 'redactant=C:/cb/22\c93221b1eb273c\debug\build\redactant/7cde3a615af14ac6\out\libredactant-7cde3a615af14ac6.rmeta' --extern 'unicode_normalization=C:/cb/22\c93221b1eb273c\debug\build\unicode-normalization/91ade507608f7401\out\libunicode_normalization-91ade507608f7401.rmeta' --force-warn=unused_crate_dependencies`
+     Running `C:\Users\cires\AppData\Local\Microsoft\WinGet\Links\sccache 'C:\rust\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe' --crate-name sageant --edition=2024 'src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --test --cfg 'feature="nfc"' --cfg 'feature="redactant"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("nfc", "redactant"))' -C metadata=76269b694c1e44aa -C extra-filename=-99b9109e302fc873 --out-dir 'C:/cb/22\c93221b1eb273c\debug\build\sageant/99b9109e302fc873\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\block-buffer/21563e730d4fb2d3\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cfg-if/c8bd55c15862100f\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cmov/c516e79ccc1f033c\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\const-oid/3f8c8a4d9714f63a\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cpufeatures/feac0efd605099d5\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\crypto-common/edbca1e7d7959bc5\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\ctutils/e612cbbb51615f9a\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\digest/ad3adfe261d1f356\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\hmac/fe712b48c0a00b7c\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\hybrid-array/99c3851797025f91\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\sha2/fa44ef2facc0e967\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\tinyvec/91a6bf89fbd0d4aa\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\typenum/e4d374bfb478db2e\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\zeroize/ef2d939e05cb1603\out' --extern 'redactant=C:/cb/22\c93221b1eb273c\debug\build\redactant/7cde3a615af14ac6\out\libredactant-7cde3a615af14ac6.rlib' --extern 'unicode_normalization=C:/cb/22\c93221b1eb273c\debug\build\unicode-normalization/91ade507608f7401\out\libunicode_normalization-91ade507608f7401.rlib' --force-warn=unused_crate_dependencies`
+warning: unused import: `LinkKind`
+  --> src\worth.rs:22:29
+   |
+22 | use crate::model::{ChunkId, LinkKind, Timestamp};
+   |                             ^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0277]: the trait bound `Worth: Default` is not satisfied
+   --> src\worth.rs:120:8
+    |
+120 |     Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+    |        ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `Default` is not implemented for `Worth`
+   --> src\worth.rs:86:1
+    |
+ 86 | pub struct Worth {
+    | ^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0277`.
+warning: `sageant` (lib test) generated 1 warning
+error: could not compile `sageant` (lib test) due to 1 previous error; 1 warning emitted
+
+Caused by:
+  process didn't exit successfully: `C:\Users\cires\AppData\Local\Microsoft\WinGet\Links\sccache 'C:\rust\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe' --crate-name sageant --edition=2024 'src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --test --cfg 'feature="nfc"' --cfg 'feature="redactant"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("nfc", "redactant"))' -C metadata=76269b694c1e44aa -C extra-filename=-99b9109e302fc873 --out-dir 'C:/cb/22\c93221b1eb273c\debug\build\sageant/99b9109e302fc873\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\block-buffer/21563e730d4fb2d3\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cfg-if/c8bd55c15862100f\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cmov/c516e79ccc1f033c\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\const-oid/3f8c8a4d9714f63a\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cpufeatures/feac0efd605099d5\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\crypto-common/edbca1e7d7959bc5\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\ctutils/e612cbbb51615f9a\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\digest/ad3adfe261d1f356\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\hmac/fe712b48c0a00b7c\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\hybrid-array/99c3851797025f91\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\sha2/fa44ef2facc0e967\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\tinyvec/91a6bf89fbd0d4aa\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\typenum/e4d374bfb478db2e\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\zeroize/ef2d939e05cb1603\out' --extern 'redactant=C:/cb/22\c93221b1eb273c\debug\build\redactant/7cde3a615af14ac6\out\libredactant-7cde3a615af14ac6.rlib' --extern 'unicode_normalization=C:/cb/22\c93221b1eb273c\debug\build\unicode-normalization/91ade507608f7401\out\libunicode_normalization-91ade507608f7401.rlib' --force-warn=unused_crate_dependencies` (exit code: 1)
+warning: build failed, waiting for other jobs to finish...
+warning: `sageant` (lib) generated 1 warning (1 duplicate)
+error: could not compile `sageant` (lib) due to 1 previous error; 1 warning emitted
+
+Caused by:
+  process didn't exit successfully: `C:\Users\cires\AppData\Local\Microsoft\WinGet\Links\sccache 'C:\rust\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe' --crate-name sageant --edition=2024 'src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 --cfg 'feature="nfc"' --cfg 'feature="redactant"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("nfc", "redactant"))' -C metadata=b1e9ba8c1e99441a -C extra-filename=-486ae2d61be8f8b1 --out-dir 'C:/cb/22\c93221b1eb273c\debug\build\sageant/486ae2d61be8f8b1\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\block-buffer/21563e730d4fb2d3\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cfg-if/c8bd55c15862100f\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cmov/c516e79ccc1f033c\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\const-oid/3f8c8a4d9714f63a\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\cpufeatures/feac0efd605099d5\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\crypto-common/edbca1e7d7959bc5\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\ctutils/e612cbbb51615f9a\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\digest/ad3adfe261d1f356\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\hmac/fe712b48c0a00b7c\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\hybrid-array/99c3851797025f91\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\sha2/fa44ef2facc0e967\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\tinyvec/91a6bf89fbd0d4aa\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\typenum/e4d374bfb478db2e\out' -L 'dependency=C:/cb/22\c93221b1eb273c\debug\build\zeroize/ef2d939e05cb1603\out' --extern 'redactant=C:/cb/22\c93221b1eb273c\debug\build\redactant/7cde3a615af14ac6\out\libredactant-7cde3a615af14ac6.rmeta' --extern 'unicode_normalization=C:/cb/22\c93221b1eb273c\debug\build\unicode-normalization/91ade507608f7401\out\libunicode_normalization-91ade507608f7401.rmeta' --force-warn=unused_crate_dependencies` (exit code: 1)
+
+*** result: Failure(101)

@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace - with / in worth_of
+@@ -137,17 +137,17 @@
+     let h = params.half_life();
+     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);
+     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);
+     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.
+     let recency_bp = u64::try_from(
+         u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),
+     )
+     .unwrap_or(0);
+-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);
++    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) / /* ~ changed by cargo-mutants ~ */ 1);
+     let components = [
+         Component {
+             name: "structural_links",
+             raw: structural,
+             bp: bp32(structural_bp),
+         },
+         Component {
+             name: "loose_links",

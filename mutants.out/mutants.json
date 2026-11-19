@@ -1,0 +1,962 @@
+[
+  {
+    "diff": "--- src/worth.rs\n+++ replace WorthParams::half_life -> u64 with 0\n@@ -46,17 +46,17 @@\n         Self {\n             half_life: half_life.max(1),\n         }\n     }\n \n     /// The half-life in use (at least one).\n     #[must_use]\n     pub fn half_life(&self) -> u64 {\n-        self.half_life\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// One signal's contribution to a score.\n #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n pub struct Component {\n     name: &'static str,\n     raw: u64,\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "WorthParams::half_life",
+      "return_type": "-> u64",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 55
+        },
+        "start": {
+          "column": 5,
+          "line": 51
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 0",
+    "package": "sageant",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 54
+      },
+      "start": {
+        "column": 9,
+        "line": 54
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace WorthParams::half_life -> u64 with 1\n@@ -46,17 +46,17 @@\n         Self {\n             half_life: half_life.max(1),\n         }\n     }\n \n     /// The half-life in use (at least one).\n     #[must_use]\n     pub fn half_life(&self) -> u64 {\n-        self.half_life\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// One signal's contribution to a score.\n #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n pub struct Component {\n     name: &'static str,\n     raw: u64,\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "WorthParams::half_life",
+      "return_type": "-> u64",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 55
+        },
+        "start": {
+          "column": 5,
+          "line": 51
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 1",
+    "package": "sageant",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 54
+      },
+      "start": {
+        "column": 9,
+        "line": 54
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace Component::name -> &'static str with \"\"\n@@ -62,17 +62,17 @@\n     raw: u64,\n     bp: u32,\n }\n \n impl Component {\n     /// The signal's name: `structural_links`, `loose_links`, `recency` or `stability`.\n     #[must_use]\n     pub fn name(&self) -> &'static str {\n-        self.name\n+        \"\" /* ~ changed by cargo-mutants ~ */\n     }\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n         self.raw\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "Component::name",
+      "return_type": "-> &'static str",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 71
+        },
+        "start": {
+          "column": 5,
+          "line": 67
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:70:9: replace Component::name -> &'static str with \"\"",
+    "package": "sageant",
+    "replacement": "\"\"",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 70
+      },
+      "start": {
+        "column": 9,
+        "line": 70
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace Component::name -> &'static str with \"xyzzy\"\n@@ -62,17 +62,17 @@\n     raw: u64,\n     bp: u32,\n }\n \n impl Component {\n     /// The signal's name: `structural_links`, `loose_links`, `recency` or `stability`.\n     #[must_use]\n     pub fn name(&self) -> &'static str {\n-        self.name\n+        \"xyzzy\" /* ~ changed by cargo-mutants ~ */\n     }\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n         self.raw\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "Component::name",
+      "return_type": "-> &'static str",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 71
+        },
+        "start": {
+          "column": 5,
+          "line": 67
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:70:9: replace Component::name -> &'static str with \"xyzzy\"",
+    "package": "sageant",
+    "replacement": "\"xyzzy\"",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 70
+      },
+      "start": {
+        "column": 9,
+        "line": 70
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace Component::raw -> u64 with 0\n@@ -67,17 +67,17 @@\n     /// The signal's name: `structural_links`, `loose_links`, `recency` or `stability`.\n     #[must_use]\n     pub fn name(&self) -> &'static str {\n         self.name\n     }\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n-        self.raw\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n     pub fn bp(&self) -> u32 {\n         self.bp\n     }\n }\n \n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "Component::raw",
+      "return_type": "-> u64",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 76
+        },
+        "start": {
+          "column": 5,
+          "line": 72
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:75:9: replace Component::raw -> u64 with 0",
+    "package": "sageant",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 75
+      },
+      "start": {
+        "column": 9,
+        "line": 75
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace Component::raw -> u64 with 1\n@@ -67,17 +67,17 @@\n     /// The signal's name: `structural_links`, `loose_links`, `recency` or `stability`.\n     #[must_use]\n     pub fn name(&self) -> &'static str {\n         self.name\n     }\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n-        self.raw\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n     pub fn bp(&self) -> u32 {\n         self.bp\n     }\n }\n \n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "Component::raw",
+      "return_type": "-> u64",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 76
+        },
+        "start": {
+          "column": 5,
+          "line": 72
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:75:9: replace Component::raw -> u64 with 1",
+    "package": "sageant",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 75
+      },
+      "start": {
+        "column": 9,
+        "line": 75
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace Component::bp -> u32 with 0\n@@ -72,17 +72,17 @@\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n         self.raw\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n     pub fn bp(&self) -> u32 {\n-        self.bp\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// A derived worth: the score and the four components that sum to it, in a fixed order.\n #[derive(Debug, Clone, PartialEq, Eq)]\n pub struct Worth {\n     score_bp: u32,\n     components: [Component; 4],\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "Component::bp",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 81
+        },
+        "start": {
+          "column": 5,
+          "line": 77
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:80:9: replace Component::bp -> u32 with 0",
+    "package": "sageant",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 16,
+        "line": 80
+      },
+      "start": {
+        "column": 9,
+        "line": 80
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace Component::bp -> u32 with 1\n@@ -72,17 +72,17 @@\n     /// The raw measurement: a link count, an age in the caller's unit, or a version count.\n     #[must_use]\n     pub fn raw(&self) -> u64 {\n         self.raw\n     }\n     /// What this signal adds to the score, in basis points.\n     #[must_use]\n     pub fn bp(&self) -> u32 {\n-        self.bp\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// A derived worth: the score and the four components that sum to it, in a fixed order.\n #[derive(Debug, Clone, PartialEq, Eq)]\n pub struct Worth {\n     score_bp: u32,\n     components: [Component; 4],\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "Component::bp",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 81
+        },
+        "start": {
+          "column": 5,
+          "line": 77
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:80:9: replace Component::bp -> u32 with 1",
+    "package": "sageant",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 16,
+        "line": 80
+      },
+      "start": {
+        "column": 9,
+        "line": 80
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace Worth::score_bp -> u32 with 0\n@@ -87,17 +87,17 @@\n     score_bp: u32,\n     components: [Component; 4],\n }\n \n impl Worth {\n     /// The score in basis points, 0 to 10 000.\n     #[must_use]\n     pub fn score_bp(&self) -> u32 {\n-        self.score_bp\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n     /// The components: structural links, loose links, recency, stability, in that order.\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n         &self.components\n     }\n }\n \n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "Worth::score_bp",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 92
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:95:9: replace Worth::score_bp -> u32 with 0",
+    "package": "sageant",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 95
+      },
+      "start": {
+        "column": 9,
+        "line": 95
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace Worth::score_bp -> u32 with 1\n@@ -87,17 +87,17 @@\n     score_bp: u32,\n     components: [Component; 4],\n }\n \n impl Worth {\n     /// The score in basis points, 0 to 10 000.\n     #[must_use]\n     pub fn score_bp(&self) -> u32 {\n-        self.score_bp\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n     /// The components: structural links, loose links, recency, stability, in that order.\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n         &self.components\n     }\n }\n \n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "Worth::score_bp",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 92
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:95:9: replace Worth::score_bp -> u32 with 1",
+    "package": "sageant",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 95
+      },
+      "start": {
+        "column": 9,
+        "line": 95
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace Worth::components -> &[Component; 4] with Box::leak(Box::new([Default::default(); 4]))\n@@ -92,17 +92,17 @@\n     /// The score in basis points, 0 to 10 000.\n     #[must_use]\n     pub fn score_bp(&self) -> u32 {\n         self.score_bp\n     }\n     /// The components: structural links, loose links, recency, stability, in that order.\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n-        &self.components\n+        Box::leak(Box::new([Default::default(); 4])) /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// Narrow a basis-point value that is at most 10 000 by construction.\n fn bp32(v: u64) -> u32 {\n     u32::try_from(v).unwrap_or(u32::MAX)\n }\n \n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "Worth::components",
+      "return_type": "-> &[Component; 4]",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 101
+        },
+        "start": {
+          "column": 5,
+          "line": 97
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:100:9: replace Worth::components -> &[Component; 4] with Box::leak(Box::new([Default::default(); 4]))",
+    "package": "sageant",
+    "replacement": "Box::leak(Box::new([Default::default(); 4]))",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 100
+      },
+      "start": {
+        "column": 9,
+        "line": 100
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace bp32 -> u32 with 0\n@@ -98,17 +98,17 @@\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n         &self.components\n     }\n }\n \n /// Narrow a basis-point value that is at most 10 000 by construction.\n fn bp32(v: u64) -> u32 {\n-    u32::try_from(v).unwrap_or(u32::MAX)\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n /// The worth of the current version of `id` at time `now`. Reads only; nothing is written and nothing about the chunk\n /// changes.\n ///\n /// # Errors\n /// `NotFound` or `Forgotten` for an unknown or removed chunk, or whatever the reader reports.\n pub fn worth_of(\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "bp32",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 107
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:106:5: replace bp32 -> u32 with 0",
+    "package": "sageant",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 106
+      },
+      "start": {
+        "column": 5,
+        "line": 106
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace bp32 -> u32 with 1\n@@ -98,17 +98,17 @@\n     #[must_use]\n     pub fn components(&self) -> &[Component; 4] {\n         &self.components\n     }\n }\n \n /// Narrow a basis-point value that is at most 10 000 by construction.\n fn bp32(v: u64) -> u32 {\n-    u32::try_from(v).unwrap_or(u32::MAX)\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n /// The worth of the current version of `id` at time `now`. Reads only; nothing is written and nothing about the chunk\n /// changes.\n ///\n /// # Errors\n /// `NotFound` or `Forgotten` for an unknown or removed chunk, or whatever the reader reports.\n pub fn worth_of(\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "bp32",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 107
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:106:5: replace bp32 -> u32 with 1",
+    "package": "sageant",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 106
+      },
+      "start": {
+        "column": 5,
+        "line": 106
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace worth_of -> Result<Worth, Error> with Ok(Default::default())\n@@ -112,62 +112,10 @@\n /// # Errors\n /// `NotFound` or `Forgotten` for an unknown or removed chunk, or whatever the reader reports.\n pub fn worth_of(\n     reader: &dyn Reader,\n     id: &ChunkId,\n     now: Timestamp,\n     params: &WorthParams,\n ) -> Result<Worth, Error> {\n-    let current = reader.get(id)?;\n-    let versions = u64::from(current.version());\n-    let mut newest = current.created_at().0;\n-    let mut structural = 0u64;\n-    let mut loose = 0u64;\n-    let outgoing = reader.links_from(id)?;\n-    let incoming = reader.links_to(id)?;\n-    for link in outgoing.iter().chain(incoming.iter()) {\n-        match link.kind() {\n-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n-            LinkKind::Cites | LinkKind::Related => loose += 1,\n-            // Evidence belongs to trust: not a neighbour, not a touch.\n-            _ => continue,\n-        }\n-        newest = newest.max(link.created_at().0);\n-    }\n-    let age = now.0.saturating_sub(newest);\n-    let h = params.half_life();\n-    let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n-    let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n-    // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n-    let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n-    )\n-    .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n-    let components = [\n-        Component {\n-            name: \"structural_links\",\n-            raw: structural,\n-            bp: bp32(structural_bp),\n-        },\n-        Component {\n-            name: \"loose_links\",\n-            raw: loose,\n-            bp: bp32(loose_bp),\n-        },\n-        Component {\n-            name: \"recency\",\n-            raw: age,\n-            bp: bp32(recency_bp),\n-        },\n-        Component {\n-            name: \"stability\",\n-            raw: versions,\n-            bp: bp32(stability_bp),\n-        },\n-    ];\n-    let score_bp = components.iter().map(|c| c.bp).sum();\n-    Ok(Worth {\n-        score_bp,\n-        components,\n-    })\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "src/worth.rs:120:5: replace worth_of -> Result<Worth, Error> with Ok(Default::default())",
+    "package": "sageant",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 172
+      },
+      "start": {
+        "column": 5,
+        "line": 120
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ delete match arm LinkKind::PartOf | LinkKind::DerivedFrom in worth_of\n@@ -121,17 +121,17 @@\n     let versions = u64::from(current.version());\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n+             /* ~ changed by cargo-mutants ~ */\n             LinkKind::Cites | LinkKind::Related => loose += 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "src/worth.rs:129:13: delete match arm LinkKind::PartOf | LinkKind::DerivedFrom in worth_of",
+    "package": "sageant",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 73,
+        "line": 129
+      },
+      "start": {
+        "column": 13,
+        "line": 129
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ delete match arm LinkKind::Cites | LinkKind::Related in worth_of\n@@ -122,17 +122,17 @@\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n             LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n-            LinkKind::Cites | LinkKind::Related => loose += 1,\n+             /* ~ changed by cargo-mutants ~ */\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "src/worth.rs:130:13: delete match arm LinkKind::Cites | LinkKind::Related in worth_of",
+    "package": "sageant",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 63,
+        "line": 130
+      },
+      "start": {
+        "column": 13,
+        "line": 130
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace += with -= in worth_of\n@@ -121,17 +121,17 @@\n     let versions = u64::from(current.version());\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n+            LinkKind::PartOf | LinkKind::DerivedFrom => structural -= /* ~ changed by cargo-mutants ~ */ 1,\n             LinkKind::Cites | LinkKind::Related => loose += 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:129:68: replace += with -= in worth_of",
+    "package": "sageant",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 70,
+        "line": 129
+      },
+      "start": {
+        "column": 68,
+        "line": 129
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace += with *= in worth_of\n@@ -121,17 +121,17 @@\n     let versions = u64::from(current.version());\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n+            LinkKind::PartOf | LinkKind::DerivedFrom => structural *= /* ~ changed by cargo-mutants ~ */ 1,\n             LinkKind::Cites | LinkKind::Related => loose += 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:129:68: replace += with *= in worth_of",
+    "package": "sageant",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 70,
+        "line": 129
+      },
+      "start": {
+        "column": 68,
+        "line": 129
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace += with -= in worth_of\n@@ -122,17 +122,17 @@\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n             LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n-            LinkKind::Cites | LinkKind::Related => loose += 1,\n+            LinkKind::Cites | LinkKind::Related => loose -= /* ~ changed by cargo-mutants ~ */ 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:130:58: replace += with -= in worth_of",
+    "package": "sageant",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 60,
+        "line": 130
+      },
+      "start": {
+        "column": 58,
+        "line": 130
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace += with *= in worth_of\n@@ -122,17 +122,17 @@\n     let mut newest = current.created_at().0;\n     let mut structural = 0u64;\n     let mut loose = 0u64;\n     let outgoing = reader.links_from(id)?;\n     let incoming = reader.links_to(id)?;\n     for link in outgoing.iter().chain(incoming.iter()) {\n         match link.kind() {\n             LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,\n-            LinkKind::Cites | LinkKind::Related => loose += 1,\n+            LinkKind::Cites | LinkKind::Related => loose *= /* ~ changed by cargo-mutants ~ */ 1,\n             // Evidence belongs to trust: not a neighbour, not a touch.\n             _ => continue,\n         }\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:130:58: replace += with *= in worth_of",
+    "package": "sageant",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 60,
+        "line": 130
+      },
+      "start": {
+        "column": 58,
+        "line": 130
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace / with % in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) * u128::from(h) % /* ~ changed by cargo-mutants ~ */ (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:142:52: replace / with % in worth_of",
+    "package": "sageant",
+    "replacement": "%",
+    "span": {
+      "end": {
+        "column": 53,
+        "line": 142
+      },
+      "start": {
+        "column": 52,
+        "line": 142
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace / with * in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) * u128::from(h) * /* ~ changed by cargo-mutants ~ */ (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:142:52: replace / with * in worth_of",
+    "package": "sageant",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 53,
+        "line": 142
+      },
+      "start": {
+        "column": 52,
+        "line": 142
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace * with + in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) + /* ~ changed by cargo-mutants ~ */ u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:142:36: replace * with + in worth_of",
+    "package": "sageant",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 37,
+        "line": 142
+      },
+      "start": {
+        "column": 36,
+        "line": 142
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace * with / in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) / /* ~ changed by cargo-mutants ~ */ u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:142:36: replace * with / in worth_of",
+    "package": "sageant",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 37,
+        "line": 142
+      },
+      "start": {
+        "column": 36,
+        "line": 142
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace + with - in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) - /* ~ changed by cargo-mutants ~ */ u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:142:69: replace + with - in worth_of",
+    "package": "sageant",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 70,
+        "line": 142
+      },
+      "start": {
+        "column": 69,
+        "line": 142
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace + with * in worth_of\n@@ -134,17 +134,17 @@\n         newest = newest.max(link.created_at().0);\n     }\n     let age = now.0.saturating_sub(newest);\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n+        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) * /* ~ changed by cargo-mutants ~ */ u128::from(age)),\n     )\n     .unwrap_or(0);\n     let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:142:69: replace + with * in worth_of",
+    "package": "sageant",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 70,
+        "line": 142
+      },
+      "start": {
+        "column": 69,
+        "line": 142
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace * with + in worth_of\n@@ -137,17 +137,17 @@\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n         u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n+    let stability_bp = STABILITY_BP_PER_VERSION + /* ~ changed by cargo-mutants ~ */ (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n         },\n         Component {\n             name: \"loose_links\",\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:145:49: replace * with + in worth_of",
+    "package": "sageant",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 145
+      },
+      "start": {
+        "column": 49,
+        "line": 145
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace * with / in worth_of\n@@ -137,17 +137,17 @@\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n         u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n+    let stability_bp = STABILITY_BP_PER_VERSION / /* ~ changed by cargo-mutants ~ */ (versions.min(STABILITY_MAX_VERSIONS) - 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n         },\n         Component {\n             name: \"loose_links\",\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:145:49: replace * with / in worth_of",
+    "package": "sageant",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 145
+      },
+      "start": {
+        "column": 49,
+        "line": 145
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace - with + in worth_of\n@@ -137,17 +137,17 @@\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n         u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n+    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) + /* ~ changed by cargo-mutants ~ */ 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n         },\n         Component {\n             name: \"loose_links\",\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:145:89: replace - with + in worth_of",
+    "package": "sageant",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 90,
+        "line": 145
+      },
+      "start": {
+        "column": 89,
+        "line": 145
+      }
+    }
+  },
+  {
+    "diff": "--- src/worth.rs\n+++ replace - with / in worth_of\n@@ -137,17 +137,17 @@\n     let h = params.half_life();\n     let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);\n     let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);\n     // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.\n     let recency_bp = u64::try_from(\n         u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),\n     )\n     .unwrap_or(0);\n-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);\n+    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) / /* ~ changed by cargo-mutants ~ */ 1);\n     let components = [\n         Component {\n             name: \"structural_links\",\n             raw: structural,\n             bp: bp32(structural_bp),\n         },\n         Component {\n             name: \"loose_links\",\n",
+    "file": "src/worth.rs",
+    "function": {
+      "function_name": "worth_of",
+      "return_type": "-> Result<Worth, Error>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 109
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/worth.rs:145:89: replace - with / in worth_of",
+    "package": "sageant",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 90,
+        "line": 145
+      },
+      "start": {
+        "column": 89,
+        "line": 145
+      }
+    }
+  }
+]

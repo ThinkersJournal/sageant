@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace bp32 -> u32 with 1
+@@ -98,17 +98,17 @@
+     #[must_use]
+     pub fn components(&self) -> &[Component; 4] {
+         &self.components
+     }
+ }
+ 
+ /// Narrow a basis-point value that is at most 10 000 by construction.
+ fn bp32(v: u64) -> u32 {
+-    u32::try_from(v).unwrap_or(u32::MAX)
++    1 /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The worth of the current version of `id` at time `now`. Reads only; nothing is written and nothing about the chunk
+ /// changes.
+ ///
+ /// # Errors
+ /// `NotFound` or `Forgotten` for an unknown or removed chunk, or whatever the reader reports.
+ pub fn worth_of(

@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace WorthParams::half_life -> u64 with 0
+@@ -46,17 +46,17 @@
+         Self {
+             half_life: half_life.max(1),
+         }
+     }
+ 
+     /// The half-life in use (at least one).
+     #[must_use]
+     pub fn half_life(&self) -> u64 {
+-        self.half_life
++        0 /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// One signal's contribution to a score.
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ pub struct Component {
+     name: &'static str,
+     raw: u64,

@@ -1,0 +1,28 @@
+src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 0
+src/worth.rs:54:9: replace WorthParams::half_life -> u64 with 1
+src/worth.rs:70:9: replace Component::name -> &'static str with ""
+src/worth.rs:70:9: replace Component::name -> &'static str with "xyzzy"
+src/worth.rs:75:9: replace Component::raw -> u64 with 0
+src/worth.rs:75:9: replace Component::raw -> u64 with 1
+src/worth.rs:80:9: replace Component::bp -> u32 with 0
+src/worth.rs:80:9: replace Component::bp -> u32 with 1
+src/worth.rs:95:9: replace Worth::score_bp -> u32 with 0
+src/worth.rs:95:9: replace Worth::score_bp -> u32 with 1
+src/worth.rs:106:5: replace bp32 -> u32 with 0
+src/worth.rs:106:5: replace bp32 -> u32 with 1
+src/worth.rs:129:13: delete match arm LinkKind::PartOf | LinkKind::DerivedFrom in worth_of
+src/worth.rs:130:13: delete match arm LinkKind::Cites | LinkKind::Related in worth_of
+src/worth.rs:129:68: replace += with *= in worth_of
+src/worth.rs:129:68: replace += with -= in worth_of
+src/worth.rs:130:58: replace += with -= in worth_of
+src/worth.rs:130:58: replace += with *= in worth_of
+src/worth.rs:142:52: replace / with % in worth_of
+src/worth.rs:142:52: replace / with * in worth_of
+src/worth.rs:142:36: replace * with + in worth_of
+src/worth.rs:142:36: replace * with / in worth_of
+src/worth.rs:142:69: replace + with - in worth_of
+src/worth.rs:142:69: replace + with * in worth_of
+src/worth.rs:145:49: replace * with / in worth_of
+src/worth.rs:145:49: replace * with + in worth_of
+src/worth.rs:145:89: replace - with + in worth_of
+src/worth.rs:145:89: replace - with / in worth_of

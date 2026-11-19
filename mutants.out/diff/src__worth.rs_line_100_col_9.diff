@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace Worth::components -> &[Component; 4] with Box::leak(Box::new([Default::default(); 4]))
+@@ -92,17 +92,17 @@
+     /// The score in basis points, 0 to 10 000.
+     #[must_use]
+     pub fn score_bp(&self) -> u32 {
+         self.score_bp
+     }
+     /// The components: structural links, loose links, recency, stability, in that order.
+     #[must_use]
+     pub fn components(&self) -> &[Component; 4] {
+-        &self.components
++        Box::leak(Box::new([Default::default(); 4])) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// Narrow a basis-point value that is at most 10 000 by construction.
+ fn bp32(v: u64) -> u32 {
+     u32::try_from(v).unwrap_or(u32::MAX)
+ }
+ 

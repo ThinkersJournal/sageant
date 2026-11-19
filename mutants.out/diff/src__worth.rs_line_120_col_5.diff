@@ -1,0 +1,66 @@
+--- src/worth.rs
++++ replace worth_of -> Result<Worth, Error> with Ok(Default::default())
+@@ -112,62 +112,10 @@
+ /// # Errors
+ /// `NotFound` or `Forgotten` for an unknown or removed chunk, or whatever the reader reports.
+ pub fn worth_of(
+     reader: &dyn Reader,
+     id: &ChunkId,
+     now: Timestamp,
+     params: &WorthParams,
+ ) -> Result<Worth, Error> {
+-    let current = reader.get(id)?;
+-    let versions = u64::from(current.version());
+-    let mut newest = current.created_at().0;
+-    let mut structural = 0u64;
+-    let mut loose = 0u64;
+-    let outgoing = reader.links_from(id)?;
+-    let incoming = reader.links_to(id)?;
+-    for link in outgoing.iter().chain(incoming.iter()) {
+-        match link.kind() {
+-            LinkKind::PartOf | LinkKind::DerivedFrom => structural += 1,
+-            LinkKind::Cites | LinkKind::Related => loose += 1,
+-            // Evidence belongs to trust: not a neighbour, not a touch.
+-            _ => continue,
+-        }
+-        newest = newest.max(link.created_at().0);
+-    }
+-    let age = now.0.saturating_sub(newest);
+-    let h = params.half_life();
+-    let structural_bp = (structural.saturating_mul(STRUCTURAL_BP)).min(STRUCTURAL_CAP_BP);
+-    let loose_bp = (loose.saturating_mul(LOOSE_BP)).min(LOOSE_CAP_BP);
+-    // `age + h` cannot overflow a u128; the quotient is at most RECENCY_MAX_BP because age >= 0.
+-    let recency_bp = u64::try_from(
+-        u128::from(RECENCY_MAX_BP) * u128::from(h) / (u128::from(h) + u128::from(age)),
+-    )
+-    .unwrap_or(0);
+-    let stability_bp = STABILITY_BP_PER_VERSION * (versions.min(STABILITY_MAX_VERSIONS) - 1);
+-    let components = [
+-        Component {
+-            name: "structural_links",
+-            raw: structural,
+-            bp: bp32(structural_bp),
+-        },
+-        Component {
+-            name: "loose_links",
+-            raw: loose,
+-            bp: bp32(loose_bp),
+-        },
+-        Component {
+-            name: "recency",
+-            raw: age,
+-            bp: bp32(recency_bp),
+-        },
+-        Component {
+-            name: "stability",
+-            raw: versions,
+-            bp: bp32(stability_bp),
+-        },
+-    ];
+-    let score_bp = components.iter().map(|c| c.bp).sum();
+-    Ok(Worth {
+-        score_bp,
+-        components,
+-    })
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }

@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace Component::bp -> u32 with 1
+@@ -72,17 +72,17 @@
+     /// The raw measurement: a link count, an age in the caller's unit, or a version count.
+     #[must_use]
+     pub fn raw(&self) -> u64 {
+         self.raw
+     }
+     /// What this signal adds to the score, in basis points.
+     #[must_use]
+     pub fn bp(&self) -> u32 {
+-        self.bp
++        1 /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// A derived worth: the score and the four components that sum to it, in a fixed order.
+ #[derive(Debug, Clone, PartialEq, Eq)]
+ pub struct Worth {
+     score_bp: u32,
+     components: [Component; 4],
