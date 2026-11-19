@@ -77,7 +77,7 @@ jobs:
     name: registry install smoke (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     env:
-      REGISTRY_VERSION: "0.3.24"
+      REGISTRY_VERSION: "0.3.32"
     strategy:
       fail-fast: false
       matrix:
