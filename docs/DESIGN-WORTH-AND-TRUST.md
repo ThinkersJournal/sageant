@@ -194,6 +194,7 @@ and `epistemologicant` is free to name and shape its own types.
    a claim the consumer says no longer exists (forgotten or purged); (g) an imported rating offered as a level instead of as evidence
    with its own source (section 4.1, item 9); (h) a contradiction by the claim's own source, which is a revision and not a
    contradiction. Fixtures should include one case for each, each asserting level and reason.
+   **Split (agreed with pm-ants 2026-11-19):** `epistemologicant` refuses (a)-(d) and (f); sageant's mapper, before calling the tool, handles (e) (a link with no asserting source or time is not passed as evidence), (g) (an imported rating is mapped to evidence with its own source, never a level) and (h) (a contradiction by the claim's own source is mapped as a revision note, not as a `contradict` relation). Each gets a mapper test in sageant when X3 code lands, red first with a sabotage that lets the case through. No hook is needed from the tool.
 
 ## 5. Order, survey and decisions
 
