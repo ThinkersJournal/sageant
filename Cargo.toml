@@ -4,7 +4,7 @@ resolver = "3"
 
 # One version number for every crate in the project (CireSnave's standing rule); the PM allocates it.
 [workspace.package]
-version = "0.3.31"
+version = "0.3.32"
 edition = "2024"
 rust-version = "1.94"
 license = "MIT OR Apache-2.0"

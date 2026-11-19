@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.32
+
+- Docs only: ROADMAP gains "Expansion (agreed direction, not started)" (CireSnave's approvals and rulings quoted, rows X1 to X7, nothing started); `docs/PROPOSAL-expansion-2026-11-18.md` replaced by the corrected text. No code change.
+
 ## 0.3.31
 
 - Docs and crate metadata only: ROADMAP status line no longer names a stale version; the `sageant` and `sageant-persistant` crate descriptions say what each crate is (and point to `sageant-cli`); the patent sweep's "nothing is published" is dated; HANDOFF refreshed; README note that `forget` and `purge` reach this store only and that anything shared publicly stays known; `docs/PROPOSAL-expansion-2026-11-18.md` added (not decided, nothing started). No code change.
