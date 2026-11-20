@@ -1,6 +1,6 @@
 # Design note: pre-warming a working-set cache and ranking its eviction candidates (docs only)
 
-Status: **proposal, 2026-11-20, nothing built, nothing approved.** Task from pm-ants (relaying CireSnave's idea of 2026-11-20 via the PM);
+Status: **proposal, 2026-11-20, nothing built; option 1 agreed by the PM, CireSnave has not ruled (board 472).** Task from pm-ants (relaying CireSnave's idea of 2026-11-20 via the PM);
 scope: options and a recommendation, no code. Anything for CireSnave goes through the PM board.
 
 CireSnave's idea, verbatim (via the PM): *"If we allow a tiny LLM to be a silent observer in the chat stream of our large models to
@@ -119,7 +119,9 @@ same one. The generic policy and replay code belongs in its own generic project 
 baselines need), (b) a `Promoter` that fuses "latest message" and "last plan step" queries (no model; fits the existing trait), (c) if (B) is chosen, a derived hot-tier table
 removed by `forget` and `purge`, with a read-every-file test. ROADMAP row **C1** records this as an idea awaiting priority.
 
-## 7. Open questions for the PM
+## 7. Open questions: board 472 (open, awaiting CireSnave)
+
+The PM agreed option 1 (recorder and replay harness first) on 2026-11-20, via pm-ants. Docs only until CireSnave rules; the recorder stays unbuilt. The PM's recommendations on the three questions, as relayed: (1) a harness-side working set; (2) yes, an opt-in, local, screened recorder; (3) a new small generic replay-harness project, name later. These are recommendations, not decisions.
 
 1. Which cache does the idea mean: a harness working set (A), a sageant hot tier (B), or something in another project I have not read?
 2. Is the recorder acceptable (opt-in, local, screened)? It is the first thing that writes a trace of conversations.
