@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace Worth::version -> u32 with 1
+@@ -99,17 +99,17 @@
+     /// The components: structural links, loose links, recency, stability, in that order.
+     #[must_use]
+     pub fn components(&self) -> &[Component; 4] {
+         &self.components
+     }
+     /// The version of the chunk this worth was computed for.
+     #[must_use]
+     pub fn version(&self) -> u32 {
+-        self.version
++        1 /* ~ changed by cargo-mutants ~ */
+     }
+     /// The half-life, in the caller's time unit, it was computed with.
+     #[must_use]
+     pub fn half_life(&self) -> u64 {
+         self.half_life
+     }
+     /// Rebuild a worth from stored parts. The caller (the decoder) has already checked the sum and the names.
+     pub(crate) fn from_parts(

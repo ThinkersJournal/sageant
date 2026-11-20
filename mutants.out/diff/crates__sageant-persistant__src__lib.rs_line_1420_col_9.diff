@@ -1,0 +1,21 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace PersistStore::record_worth_with_hook_for_test -> Result<WorthSnapshot, Error> with Ok(Default::default())
+@@ -1412,17 +1412,17 @@
+     #[doc(hidden)]
+     pub fn record_worth_with_hook_for_test(
+         &self,
+         id: &ChunkId,
+         worth: &Worth,
+         now: Timestamp,
+         hook: &dyn Fn(),
+     ) -> Result<WorthSnapshot, Error> {
+-        self.record_worth_inner(id, worth, now, Some(hook))
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn record_worth_inner(
+         &self,
+         id: &ChunkId,
+         worth: &Worth,
+         now: Timestamp,
+         hook: Option<&dyn Fn()>,

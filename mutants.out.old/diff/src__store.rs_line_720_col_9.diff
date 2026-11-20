@@ -1,0 +1,21 @@
+--- src/store.rs
++++ replace <impl WorthStore for MemoryStore>::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])
+@@ -712,17 +712,11 @@
+         self.worth.insert(
+             (id.clone(), worth.version(), WORTH_MODEL.to_owned()),
+             snapshot.clone(),
+         );
+         Ok(snapshot)
+     }
+ 
+     fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {
+-        self.lineage(id)?;
+-        Ok(self
+-            .worth
+-            .iter()
+-            .filter(|((chunk, _, _), _)| chunk == id)
+-            .map(|(_, snapshot)| snapshot.clone())
+-            .collect())
++        Ok(vec![]) /* ~ changed by cargo-mutants ~ */
+     }
+ }

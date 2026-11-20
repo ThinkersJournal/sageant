@@ -1,0 +1,21 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace <impl WorthStore for PersistStore>::record_worth -> Result<WorthSnapshot, Error> with Ok(Default::default())
+@@ -1684,17 +1684,17 @@
+ 
+ impl WorthStore for PersistStore {
+     fn record_worth(
+         &mut self,
+         id: &ChunkId,
+         worth: &Worth,
+         now: Timestamp,
+     ) -> Result<WorthSnapshot, Error> {
+-        Self::record_worth(self, id, worth, now)
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+     fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {
+         Self::worth_snapshots(self, id)
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {

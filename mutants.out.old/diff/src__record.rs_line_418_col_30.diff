@@ -1,0 +1,18 @@
+--- src/record.rs
++++ replace != with == in WorthSnapshot::decode
+@@ -410,14 +410,14 @@
+             return Err(Error::Corrupt("score"));
+         }
+         let snapshot = Self {
+             id: chunk_id,
+             model_id,
+             computed_at,
+             worth: Worth::from_parts(score_bp, components, version, half_life),
+         };
+-        if snapshot.encode() != bytes {
++        if snapshot.encode() == /* ~ changed by cargo-mutants ~ */ bytes {
+             return Err(Error::Corrupt("not canonical"));
+         }
+         Ok(snapshot)
+     }
+ }

@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace Worth::half_life -> u64 with 0
+@@ -104,17 +104,17 @@
+     /// The version of the chunk this worth was computed for.
+     #[must_use]
+     pub fn version(&self) -> u32 {
+         self.version
+     }
+     /// The half-life, in the caller's time unit, it was computed with.
+     #[must_use]
+     pub fn half_life(&self) -> u64 {
+-        self.half_life
++        0 /* ~ changed by cargo-mutants ~ */
+     }
+     /// Rebuild a worth from stored parts. The caller (the decoder) has already checked the sum and the names.
+     pub(crate) fn from_parts(
+         score_bp: u32,
+         components: [Component; 4],
+         version: u32,
+         half_life: u64,
+     ) -> Self {

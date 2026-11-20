@@ -1,0 +1,18 @@
+crates/sageant-persistant/src/lib.rs:73:5: replace worth_key -> String with String::new()
+crates/sageant-persistant/src/lib.rs:73:5: replace worth_key -> String with "xyzzy".into()
+crates/sageant-persistant/src/lib.rs:828:9: replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![])
+crates/sageant-persistant/src/lib.rs:828:9: replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![String::new()])
+crates/sageant-persistant/src/lib.rs:1189:9: replace PersistStore::removal_ops -> Result<Vec<BatchOp>, Error> with Ok(vec![])
+crates/sageant-persistant/src/lib.rs:828:9: replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec!["xyzzy".into()])
+crates/sageant-persistant/src/lib.rs:1203:28: replace == with != in PersistStore::removal_ops
+crates/sageant-persistant/src/lib.rs:1433:32: replace == with != in PersistStore::record_worth_inner
+crates/sageant-persistant/src/lib.rs:1433:37: replace || with && in PersistStore::record_worth_inner
+crates/sageant-persistant/src/lib.rs:1433:56: replace > with == in PersistStore::record_worth_inner
+crates/sageant-persistant/src/lib.rs:1433:56: replace > with < in PersistStore::record_worth_inner
+crates/sageant-persistant/src/lib.rs:1433:56: replace > with >= in PersistStore::record_worth_inner
+crates/sageant-persistant/src/lib.rs:1457:24: replace == with != in PersistStore::record_worth_inner
+crates/sageant-persistant/src/lib.rs:1475:9: replace PersistStore::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])
+crates/sageant-persistant/src/lib.rs:1487:21: replace || with && in PersistStore::worth_snapshots
+crates/sageant-persistant/src/lib.rs:1487:28: replace != with == in PersistStore::worth_snapshots
+crates/sageant-persistant/src/lib.rs:1486:34: replace != with == in PersistStore::worth_snapshots
+crates/sageant-persistant/src/lib.rs:1695:9: replace <impl WorthStore for PersistStore>::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])

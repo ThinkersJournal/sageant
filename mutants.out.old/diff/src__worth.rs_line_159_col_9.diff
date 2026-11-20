@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace WorthSnapshot::id -> &ChunkId with Box::leak(Box::new(Default::default()))
+@@ -151,17 +151,17 @@
+             model_id: WORTH_MODEL.to_owned(),
+             computed_at,
+             worth: worth.clone(),
+         }
+     }
+     /// The chunk it is about.
+     #[must_use]
+     pub fn id(&self) -> &ChunkId {
+-        &self.id
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+     /// The chunk version it was computed for.
+     #[must_use]
+     pub fn version(&self) -> u32 {
+         self.worth.version
+     }
+     /// The formula that produced it, such as `worth-v1`.
+     #[must_use]

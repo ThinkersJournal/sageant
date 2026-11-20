@@ -1,0 +1,51 @@
+--- src/record.rs
++++ replace WorthSnapshot::encode -> Vec<u8> with vec![]
+@@ -337,47 +337,17 @@
+             .bytes()
+             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
+ }
+ 
+ impl WorthSnapshot {
+     /// The canonical stored form of this snapshot: numbers only, never content.
+     #[must_use]
+     pub fn encode(&self) -> Vec<u8> {
+-        let mut out = WORTH_HEADER.as_bytes().to_vec();
+-        put_field(&mut out, "id", self.id.as_str().as_bytes());
+-        put_field(
+-            &mut out,
+-            "version",
+-            self.worth.version().to_string().as_bytes(),
+-        );
+-        put_field(&mut out, "model", self.model_id.as_bytes());
+-        put_field(
+-            &mut out,
+-            "half_life",
+-            self.worth.half_life().to_string().as_bytes(),
+-        );
+-        put_field(
+-            &mut out,
+-            "computed_at",
+-            self.computed_at.0.to_string().as_bytes(),
+-        );
+-        put_field(
+-            &mut out,
+-            "score_bp",
+-            self.worth.score_bp().to_string().as_bytes(),
+-        );
+-        for c in self.worth.components() {
+-            put_field(
+-                &mut out,
+-                c.name(),
+-                format!("{} {}", c.raw(), c.bp()).as_bytes(),
+-            );
+-        }
+-        out
++        vec![] /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Read a stored snapshot back, verifying it.
+     ///
+     /// # Errors
+     /// `Corrupt` for anything that is not exactly what `encode` writes, a score that is not the sum of its
+     /// components, a zero version or half-life, or a model id that is not safe in a key.
+     pub fn decode(bytes: &[u8]) -> Result<Self, Error> {

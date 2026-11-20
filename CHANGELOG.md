@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.33
+
+- Worth snapshots (X1 slices 1 and 2; additive public API, nothing existing changes). `worth_of` computes `worth-v1`, a derived integer score (basis points) from structural and loose links, recency and stability; `Worth` (also `version()`, `half_life()`), `Component`, `WorthParams`, `WORTH_MODEL`. `WorthSnapshot` and the `WorthStore` trait file a worth per (chunk, version, model); `MemoryStore` and `PersistStore` implement it (`w/<id>/<version>/<model>` keys, numbers only, not an audited write). `forget` and `purge` remove a chunk's snapshots in the same atomic batch, including against a write racing them. No read signal and no change to any chunk, link or existing key. Docs: `docs/DESIGN-WORTH-AND-TRUST.md` (worth, adaptive decay, the trust tool as generic requirements, fixture inputs for EpistemologicAnt), `docs/DESIGN-PREWARM-AND-EVICT.md` (idea, options only), ROADMAP row C1; mutation runs 8 and 9 in `docs/MUTATION.md`; CI `REGISTRY_VERSION` pin 0.3.32.
+
 ## 0.3.32
 
 - Docs only: ROADMAP gains "Expansion (agreed direction, not started)" (CireSnave's approvals and rulings quoted, rows X1 to X7, nothing started); `docs/PROPOSAL-expansion-2026-11-18.md` replaced by the corrected text. No code change.

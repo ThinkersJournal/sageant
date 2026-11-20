@@ -1,0 +1,52 @@
+--- src/record.rs
++++ replace WorthSnapshot::decode -> Result<Self, Error> with Ok(Default::default())
+@@ -376,48 +376,11 @@
+     }
+ 
+     /// Read a stored snapshot back, verifying it.
+     ///
+     /// # Errors
+     /// `Corrupt` for anything that is not exactly what `encode` writes, a score that is not the sum of its
+     /// components, a zero version or half-life, or a model id that is not safe in a key.
+     pub fn decode(bytes: &[u8]) -> Result<Self, Error> {
+-        let mut cur = Cursor { rest: bytes };
+-        cur.header(WORTH_HEADER)?;
+-        let chunk_id = id(cur.field("id")?)?;
+-        let version: u32 = number(cur.field("version")?)?;
+-        let model_id = cur.field("model")?.to_owned();
+-        let half_life: u64 = number(cur.field("half_life")?)?;
+-        let computed_at = Timestamp(number(cur.field("computed_at")?)?);
+-        let score_bp: u32 = number(cur.field("score_bp")?)?;
+-        let mut parts = Vec::with_capacity(4);
+-        for name in COMPONENT_NAMES {
+-            let value = cur.field(name)?;
+-            let (raw, bp) = value.split_once(' ').ok_or(Error::Corrupt("component"))?;
+-            parts.push(Component {
+-                name,
+-                raw: number(raw)?,
+-                bp: number(bp)?,
+-            });
+-        }
+-        cur.finish()?;
+-        if version == 0 || half_life == 0 || !model_id_ok(&model_id) {
+-            return Err(Error::Corrupt("fields"));
+-        }
+-        let components: [Component; 4] =
+-            parts.try_into().map_err(|_| Error::Corrupt("component"))?;
+-        let sum: u64 = components.iter().map(|c| u64::from(c.bp)).sum();
+-        if sum != u64::from(score_bp) {
+-            return Err(Error::Corrupt("score"));
+-        }
+-        let snapshot = Self {
+-            id: chunk_id,
+-            model_id,
+-            computed_at,
+-            worth: Worth::from_parts(score_bp, components, version, half_life),
+-        };
+-        if snapshot.encode() != bytes {
+-            return Err(Error::Corrupt("not canonical"));
+-        }
+-        Ok(snapshot)
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }

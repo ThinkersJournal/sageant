@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace WorthSnapshot::computed_at -> Timestamp with Default::default()
+@@ -166,17 +166,17 @@
+     /// The formula that produced it, such as `worth-v1`.
+     #[must_use]
+     pub fn model_id(&self) -> &str {
+         &self.model_id
+     }
+     /// When it was computed, in the caller's time.
+     #[must_use]
+     pub fn computed_at(&self) -> Timestamp {
+-        self.computed_at
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+     /// The score and its components.
+     #[must_use]
+     pub fn worth(&self) -> &Worth {
+         &self.worth
+     }
+ }
+ 

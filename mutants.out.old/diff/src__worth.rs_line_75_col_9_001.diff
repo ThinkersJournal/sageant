@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace Component::raw -> u64 with 1
+@@ -67,17 +67,17 @@
+     /// The signal's name: `structural_links`, `loose_links`, `recency` or `stability`.
+     #[must_use]
+     pub fn name(&self) -> &'static str {
+         self.name
+     }
+     /// The raw measurement: a link count, an age in the caller's unit, or a version count.
+     #[must_use]
+     pub fn raw(&self) -> u64 {
+-        self.raw
++        1 /* ~ changed by cargo-mutants ~ */
+     }
+     /// What this signal adds to the score, in basis points.
+     #[must_use]
+     pub fn bp(&self) -> u32 {
+         self.bp
+     }
+ }
+ 

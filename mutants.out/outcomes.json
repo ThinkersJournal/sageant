@@ -1,0 +1,1692 @@
+{
+  "outcomes": [
+    {
+      "scenario": "Baseline",
+      "summary": "Success",
+      "log_path": "log/baseline.log",
+      "diff_path": null,
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 82.4454517,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 54.9636682,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:73:5: replace worth_key -> String with String::new()",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "worth_key",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 71,
+                "column": 1
+              },
+              "end": {
+                "line": 74,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 73,
+              "column": 5
+            },
+            "end": {
+              "line": 73,
+              "column": 58
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_73_col_5.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_73_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 26.1163997,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 66.9841876,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:73:5: replace worth_key -> String with \"xyzzy\".into()",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "worth_key",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 71,
+                "column": 1
+              },
+              "end": {
+                "line": 74,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 73,
+              "column": 5
+            },
+            "end": {
+              "line": 73,
+              "column": 58
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_73_col_5_001.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_73_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 82.1498525,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 58.0843231,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:828:9: replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![])",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::scan_keys",
+            "return_type": "-> Result<Vec<String>, Error>",
+            "span": {
+              "start": {
+                "line": 826,
+                "column": 5
+              },
+              "end": {
+                "line": 841,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 828,
+              "column": 9
+            },
+            "end": {
+              "line": 840,
+              "column": 10
+            }
+          },
+          "replacement": "Ok(vec![])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_828_col_9.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_828_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 16.6724151,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 75.6561955,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:828:9: replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![String::new()])",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::scan_keys",
+            "return_type": "-> Result<Vec<String>, Error>",
+            "span": {
+              "start": {
+                "line": 826,
+                "column": 5
+              },
+              "end": {
+                "line": 841,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 828,
+              "column": 9
+            },
+            "end": {
+              "line": 840,
+              "column": 10
+            }
+          },
+          "replacement": "Ok(vec![String::new()])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_828_col_9_001.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_828_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 25.656388,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 65.2316237,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1189:9: replace PersistStore::removal_ops -> Result<Vec<BatchOp>, Error> with Ok(vec![])",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::removal_ops",
+            "return_type": "-> Result<Vec<BatchOp>, Error>",
+            "span": {
+              "start": {
+                "line": 1186,
+                "column": 5
+              },
+              "end": {
+                "line": 1215,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1189,
+              "column": 9
+            },
+            "end": {
+              "line": 1214,
+              "column": 16
+            }
+          },
+          "replacement": "Ok(vec![])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1189_col_9.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1189_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 21.1794313,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 6.0019517,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1189:9: replace PersistStore::removal_ops -> Result<Vec<BatchOp>, Error> with Ok(vec![Default::default()])",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::removal_ops",
+            "return_type": "-> Result<Vec<BatchOp>, Error>",
+            "span": {
+              "start": {
+                "line": 1186,
+                "column": 5
+              },
+              "end": {
+                "line": 1215,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1189,
+              "column": 9
+            },
+            "end": {
+              "line": 1214,
+              "column": 16
+            }
+          },
+          "replacement": "Ok(vec![Default::default()])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1189_col_9_001.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1189_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.9697915,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:828:9: replace PersistStore::scan_keys -> Result<Vec<String>, Error> with Ok(vec![\"xyzzy\".into()])",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::scan_keys",
+            "return_type": "-> Result<Vec<String>, Error>",
+            "span": {
+              "start": {
+                "line": 826,
+                "column": 5
+              },
+              "end": {
+                "line": 841,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 828,
+              "column": 9
+            },
+            "end": {
+              "line": 840,
+              "column": 10
+            }
+          },
+          "replacement": "Ok(vec![\"xyzzy\".into()])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_828_col_9_002.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_828_col_9_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 20.8536198,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 68.0874073,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1408:9: replace PersistStore::record_worth -> Result<WorthSnapshot, Error> with Ok(Default::default())",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1395,
+                "column": 5
+              },
+              "end": {
+                "line": 1409,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1408,
+              "column": 9
+            },
+            "end": {
+              "line": 1408,
+              "column": 54
+            }
+          },
+          "replacement": "Ok(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1408_col_9.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1408_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 3.4653061,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1420:9: replace PersistStore::record_worth_with_hook_for_test -> Result<WorthSnapshot, Error> with Ok(Default::default())",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth_with_hook_for_test",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1411,
+                "column": 5
+              },
+              "end": {
+                "line": 1421,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1420,
+              "column": 9
+            },
+            "end": {
+              "line": 1420,
+              "column": 60
+            }
+          },
+          "replacement": "Ok(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1420_col_9.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1420_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.8704019,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1430:9: replace PersistStore::record_worth_inner -> Result<WorthSnapshot, Error> with Ok(Default::default())",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth_inner",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1423,
+                "column": 5
+              },
+              "end": {
+                "line": 1468,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1430,
+              "column": 9
+            },
+            "end": {
+              "line": 1467,
+              "column": 59
+            }
+          },
+          "replacement": "Ok(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1430_col_9.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1430_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.8699105,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1203:28: replace == with != in PersistStore::removal_ops",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::removal_ops",
+            "return_type": "-> Result<Vec<BatchOp>, Error>",
+            "span": {
+              "start": {
+                "line": 1186,
+                "column": 5
+              },
+              "end": {
+                "line": 1215,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1203,
+              "column": 28
+            },
+            "end": {
+              "line": 1203,
+              "column": 30
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1203_col_28.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1203_col_28.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 15.5849833,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 5.6486076,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1433:32: replace == with != in PersistStore::record_worth_inner",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth_inner",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1423,
+                "column": 5
+              },
+              "end": {
+                "line": 1468,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1433,
+              "column": 32
+            },
+            "end": {
+              "line": 1433,
+              "column": 34
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1433_col_32.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1433_col_32.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 37.5548229,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 52.8280725,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1433:37: replace || with && in PersistStore::record_worth_inner",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth_inner",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1423,
+                "column": 5
+              },
+              "end": {
+                "line": 1468,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1433,
+              "column": 37
+            },
+            "end": {
+              "line": 1433,
+              "column": 39
+            }
+          },
+          "replacement": "&&",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1433_col_37.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1433_col_37.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 37.0396102,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 53.8831132,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1433:56: replace > with == in PersistStore::record_worth_inner",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth_inner",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1423,
+                "column": 5
+              },
+              "end": {
+                "line": 1468,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1433,
+              "column": 56
+            },
+            "end": {
+              "line": 1433,
+              "column": 57
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1433_col_56.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1433_col_56.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 23.6364518,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 64.3919693,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1433:56: replace > with < in PersistStore::record_worth_inner",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth_inner",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1423,
+                "column": 5
+              },
+              "end": {
+                "line": 1468,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1433,
+              "column": 56
+            },
+            "end": {
+              "line": 1433,
+              "column": 57
+            }
+          },
+          "replacement": "<",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1433_col_56_001.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1433_col_56_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 23.2375674,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 64.7901867,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1458:17: replace && with || in PersistStore::record_worth_inner",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth_inner",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1423,
+                "column": 5
+              },
+              "end": {
+                "line": 1468,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1458,
+              "column": 17
+            },
+            "end": {
+              "line": 1458,
+              "column": 19
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1458_col_17.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1458_col_17.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 2.3274415,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1433:56: replace > with >= in PersistStore::record_worth_inner",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth_inner",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1423,
+                "column": 5
+              },
+              "end": {
+                "line": 1468,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1433,
+              "column": 56
+            },
+            "end": {
+              "line": 1433,
+              "column": 57
+            }
+          },
+          "replacement": ">=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1433_col_56_002.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1433_col_56_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 26.7402402,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 51.6973147,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1457:24: replace == with != in PersistStore::record_worth_inner",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::record_worth_inner",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1423,
+                "column": 5
+              },
+              "end": {
+                "line": 1468,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1457,
+              "column": 24
+            },
+            "end": {
+              "line": 1457,
+              "column": 26
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1457_col_24.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1457_col_24.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 27.5846932,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 48.7981131,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1475:9: replace PersistStore::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![Default::default()])",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::worth_snapshots",
+            "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+            "span": {
+              "start": {
+                "line": 1470,
+                "column": 5
+              },
+              "end": {
+                "line": 1498,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1475,
+              "column": 9
+            },
+            "end": {
+              "line": 1497,
+              "column": 10
+            }
+          },
+          "replacement": "Ok(vec![Default::default()])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1475_col_9_001.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1475_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.9186976,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1475:9: replace PersistStore::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::worth_snapshots",
+            "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+            "span": {
+              "start": {
+                "line": 1470,
+                "column": 5
+              },
+              "end": {
+                "line": 1498,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1475,
+              "column": 9
+            },
+            "end": {
+              "line": 1497,
+              "column": 10
+            }
+          },
+          "replacement": "Ok(vec![])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1475_col_9.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1475_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 21.5150108,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 59.3770687,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1487:21: replace || with && in PersistStore::worth_snapshots",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::worth_snapshots",
+            "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+            "span": {
+              "start": {
+                "line": 1470,
+                "column": 5
+              },
+              "end": {
+                "line": 1498,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1487,
+              "column": 21
+            },
+            "end": {
+              "line": 1487,
+              "column": 23
+            }
+          },
+          "replacement": "&&",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1487_col_21.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1487_col_21.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 21.9664323,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 56.3942788,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1487:28: replace != with == in PersistStore::worth_snapshots",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::worth_snapshots",
+            "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+            "span": {
+              "start": {
+                "line": 1470,
+                "column": 5
+              },
+              "end": {
+                "line": 1498,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1487,
+              "column": 28
+            },
+            "end": {
+              "line": 1487,
+              "column": 30
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1487_col_28.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1487_col_28.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 23.7695072,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 46.5278422,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1692:9: replace <impl WorthStore for PersistStore>::record_worth -> Result<WorthSnapshot, Error> with Ok(Default::default())",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "<impl WorthStore for PersistStore>::record_worth",
+            "return_type": "-> Result<WorthSnapshot, Error>",
+            "span": {
+              "start": {
+                "line": 1686,
+                "column": 5
+              },
+              "end": {
+                "line": 1693,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1692,
+              "column": 9
+            },
+            "end": {
+              "line": 1692,
+              "column": 49
+            }
+          },
+          "replacement": "Ok(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1692_col_9.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1692_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.6672584000000001,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1486:34: replace != with == in PersistStore::worth_snapshots",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "PersistStore::worth_snapshots",
+            "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+            "span": {
+              "start": {
+                "line": 1470,
+                "column": 5
+              },
+              "end": {
+                "line": 1498,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1486,
+              "column": 34
+            },
+            "end": {
+              "line": 1486,
+              "column": 36
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1486_col_34.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1486_col_34.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 23.664476,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 49.5969003,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1695:9: replace <impl WorthStore for PersistStore>::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![Default::default()])",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "<impl WorthStore for PersistStore>::worth_snapshots",
+            "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+            "span": {
+              "start": {
+                "line": 1694,
+                "column": 5
+              },
+              "end": {
+                "line": 1696,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1695,
+              "column": 9
+            },
+            "end": {
+              "line": 1695,
+              "column": 40
+            }
+          },
+          "replacement": "Ok(vec![Default::default()])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1695_col_9_001.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1695_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 2.1212178,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/sageant-persistant/src/lib.rs:1695:9: replace <impl WorthStore for PersistStore>::worth_snapshots -> Result<Vec<WorthSnapshot>, Error> with Ok(vec![])",
+          "package": "sageant-persistant",
+          "file": "crates/sageant-persistant/src/lib.rs",
+          "function": {
+            "function_name": "<impl WorthStore for PersistStore>::worth_snapshots",
+            "return_type": "-> Result<Vec<WorthSnapshot>, Error>",
+            "span": {
+              "start": {
+                "line": 1694,
+                "column": 5
+              },
+              "end": {
+                "line": 1696,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1695,
+              "column": 9
+            },
+            "end": {
+              "line": 1695,
+              "column": 40
+            }
+          },
+          "replacement": "Ok(vec![])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__sageant-persistant__src__lib.rs_line_1695_col_9.log",
+      "diff_path": "diff/crates__sageant-persistant__src__lib.rs_line_1695_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 13.4602625,
+          "process_status": "Success",
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 47.896478,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\rust\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=sageant-persistant@0.3.32",
+            "--all-features"
+          ]
+        }
+      ]
+    }
+  ],
+  "total_mutants": 26,
+  "missed": 0,
+  "caught": 18,
+  "timeout": 0,
+  "unviable": 8,
+  "success": 0,
+  "start_time": "2026-11-19T21:54:08.2715434Z",
+  "end_time": "2026-11-19T22:08:59.3042229Z",
+  "cargo_mutants_version": "27.1.0"
+}

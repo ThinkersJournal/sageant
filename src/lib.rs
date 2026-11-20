@@ -21,6 +21,7 @@ mod retrieve;
 mod screen;
 mod sha256;
 mod store;
+mod worth;
 mod writer;
 
 pub use error::Error;
@@ -43,4 +44,5 @@ pub use screen::RegisteredSecrets;
 pub use screen::SecretScreen;
 pub use sha256::sha256_hex;
 pub use store::MemoryStore;
+pub use worth::{Component, WORTH_MODEL, Worth, WorthParams, WorthSnapshot, WorthStore, worth_of};
 pub use writer::Writer;

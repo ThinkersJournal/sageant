@@ -204,3 +204,28 @@ hand with the mutant: the second `put` after deleting `index2.db` still leaves a
 rebuilds on every open, which costs time and changes no answer. Not a test gap in behaviour, a performance difference nothing observes.
 
 Limits: diff-scoped; kill tests written after the survivors were known; Windows only.
+
+# Mutation run 8 (worth-v1, X1 slice 1)
+
+`cargo mutants -p sageant --all-features --no-shuffle -f src/worth.rs -j 2` (Windows, branch `work/phase1-design`). **File-scoped to
+`src/worth.rs`, not a full run.** 30 mutants, 25 minutes: **28 caught, 0 missed, 2 unviable.** The tests (`tests/worth.rs`) were written
+before the code and fail to compile without it (the red state); six hand-made sabotages of the implementation (evidence links counted
+as loose, structural cap removed, a changed weight, link touches ignored, a changed stability cap, age measured from creation only) each
+failed at least one test. No kill tests were needed afterwards.
+
+Limits: file-scoped; Windows only; the 2 unviable mutants did not compile and say nothing about the tests.
+
+# Mutation run 9 (worth snapshots, X1 slice 2)
+
+Two filtered runs (Windows, branch `work/phase1-design`), `-j 2`, `--no-shuffle`, **not full runs**:
+- `cargo mutants -p sageant --all-features --re '(?i)worth'`: 62 mutants, 7 minutes: **53 caught, 0 missed, 9 unviable**.
+- `cargo mutants -p sageant-persistant --all-features --re '(?i)worth|scan_keys|removal_ops'`: 26 mutants, 15 minutes: **18 caught, 0 missed, 8 unviable**.
+
+The tests (`tests/worth_store.rs`, `crates/sageant-persistant/tests/worth.rs`) were written before the code; they failed to compile
+without it, which is a weaker red than a failing assertion. Five hand sabotages were each caught: `forget` leaving the `w/` keys, the
+generation write removed from `record_worth` (a first attempt that rewrote the same value did not change state and was not caught; it
+was a bad sabotage, redone), the `record_worth` head requirement removed, `MemoryStore::forget` keeping snapshots, and the key-versus-record
+check removed. No kill tests were needed afterwards.
+
+Limits: regex-filtered by mutant name, so code that does not carry "worth" in its name (the shared codec helpers, `scan_keys` aside) is not
+covered here; Windows only; the unviable mutants did not compile and say nothing about the tests.

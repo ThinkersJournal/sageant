@@ -1,0 +1,21 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace worth_key -> String with String::new()
+@@ -65,17 +65,17 @@
+ }
+ 
+ fn review_key(id: &ChunkId) -> String {
+     format!("v/{}", id.as_str())
+ }
+ 
+ /// A worth snapshot: `w/<id>/<version, 10 digits>/<model id>`.
+ fn worth_key(id: &ChunkId, version: u32, model_id: &str) -> String {
+-    format!("w/{}/{version:010}/{model_id}", id.as_str())
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn audit_key(seq: u64) -> String {
+     format!("a/{seq:020}")
+ }
+ 
+ /// Per-chunk write generation: `n/<id>` counts the links ever added from or to the chunk, and the worth snapshots written for it. A writer that read links
+ /// (a cycle check, a forget) requires the counters it read to be unchanged when it commits, so a link that lands in

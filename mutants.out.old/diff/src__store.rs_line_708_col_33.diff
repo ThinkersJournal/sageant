@@ -1,0 +1,21 @@
+--- src/store.rs
++++ replace || with && in <impl WorthStore for MemoryStore>::record_worth
+@@ -700,17 +700,17 @@
+ impl WorthStore for MemoryStore {
+     fn record_worth(
+         &mut self,
+         id: &ChunkId,
+         worth: &Worth,
+         now: Timestamp,
+     ) -> Result<WorthSnapshot, Error> {
+         let head = self.lineage(id)?.last().ok_or(Error::NotFound)?.version;
+-        if worth.version() == 0 || worth.version() > head {
++        if worth.version() == 0 && /* ~ changed by cargo-mutants ~ */ worth.version() > head {
+             return Err(Error::Invalid("worth version"));
+         }
+         let snapshot = WorthSnapshot::new(id, worth, now);
+         self.worth.insert(
+             (id.clone(), worth.version(), WORTH_MODEL.to_owned()),
+             snapshot.clone(),
+         );
+         Ok(snapshot)

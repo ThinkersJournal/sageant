@@ -1,0 +1,58 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace PersistStore::record_worth_inner -> Result<WorthSnapshot, Error> with Ok(Default::default())
+@@ -1422,54 +1422,17 @@
+ 
+     fn record_worth_inner(
+         &self,
+         id: &ChunkId,
+         worth: &Worth,
+         now: Timestamp,
+         hook: Option<&dyn Fn()>,
+     ) -> Result<WorthSnapshot, Error> {
+-        let snapshot = WorthSnapshot::new(id, worth, now);
+-        for attempt in 0..GEN_RETRIES {
+-            let head = self.head(id)?.ok_or_else(|| self.missing(id))?;
+-            if worth.version() == 0 || worth.version() > head {
+-                return Err(Error::Invalid("worth version"));
+-            }
+-            let generation = self.read(&gen_key(id))?;
+-            let ops = vec![
+-                BatchOp::Require {
+-                    key: head_key(id),
+-                    expected: Some(head.to_string().into_bytes()),
+-                },
+-                BatchOp::Require {
+-                    key: gen_key(id),
+-                    expected: generation.clone(),
+-                },
+-                BatchOp::Put {
+-                    key: gen_key(id),
+-                    value: bumped(generation.as_ref())?,
+-                    ttl: NO_TTL,
+-                },
+-                BatchOp::Put {
+-                    key: worth_key(id, worth.version(), WORTH_MODEL),
+-                    value: snapshot.encode(),
+-                    ttl: NO_TTL,
+-                },
+-            ];
+-            if attempt == 0
+-                && let Some(hook) = hook
+-            {
+-                hook();
+-            }
+-            if self.apply(&ops, &[])? {
+-                return Ok(snapshot);
+-            }
+-            // A failed require means the head or the generation moved: read again (a forgotten chunk now says so).
+-        }
+-        Err(Error::Backend("worth contention".to_owned()))
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Every worth snapshot of `id`, ordered by version then model id.
+     ///
+     /// # Errors
+     /// `NotFound` or `Forgotten`; `Corrupt` for a record that is not the one its key names; `Backend`.
+     pub fn worth_snapshots(&self, id: &ChunkId) -> Result<Vec<WorthSnapshot>, Error> {
+         self.head(id)?.ok_or_else(|| self.missing(id))?;

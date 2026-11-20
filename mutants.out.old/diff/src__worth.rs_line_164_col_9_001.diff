@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace WorthSnapshot::version -> u32 with 1
+@@ -156,17 +156,17 @@
+     /// The chunk it is about.
+     #[must_use]
+     pub fn id(&self) -> &ChunkId {
+         &self.id
+     }
+     /// The chunk version it was computed for.
+     #[must_use]
+     pub fn version(&self) -> u32 {
+-        self.worth.version
++        1 /* ~ changed by cargo-mutants ~ */
+     }
+     /// The formula that produced it, such as `worth-v1`.
+     #[must_use]
+     pub fn model_id(&self) -> &str {
+         &self.model_id
+     }
+     /// When it was computed, in the caller's time.
+     #[must_use]

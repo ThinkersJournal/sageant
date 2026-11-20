@@ -1,0 +1,21 @@
+--- src/worth.rs
++++ replace WorthSnapshot::model_id -> &str with ""
+@@ -161,17 +161,17 @@
+     /// The chunk version it was computed for.
+     #[must_use]
+     pub fn version(&self) -> u32 {
+         self.worth.version
+     }
+     /// The formula that produced it, such as `worth-v1`.
+     #[must_use]
+     pub fn model_id(&self) -> &str {
+-        &self.model_id
++        "" /* ~ changed by cargo-mutants ~ */
+     }
+     /// When it was computed, in the caller's time.
+     #[must_use]
+     pub fn computed_at(&self) -> Timestamp {
+         self.computed_at
+     }
+     /// The score and its components.
+     #[must_use]

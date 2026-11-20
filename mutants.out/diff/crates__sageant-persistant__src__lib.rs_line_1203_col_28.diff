@@ -1,0 +1,21 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace == with != in PersistStore::removal_ops
+@@ -1195,17 +1195,17 @@
+             ops.push(BatchOp::Delete {
+                 key: link_key(link.from(), link.kind(), link.to()),
+             });
+             ops.push(BatchOp::Delete {
+                 key: reverse_key(link.from(), link.kind(), link.to()),
+             });
+         }
+         for link in self.scan_links(&format!("r/{}/", id.as_str()))? {
+-            if link.kind() == LinkKind::DerivedFrom {
++            if link.kind() != /* ~ changed by cargo-mutants ~ */ LinkKind::DerivedFrom {
+                 ops.push(BatchOp::Put {
+                     key: review_key(link.from()),
+                     value: b"1".to_vec(),
+                     ttl: NO_TTL,
+                 });
+             }
+         }
+         for key in self.scan_keys(&format!("w/{}/", id.as_str()))? {

@@ -1,0 +1,21 @@
+--- crates/sageant-persistant/src/lib.rs
++++ replace == with != in PersistStore::record_worth_inner
+@@ -1425,17 +1425,17 @@
+         id: &ChunkId,
+         worth: &Worth,
+         now: Timestamp,
+         hook: Option<&dyn Fn()>,
+     ) -> Result<WorthSnapshot, Error> {
+         let snapshot = WorthSnapshot::new(id, worth, now);
+         for attempt in 0..GEN_RETRIES {
+             let head = self.head(id)?.ok_or_else(|| self.missing(id))?;
+-            if worth.version() == 0 || worth.version() > head {
++            if worth.version() != /* ~ changed by cargo-mutants ~ */ 0 || worth.version() > head {
+                 return Err(Error::Invalid("worth version"));
+             }
+             let generation = self.read(&gen_key(id))?;
+             let ops = vec![
+                 BatchOp::Require {
+                     key: head_key(id),
+                     expected: Some(head.to_string().into_bytes()),
+                 },
