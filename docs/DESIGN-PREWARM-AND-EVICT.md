@@ -1,128 +1,152 @@
-# Design note: pre-warming a working-set cache and ranking its eviction candidates (docs only)
+# Design note: SageAnt as a finite cache: automatic demotion and forgetting, worth, and pre-warm (docs only)
 
-Status: **proposal, 2026-11-20, nothing built; option 1 agreed by the PM, CireSnave has not ruled (board 472).** Task from pm-ants (relaying CireSnave's idea of 2026-11-20 via the PM);
-scope: options and a recommendation, no code. Anything for CireSnave goes through the PM board.
+Status: **proposal, rewritten 2026-11-21 after CireSnave's ruling on board 472; nothing built, no recorder (dropped from the design 2026-11-21), no deletion code, no code on the use signal (task stop condition).**
+Task from pm-ants relaying the PM. Items marked **ASK** are brought back for a decision, not decided here. Anything for CireSnave goes through the PM board.
 
-CireSnave's idea, verbatim (via the PM): *"If we allow a tiny LLM to be a silent observer in the chat stream of our large models to
-predict where the conversation is likely headed and what information will likely be needed so we can generate queries to pre-warm the
-cache, much of the information our larger agent needs should already be sitting in its cache before it needs it. If we have the LRU
-output from the cache output a somewhat large list of removal candidates, that same tiny LLM could rank those removal candidates by
-likelihood to be needed again soon."*
+## 0. Rulings this note rests on, verbatim, and what they withdraw
 
-## 1. What exists (read at `origin/main` e147018, and my branch `work/phase1-design` for what is about to)
+CireSnave 2026-11-20 (idea, via the PM): *"If we allow a tiny LLM to be a silent observer in the chat stream of our large models to predict where the
+conversation is likely headed ... so we can generate queries to pre-warm the cache ... If we have the LRU output from the cache output a somewhat large
+list of removal candidates, that same tiny LLM could rank those removal candidates by likelihood to be needed again soon."*
 
-Checked with `git grep -n -i -E "\blru\b|cache|evict|prewarm|pre-warm|probation" origin/main -- '*.rs' '*.md' '*.toml'`. Positive control: the
-same query finds the word "cache" in `docs/PROPOSAL-expansion-2026-11-18.md` (the replication proposal), so the query works.
+CireSnave 2026-11-21 (via the PM, relayed by pm-ants): *"SageAnt *is a cache*. ... SageAnt is a knowledge base that caches knowledge the model may need. As such,
+its own knowledge chunks are what I was referring to the eviction of."*
 
-- **There is no cache and no LRU in sageant's code.** Zero hits in any `.rs` file. The only "cache" and "eviction" text is in the
-  expansion proposal and ROADMAP X2, which are plans. If the PM means a cache in another project (the harness, or PersistAnt), I have not read
-  it; this note would then apply to whatever interface that cache offers.
-- **What sageant does have that this idea would plug into** (`src/maintain.rs`, `src/retrieve.rs`, CONTRACT D10/D12):
-  - `Retriever`, `Query` (with an opaque `context` byte string), `Hit` with a score and a `Reason`, and `Fuser`: retrieval is already
-    pluggable and explained.
-  - `Promoter::promote(ctx, reader) -> Vec<Hit>`: "a retriever with a working-memory target and no extra power: it reads, it cannot
-    write." This is the existing seam for "what should be in the agent's working set". The harness decides when to call it.
-  - `Demoter` and the plan-then-apply `Maintainer` with `Change::Archive`: storage-level, reversible demotion. The header says
-    *"No model calls happen here: a harness that wants summaries supplies its own `Demoter`."* That rule decides where a tiny model may live (section 4).
-- **What sageant does not have: any read or hit signal.** The worth design (`docs/DESIGN-WORTH-AND-TRUST.md` 2.2) refused a counter updated
-  by every read, including on the read-only MCP server, because it makes a read-only server write and lets a reader influence what is kept.
-  The PM's baseline "LRU plus cheap signals (hits, age, source still in discussion)" needs a hit signal, so this note's recommended
-  sequencing depends on the planned owner/grant-only access log (X1 option b).
-- **Two different "evictions".** X2's `DecayMaintainer` archives lowest-worth chunks when the **store** is over its byte budget: durable,
-  reversible, audited. A cache's eviction drops a **reference** from a bounded hot set; the chunk stays stored and nothing is lost.
-  They must not be conflated: the ranker below only ever touches the second.
+CireSnave 2026-11-21, ruling (via the PM, relayed by pm-ants; the relay elides some text with "..."): *"The knowledge chunks SageAnt stores go into a finite storage space.
+That means that forgetting must be automatic.  The account holder should be able to set a maximum size for SageAnt's knowledge base and when it is over 3/4 full,
+SageAnt must begin deciding based on LRU and worth which knowledge chunks to demote, and when other storage options become close to full, which to forget.  That is
+not a person's act ... For now, that forgetting should be based on LRU ... Whether a knowledge chunk is refetchable does not change the final decision about whether
+it gets deleted ... The one place where refetchability should be calculated in is in the worth calculation which is based on a probability of future need ... Once it
+has been demoted to the lowest rung of storage and even that is getting full, deletions must begin."*
 
-## 2. What "the cache" is, since sageant has none (decision needed)
+CireSnave 2026-11-21, on trust (via the PM, relayed by pm-ants): *"Earned trust vanishes when a piece of knowledge is deleted.  We have no way of knowing if retrieving the same knowledge retrieved from its source again contains the same content and should have the same trust rating."* So deletion removes a chunk's trust and its evidence links, a re-fetched chunk is a new chunk with no earned trust, and no rating is kept after a delete. Demotion still leaves trust byte-identical. The PM's earlier "never evict earned trust without a copy of the rating" is withdrawn.
 
-- **(A) A harness-side working set (recommended).** The large agent's harness keeps a bounded set of chunk references (id, version) it
-  has loaded or pre-loaded into the agent's context or fast local store. Sageant stays as it is and supplies reads, the `Promoter`
-  seam, and signals. The cache, its LRU and the model live in the harness (or a separate generic cache-policy project).
-- **(B) A hot tier inside sageant.** A derived, bounded table of `(chunk id, version, tier, entered_at, last_hit)`. It is recomputable
-  like worth snapshots, holds no content, and `forget`/`purge` remove its rows in the same batch. Only worth building if several
-  harnesses need the same cache.
-- **Not recommended: copying content into a cache store.** It would put forgotten content in a second place (CONTRACT D3, D8).
+CireSnave 2026-11-21, on use (via the PM, relayed by pm-ants): *"Use of a knowledge chunk from the viewpoint of SageAnt should be that the knowledge chunk was returned in a query result.  Value to the LLM once it the knowledge chunk is in its context window is another issue entirely and one we should tune in advance and set in the code rather than try to learn on demand."* So **use = SageAnt returned the chunk in a query result, recorded by SageAnt.** This replaces the owner-process timestamp of the earlier Q1 answer and, for this purpose, the 2026-11-19 no-read-counter rule. What a chunk is worth to the LLM once in its context is **fixed in code in advance, not learned**; the tiny-model observer, the recorder and the replay harness are dropped from the design (ROADMAP keeps them as a dated idea row, C2).
 
-Either way an entry is a **reference to a stored chunk version**, so a pre-warmed entry carries the same origin, confidence and trust
-labels as any read (the PM's thought 2), and removing the chunk removes it.
+CireSnave 2026-11-21, final answers on board 472 (via the PM, relayed by pm-ants): Q5 *"I'm fine with limiting it to 50%."* Q6 *"Of course we refuse to write to a full store.  The only other option is writing and failing at which point we refuse anyway."* Q7 *"SageAnt should allow the account holder to configure multiple stores where each successive one is colder the further from the LLM it gets.  The primary store is likely in RAM.  The secondary store is likely on an SSD.  A third-level store could be on a local spinning disk hard drive.  A fourth-level store might be in cloud storage.  My point is that the account holder should be able to set up the number, location, and order of storage sites."* And: *"Each storage location must have its own maximum size."*
+So: pins are capped at 50%; a full store refuses writes; the stores are an **account-holder-configured ordered list of any number**, each colder than the last (not two rungs in one store), each with **its own maximum size**; there is no single whole-store maximum; backends are chosen through PersistAnt (his standing rule: nothing hard-wired). Board 472 is closed.
 
-## 3. The two jobs, with baselines that need no model
+**Withdrawn by those rulings:** my 2026-11-21 draft's "demote only, never drop", its "sole copies are never dropped" and "forgetting stays a person's act", and the
+design note `docs/DESIGN-WORTH-AND-TRUST.md` line 16 and 3.3 ("`forget` and `purge` never from a maintainer"; X2 "never forgets"). Those lines are stale until
+the design is accepted and the worth note is amended. **Unchanged:** `purge` needs a person (CONTRACT D13); automatic forgetting is `forget`, which leaves a tombstone.
 
-**3.1 Eviction ranker (first).** The cache's LRU emits N candidates (the PM suggests about 50); a ranker reorders them by likelihood of
-being needed again soon; the cache evicts from the low end.
-- *Baseline 0:* plain LRU. *Baseline 1:* LRU plus cheap signals: recency, hit count, whether the source chunk's collection or
-  lineage appeared in the last few turns, structural neighbours of what is currently cached (the worth components `structural_links`,
-  `loose_links` are reusable here), a pin. *Candidate:* baseline 1 with a model reordering the same candidate list.
-- **Safety properties (non-negotiable, each a test):** the ranker may only **reorder** the candidates it was given (a returned id not in
-  the list is dropped, a missing id is appended in LRU order); pinned chunks are never candidates; a timeout, a parse failure or any error
-  returns plain LRU order; the ranker is off the request path (eviction runs asynchronously, so a slow model costs nothing a reader sees).
+## 1. What exists today (read at `origin/main` 7395e92; the access-log slice is on `work/x1-access-log`)
 
-**3.2 Pre-warm (second).** An observer predicts what the big agent will need and produces queries; the results are loaded as
-*speculative* entries.
-- *Baseline:* run retrieval on the latest user message plus the agent's last plan step, with no model (a `Promoter` that fuses two
-  queries). *Candidate:* the same plus queries a tiny model proposes from the stream.
-- **Probationary tier:** speculative entries sit in a small separate budget (a fixed fraction of the cache) and are **promoted only on a real
-  hit** by the big agent; unpromoted entries age out first. A wrong guess therefore costs one small tier, never a good entry.
-- **Same gates as any read:** every pre-warm query is a read, so per-collection grants and the secret screen apply exactly as for the
-  big agent's own reads. A pre-warm may never read a collection the agent could not. The observer does not write to the store.
+- **Two statuses, one store.** `Status::{Active, Archived}`; `Change::Archive` is reversible and audited (`src/maintain.rs`, `set_status`). `forget` removes every version, index
+  row and derived record in one batch and leaves a `Tombstone {id, collection, versions_removed, at, actor, reason, keyed_hash?}`; `purge` removes the tombstone, person only.
+  One `PersistStore` is one backend: one file or endpoint. There is no second store today. Two facts that bear on the ladder: `PersistStore::open` requires data that **survives the process exiting** (so a non-durable RAM backend is refused by the code as it stands), and `choose_backend` refuses a server endpoint ("name the backend and use `open`"); both in `crates/sageant-persistant/src/lib.rs`. PersistAnt does offer RAM kvs (answers below).
+- **X2 as approved** (ROADMAP row X2, worth note section 3): `DecayMaintainer` with comfortable/pressured/emergency regimes, worth-ordered archiving, a pin, a **per-collection**
+  budget that the owner sets, never forgetting. The rulings change three of those: the maximum is **per store**, set by the account holder (a store, not a collection, is what fills), the first mark is **3/4**,
+  and forgetting is now in scope at the last store.
+- **Worth** (`worth-v1`, merged): structural and loose links, recency, stability; integer basis points. **No use signal, no refetchability, no trust.**
+- **The use signal** that LRU needs does not exist on `main`. The X1 access-log slice on the branch (unmerged) is an *append-per-access* log written only by callers with a write path, which the use ruling reshapes (section 4): `AccessLog::record_access(&mut self, ..)`, so only a caller with a write path appends. No `Reader` call does.
+- No LRU, no cache, no eviction in code. Control: `git grep -n -i -E "\blru\b|evict|prewarm" origin/main -- '*.rs'` finds 0 lines; `git grep -n -i cache origin/main -- '*.md'` finds 34.
 
-## 4. Where a tiny model may live, and the risks that come with the stream
+## 2. The stores and their size limits
 
-1. **Not in sageant's core.** The contract says the store makes no model calls. The model sits behind a trait in the harness or a
-   separate crate: `Ranker { rank(candidates, context) -> order }` and `Predictor { propose(stream_window) -> Vec<Query> }`, each with a
-   no-model default (the baselines above). Swappable, so the choice of model is a replay result, not a design commitment.
-2. **Privacy.** The stream holds the owner's private conversation. The observer is **local only** (no network call, no hosted model), as the PM
-   says; the owner's secret store (`with-secret`) is the boundary, and any recorded trace passes the existing `SecretScreen` before it is
-   written. A query a model generated is data, never an instruction.
-3. **Injection.** The stream includes untrusted text (web pages, tool output). An attacker can write text meant to make a model keep or
-   fetch something. Bounds that do not rely on the model behaving: effect limited to reordering a given list (3.1) and to a small
-   probationary tier that needs a real hit to promote (3.2); no tool access for the model; output parsed against a strict schema; every
-   decision reproducible from the logged inputs. This is the same worry as the refused read counter ("an agent could pin a chunk by reading it
-   in a loop"): the cache must not become a way to influence what is *kept*; it only influences what is *near*.
-4. **Cost.** The portfolio rule is to route bulk work off Claude; a small local model fits, a hosted one does not.
+**An ordered list of stores, configured by the account holder** (owner-only configuration; never settable through MCP): any number, in order from the one nearest the LLM to the coldest. Each entry: a name, a backend and endpoint **chosen through PersistAnt** (`storage_needs()` and the registry; no backend named in sageant's code),
+and **its own maximum size** (`max_bytes`). There is no whole-store maximum. A store's temperature is its position: store 0 is the primary (the owner expects RAM), the next an SSD, then a local hard disk, then perhaps cloud storage. A new chunk is written to store 0. **No list configured, or a store without a maximum, nothing automatic happens to it** (an account never loses a chunk to policy it did not configure).
+- **Size** means logical bytes of stored records (keys plus values, counted by the scan the tests use), not file size: SQLite keeps freed pages until vacuumed, so the file does not shrink when a chunk is forgotten. PersistAnt reports neither: no kv or blob capability gives stored bytes (the PersistAnt lane, below), so sageant counts by scanning, or uses file size on SQLite and file stores for a quota.
+- **Marks and targets are settings of each store, against its own maximum (CireSnave 2026-11-21: *"Shouldn't the percentages of fullness be settable per storage location as well?"*, answered yes via the PM).** Five owner-only settings per store: a **demote mark**, a **forget mark**, an **emergency mark**, a **demote target** and a **forget target**; defaults 75/85/95 and 65/75 (the PM's Q8 values). Over its demote mark a store demotes to the next one down, to its demote target; the **last** store, over its forget mark, forgets to its forget target (a store that is not last never forgets, so its forget mark and target are unused but still validated); over its emergency mark a store runs the same pass at once, before a write or move that would cross 100%. A recovery margin stops flapping.
+  **Validated when set, refused with a message naming the store and the rule if any fails:** each target below its mark (demote target < demote mark, forget target < forget mark); demote mark < forget mark < emergency mark; every value above 0 and the emergency mark under 100. A configuration is checked as a whole when the list is loaded, not only when a value is changed. Every plan prints the settings it used.
+- **Demotion moves a chunk one store down**, never two. The plan works from the coldest store up so room exists below before anything is moved into it, and **a move into a store above its hard cap is refused**.
+- **A full store refuses writes (CireSnave, Q6).** A write goes to store 0; if store 0 is at its hard cap and a pass cannot free space (the stores below are full of what cannot be moved, or everything is pinned) the write fails with an explicit error and nothing is written. No write is attempted on the hope of making room afterwards.
+- **The last store never fills**: its emergency pass runs before a write or a move that would cross 100% of it (the validation above keeps the emergency mark under 100).
+- **Pins (CireSnave, Q5):** owner-only; a pinned chunk is never demoted or forgotten, and the **pinned bytes in any one store may not exceed 50% of that store's maximum**; a pin beyond that is refused, so pins cannot stop a store from ever freeing space.
 
-## 5. How to test it: replay first, and know the ceiling
+**Three structural problems the stores raise, ruled by the PM 2026-11-21 (via pm-ants; a PM ruling, not a CireSnave quote). All three leans were accepted.**
+1. **Durability (Q14, ruled: write-through for any volatile store; a configuration with a volatile store and no durable one below it is refused).** A RAM store at the top is not durable, and the code today refuses a non-durable backend. If a chunk lives only in RAM it is lost on a crash before it is demoted. Options: (i) **write-through**: every chunk is also written to a durable store before the write returns, and the upper stores hold *copies* (an inclusive hierarchy; demotion then drops the copy above, and "forgetting at the last store" removes the chunk everywhere);
+   (ii) **exclusive** placement (the PM's "demotion moves a chunk one store down"), which is only safe if the top store is durable; for a volatile store 0 it needs a durable journal. Lean: (i) for any non-durable store, (ii) for durable ones; PersistAnt's capability report says which is which, and a configuration with a volatile store and no durable one below it is refused.
+2. **Where the catalog lives (Q15, ruled: the catalog and index in one durable store, only bodies tiered; forget is one catalog batch then body deletes).** The links, tombstones, audit log, generation counters, worth, use and trust records, and the text index must stay consistent while chunk bodies move between backends that share no transaction. Options: (I) **the catalog and index stay in one durable store (the first durable one) and only chunk bodies are tiered**; a move writes the body below, flips the chunk's location record in one catalog batch (requiring the head and location unchanged), then deletes the old body; `forget` is one catalog batch followed by deleting bodies, so a crash leaves an unreferenced body (swept), never a resurrected chunk. The cost: that store must hold the catalog and index of everything, and it constrains how small store 0 can be.
+   (II) each store complete for its own chunks, reads taking the union: no catalog bottleneck, but a move, a forget and a link between stores need a cross-store protocol (copy-verify-delete, a tombstone consulted in every store, one maintenance lease), and a forget racing a move can resurrect a chunk. Lean: (I).
+3. **Promotion (Q13, ruled: one store up, once per window).** The rulings say how chunks go down, not up. A chunk returned in a query from a cold store would, in a cache, move up. Lean: one store up, at most once per window, on a use record (section 4), by the same move protocol.
+**A cloud store is a named future store type, not offered now (PM): it waits for X7.** Network and privacy: a cloud store sends content off the machine. The worth note's rule for X1-X3 is local only, no network, and the store refuses server endpoints today; a cloud store is not offered until the encryption and authentication rules of X7 exist, and a backend without `secure_delete` means "unretrievable" only, never "erased", for any chunk that has lived on it (the README table stays the single source, per store).
 
-No observer or ranker is built before the replay exists (the PM's thought 4). The replay is the work.
-- **Trace:** per conversation turn, the chunk references the big agent actually requested (and the query text that produced them), the
-  cache's contents at that moment, and timestamps. Replaying a trace against a policy gives its hit rate with no model in the loop for
-  the baselines.
-- **Metrics:** hit rate on requests the agent really made; **eviction regret** (evicted, then requested within T); pre-warm precision
-  (promoted over loaded) and wasted loads; added latency of the ranker on and off the request path (p50 and p95); and the **offline optimum
-  (Belady's rule) on the same trace**, which bounds what any policy can gain. If plain LRU is already close to the optimum on our traces, stop:
-  there is nothing for a model to win. If LRU plus signals closes most of the gap, the model has to beat *that*, not LRU.
-- **Adoption rule, fixed before measuring** (my proposal, the owner may change the numbers): a model is adopted only if it beats LRU plus
-  signals on hit rate by at least 5 percentage points on a held-out half of the traces, with the ranker's p95 off-path latency under
-  the interval between evictions, and no safety test failing. Compare at least two sizes so cost is visible.
-- **Trace source, in order of preference:** (1) a harness-side recorder, **opt-in and local**, switched on for our own lanes' sessions; the
-  X1 access log (owner/grant only) gives the chunk-level half of it. (2) Existing session transcripts, replayed offline on this machine,
-  screened and never copied off it. (3) Synthetic traces from a generator, for the safety tests and to check the harness itself, not
-  for choosing a model. A trace is only as good as the work it came from; ours is mostly engineering sessions, and a result may not
-  carry to other uses.
-- **Which tiny model:** I do not name one. Candidates must be local, small and permissively licensed; the choice is made on replay results
-  behind the `Ranker`/`Predictor` traits. Picking by reputation before a replay would be a guess.
+## 3. Order of demotion and of forgetting
 
-## 6. Options and recommendation
+- **Demotion (store i to store i+1): LRU and worth.** Take the least-recently-used window by the recorded last use (section 4; a chunk never returned in a query uses its `created_at`), the PM's "somewhat large list", about 50 or twice what the pass needs, and demote lowest worth first inside it; ties by older last use, then
+  lineage id (total, deterministic). Skip a chunk other active chunks depend on through `part-of` or `derived-from` (worth note 3.3), and a pinned chunk.
+- **Forgetting (the last store): LRU only, for now** (the ruling). Same tie rule. Worth, trust and refetchability do **not** protect a chunk from deletion at the last store under this rule; they only shape what reaches that store
+  and in what order. For trust this is now the rule, not a gap (CireSnave 2026-11-21, section 0): trust is lost with the chunk. One honest risk, stated once and not argued: LRU forgets an old, never-reread note by its author as readily as a stale scrape, and
+  a `User`, `Agent` or `Model` chunk is a sole copy. The mitigations inside the ruling are the owner's pin, the dry-run, and the deletion log of section 6.
+- **Pins stay** (section 2: owner-only, exempt from both, capped at 50% of a store's maximum, CireSnave Q5).
+- **No model is involved in demotion or deletion.** Order is a deterministic function of recorded last use, worth and the rules above.
+- **Plan before apply, deterministic, `--dry-run` prints the plan.** Each step carries a `Why` naming the store, its fill, the mark and the numbers used. A new `Change::Forget`, an actor such as `policy:budget`, a lineage forgotten whole. Derived chunks of a forgotten source get the existing `NeedsReview` flag.
 
-| Option | What it is | Cost | Risk |
-|---|---|---|---|
-| 0 | Do nothing | none | none; no gain |
-| 1 | **Recorder and replay harness only**, with LRU, LRU plus signals, and the Belady ceiling | smallest | none to the store; gives the numbers to decide |
-| 2 | 1, plus the eviction ranker behind a trait, no-model default | small | low (reorder-only, LRU fallback) |
-| 3 | 2, plus the pre-warm predictor and probationary tier | larger | medium (privacy and injection surface of an observer) |
+## 4. The use signal: a chunk was returned in a query result (CireSnave 2026-11-21)
 
-**Recommendation: option 1 now, then 2 only if the ceiling and the signals baseline leave room, then 3 only after 2 pays.** Ranker before
-pre-warm because its failure mode is cheaper and its worst case is "plain LRU". Cache is (A), harness side, unless two or more harnesses ask for the
-same one. The generic policy and replay code belongs in its own generic project rather than shaped to sageant (CireSnave's rule of
-2026-11-18), with sageant supplying signals and the `Promoter` baseline; creating that project is a decision for the PM and CireSnave.
+**Definition.** A chunk is *used* when SageAnt returns it in a query result and SageAnt records that. Not when it is read by id, listed, or walked through links: those are not query results (**Q10 answered by the PM: no**; the rule is "returned in a query result", and get-by-id is not a query). Whether the LLM then makes any use of the chunk is a different matter and is not measured (below).
 
-**What sageant's own rows would be**, in this order, none started: (a) the X1 access log (already queued; it is the only new signal the
-baselines need), (b) a `Promoter` that fuses "latest message" and "last plan step" queries (no model; fits the existing trait), (c) if (B) is chosen, a derived hot-tier table
-removed by `forget` and `purge`, with a read-every-file test. ROADMAP row **C1** records this as an idea awaiting priority.
+**What the record is.** One fixed key per chunk, `u/<chunk id>`, holding the time of the **last** return only (numbers only, never content or the query text; **Q11 answered by the PM: last-use only**, worth is fixed constants and there is no count to learn from). LRU needs only the last time, so storage is O(chunks) and not O(returns).
+Because the key is known from the id, `forget` and `purge` delete it by name in their own batch with no scan, so a write racing a forget cannot leave an orphan (the record requires the head unchanged; a forget that lands first makes the record fail, and one that lands second deletes it).
+Recording does **not** bump the per-chunk link generation, so a query never makes a concurrent link write retry.
+There is no count: a loop of queries has nothing to run up.
 
-## 7. Open questions: board 472 (open, awaiting CireSnave)
+**Where it is written.** In SageAnt's own adapters, after the result is built: a `Retriever` wrapper in the CLI and the MCP server calls a new `UseLog::mark_used(&mut self, ids, now)` for the ids it is about to return, once per chunk per window (parameter, proposed one hour), best effort. The core `Retriever` still reads only (`&dyn Reader`).
+**A failure to record never fails or slows a query**: it is skipped and counted, and the count is shown by a status call. The branch's `AccessLog` (`x/<id>/<seq>`, one record per access, unbounded) is **superseded by this shape** (Q11); that unmerged slice stays unpushed until the PM has read this note, and is then replaced, not shipped.
 
-The PM agreed option 1 (recorder and replay harness first) on 2026-11-20, via pm-ants. Docs only until CireSnave rules; the recorder stays unbuilt. The PM's recommendations on the three questions, as relayed: (1) a harness-side working set; (2) yes, an opt-in, local, screened recorder; (3) a new small generic replay-harness project, name later. These are recommendations, not decisions.
+**Consequences to accept knowingly.**
+- **A query on a read-only MCP collection now causes a write, and it is recorded anyway (Q12 answered by the PM: do not switch recording off on read-only opens).** The rule keeps what the LLM is using, and read-only readers are among them. So the record is made **under the store's own authority**, as bookkeeping and not as a chunk write:
+  a read-only grant still cannot create, supersede, link, archive, forget or otherwise change a chunk, and the use record is not a tool, takes no grant, and holds no content. In the MCP server this is clean as the code stands: `Tools` owns the store (`Mutex<S>`), `search` already holds that lock while it calls `retrieve`, and `Grants` gate only the write *tools*, not the store handle,
+  so the server marks the returned ids used in the same call. The README and `docs/THREAT-MODEL-MCP-HTTP.md` get one line each **when the code lands** (written now they would be false): *"A query records the time each returned chunk was last returned, under the store's own authority. It stores a time, never content or the query, and a read-only grant still cannot change a chunk."*
+  **The one case that cannot be done cleanly:** a database the process cannot write at all (a read-only file, an OS-level read-only mount). Recording then fails; it is skipped, the skip is counted and shown by a status call, and the query still succeeds. The use signal in such a store is simply absent, so LRU there falls back to `created_at`. That is a [FINDING] for the PM only if such a deployment is wanted.
+- **Steering.** Anyone who may query can keep a chunk young by making queries that return it, and a hostile prompt can do it on purpose. The use record only delays demotion or forgetting; it never raises worth beyond the capped term and never touches pins or trust; chunks kept alive compete for the same finite space, so the cost of steering is a worse knowledge base, not an overrun.
+  A test (when built): a thousand queries returning one chunk in a window move its score and last-use no more than one.
+- A chunk that is *returned but never valuable* (a noisy match) is "used" under this definition. The ruling accepts that; the worth term below is where value is set.
 
-1. Which cache does the idea mean: a harness working set (A), a sageant hot tier (B), or something in another project I have not read?
-2. Is the recorder acceptable (opt-in, local, screened)? It is the first thing that writes a trace of conversations.
-3. Who owns the replay harness: a new generic project, the harness lane, or me as a docs-first stub?
+**Value to the LLM: fixed in code, not learned.** `worth-v2` gets its weights, caps, half-life and the refetchability and trust factors as named constants in code (the v1 pattern), documented with their reasons, and a test pins the table so a change is a visible diff and a new model id. They are tuned in advance by reasoning and by hand-built fixtures
+(known graphs with known scores, as the v1 tests do), never fitted at run time from observed use. That removes the need for the recorder, the replay harness and the tiny-model ranker.
+
+## 5. Worth: probability of future need, with refetchability and trust inside it
+
+`worth-v2` is a **new model id**, never an edit of v1 (worth note 2.1). Components, all integer basis points, fixed weights:
+- **Need (probability of future need):** v1's structural links, loose links, recency and stability, plus a **use** term from the recorded last use (last-use only, Q11), section 4.
+- **Refetchability, only here (the ruling).** Delete decisions (section 3) do not look at it. Today `source` is a free string and the store records no fetch recipe (CONTRACT D5), so refetchability is a **derived heuristic**,
+  not a stored fact: `origin` is `Web` and `source` parses as an http(s) address gives a refetch factor from `WorthParams`, everything else (`User`, `Agent`, `Model`, `Tool`) gives 0. The core makes no network call, so it cannot check that
+  a re-fetch still exists or equals the stored text (`content_hash` could verify a copy, not produce one); a harness that did could write a verified flag later. **ASK (Q9):** my reading is that refetchability lowers the *cost of a miss*,
+  so a refetchable chunk scores lower; confirm that direction and that a heuristic is acceptable until something records it.
+- **Earned trust (X3, not built): does it count in worth? Proposed, not decided (Q2).** Trust vanishes on deletion and cannot be rebuilt by re-fetching, so a high-trust chunk costs more to lose than its need alone says, and worth is where that belongs. Options:
+  (a, recommended) one bounded additive component with a fixed weight, reserved at 0 until X3 exists, so it can reorder demotion but not swamp need; (b) a multiplier on the whole score, which lets a trusted but never-needed chunk outrank everything and so
+  crowd the store; (c) not counted (trust is then lost silently by whatever LRU picks). What worth cannot do under the ruling is protect trust at deletion: the last store is pure LRU, so the cost of losing earned trust is paid whenever LRU reaches it.
+  Say so in the deletion log (section 6): a record can carry the trust level and model id the chunk had when it went, numbers only, so the owner sees what was lost; the log is not a copy of the rating and cannot restore it.
+- **What deletion removes, exactly.** The chunk's own trust snapshots and per-source records go in the same batch as its content (as `w/` and `u/` records do), and so do its outgoing evidence links (`corroborated-by`, `contradicted-by`; `removal_ops` already deletes outgoing links).
+  Evidence links *pointing at* it belong to other chunks' versions, which are append-only (CONTRACT D6), so they stay and read as removed targets. **Requirement on X3:** a link to a removed target counts as no evidence, so other chunks' derived trust drops when their corroborator is forgotten, and
+  they get the `NeedsReview` flag. A re-fetched copy of a forgotten chunk is a new put: same content hash, same id (ids derive from content), but no trust, no links and no history; the tombstone does not carry trust forward. (If the id equals a tombstoned id the put today behaves as for any forgotten chunk; the interaction is not changed here.)
+
+## 6. A content-free deletion log (brought back, not decided)
+
+Exists: the audit log (ids, action, time, reason, never content, asserted by a test) and the tombstone above. For automatic forgetting the owner will want to see what went and why, and to catch a misbehaving policy. **ASK (Q4)** a record per
+forgotten lineage under its own key prefix, holding **numbers and enums only**: chunk id, collection, `origin`, versions removed, bytes freed, last-use time, worth and model id at the time, store, fill and mark, plan id, time, actor.
+- **Not** the `source` string (a URL can be private), not tags or content; a content hash only as the existing opt-in keyed hash (an unkeyed hash of low-entropy text confirms guesses).
+- It is **not** removed by `forget` (it is the record of it) but is by `purge`, and the log is itself finite (suggest: compact to per-day counts after a retention the owner sets). It must say "unretrievable", not "erased", except on `sqlite-secure`.
+- Test, when built: grep every database file for a forgotten chunk's text (positive control: found before) and for its `source`; neither appears; the log still names the chunk.
+
+## 7. Dropped from the design: pre-warm, the tiny-model ranker, the recorder and the replay harness
+
+CireSnave's 2026-11-20 idea (a tiny local model watching the conversation to pre-warm and to rank removal candidates) is **not part of this design** after the 2026-11-21 ruling that value to the LLM is tuned in advance and set in code. They stay on the ROADMAP as a dated idea row, **C2** (recorder, replay harness, ranker, pre-warm; idea
+2026-11-20, dropped from the design 2026-11-21), with the safety bounds already worked out (reorder-only, local only, probation tier, replay with the offline-optimum ceiling) kept in git history of this note (`git log -p -- docs/DESIGN-PREWARM-AND-EVICT.md`). Board 472 items (b) recorder and (c) replay owner no longer block anything here.
+
+## 8. What changes in the docs and code when this is accepted (not now)
+
+Worth note line 16, 3.1 (a per-collection budget becomes a per-store `max_bytes` on an ordered list of stores), 3.2 (marks), 3.3 (may forget at the lowest rung); ROADMAP X2 and C1; CONTRACT D8 text on who may `forget`; README's statements about `forget`. Tests then required, each with a sabotage:
+demoting a chunk leaves its trust snapshot and evidence links byte-identical (read back before and after); forgetting it removes its trust records and outgoing evidence links, and a re-fetched copy has none; the plan is deterministic for the same state and `now`; a per-store setting that breaks the validation order (a target at or above its mark, marks out of order, an emergency mark of 100 or more) is refused at set and at load, each case with a sabotage that lets it through; fill never reaches 100% under synthetic inflow; hysteresis does not flap; LRU order is total; a pinned chunk is never planned and pins refuse past the cap; a forgotten chunk leaves no content,
+`w/` or `u/` record; a chunk returned in a query gets its last-use time set once per window (also through a read-only grant, which still cannot change a chunk) and a failing write does not fail the query; get-by-id records nothing; a thousand returns in a window equal one; the deletion log holds no content; no limit set plans nothing.
+Order if approved: the use record and its adapter wrapper (Q10-Q12 answered first; the branch's append log reshaped), then `worth-v2`, then X2 demotion, then X2 forgetting last (the irreversible step), then the log with the forgetting.
+
+## 9. Decisions
+
+**Answered 2026-11-21 (pm-ants relaying the PM; not a CireSnave quote unless marked):** Q1 is **superseded by CireSnave's use ruling** (section 0, section 4): use is a query result recorded by SageAnt, not an owner-process timestamp. Q2 as proposed: bounded additive, 0 until X3. Q3 answered by CireSnave: trust vanishes at deletion,
+pure LRU, no trust guard. Q4 as proposed: numbers and enums only, its own retention. Q8 set by the PM: marks 75/85/95, targets 65/75. Q9 confirmed: refetchability only inside worth, derived. The note rides the 2026-11-21 day PR and CireSnave reads it before any code.
+
+**Answered by the PM, 2026-11-21 (via pm-ants):** Q10 no, only query results count. Q11 last-use only. Q12 recording is not switched off on read-only opens; it runs under the store's own authority (section 4), and only an unwritable database skips it, counted.
+
+**Answered by CireSnave (verbatim in section 0):** the fullness marks and targets are per store and settable (defaults 75/85/95, 65/75; validation in section 2). Q5 pin cap 50%. Q6 a full store refuses writes. Q7 an ordered list of any number of stores, configured by the account holder, each with its own maximum; backends via PersistAnt. Board 472 is closed.
+
+**Ruled by the PM 2026-11-21 (via pm-ants), all yes:** Q13 promote one store up, once per window. Q14 write-through for any volatile store; refuse a configuration with a volatile store and no durable one below. Q15 catalog and index in one durable store, only bodies tiered, forget = one catalog batch then body deletes. A cloud store waits for X7 and stays here as a named future store type.
+**PersistAnt lane's answers (FINDING from the PersistAnt lane 2026-11-21, read from its source at `origin/main` 51cc79f; I have not re-read that source):**
+- **RAM kv: yes.** `memory` (MemoryKv) and `kv-on-blob:opendal-memory` declare `Durability::Volatile`; the table is `declared_durability()` in `crates/persistant-kv/src/choose.rs`. A need above Volatile excludes them. PersistAnt has **no write-through tier layer**: that is sageant's to build, as ruled (Q14).
+- **Size: not available.** No kv or blob capability reports stored bytes. `kv.count` gives live keys under a prefix (native on memory and SQL engines, not on opendal stores); `blob.stat` exists for blobs (size unverified); `blob.max_value_size` is a per-value ceiling, not usage. For a quota: scan, or file size on SQLite and file stores; or ask PersistAnt for a row (not built, nothing scheduled).
+- **Durability classes** (kv): `memory` and `opendal-memory` Volatile; `opendal-fs` and `kv-on-relational:sqlite` Process; `sqlite-full`, `postgres`, `mysql` Machine (guest power loss on ext4 only; host power loss and NTFS unverified); MariaDB none declared. `PersistStore::open` needs at least Process.
+- **Erasure:** only `sqlite-secure` has `storage.secure_delete` and `kv.delete_erased`; `sqlite`, `sqlite-full`, `postgres`, `mysql`, `mariadb`, `opendal-memory` no; `opendal-fs` `kv.delete_erased` only with `put_mode=in_place` or an `atomic_write_dir` (zero-overwrite then unlink). Even yes is not a claim about journaling or copy-on-write file systems, SSD wear levelling, snapshots or backups. So per store: "erased" only where that store's backend says yes, and a chunk that ever lived on a store that says no is "unretrievable" at best.
+- **What follows for the design:** a RAM top store is available now, used only as a write-through copy (Q14); a per-store size limit needs a sageant-side scan (cost grows with the store) unless PersistAnt adds a size row, which is worth asking for once the design is accepted; the deletion log's per-store erase wording follows the table above.
+Nothing is pushed until the note is read; no code.

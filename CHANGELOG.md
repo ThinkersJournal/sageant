@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.34
+
+- Docs: `docs/DESIGN-PREWARM-AND-EVICT.md` rewritten after CireSnave's 2026-11-21 rulings (SageAnt is a finite cache; automatic demotion over 3/4 full and automatic forgetting at the lowest rung, by LRU; refetchability only inside worth): rungs, marks, use = a chunk returned in a query result recorded by SageAnt (`u/<id>`), worth-v2 fixed in code, trust vanishing on delete, a content-free deletion log, the recorder and tiny-model ranker dropped to ROADMAP idea row C2; ROADMAP row C1 reworded. No code change, no recorder, no deletion code.
+
 ## 0.3.33
 
 - Worth snapshots (X1 slices 1 and 2; additive public API, nothing existing changes). `worth_of` computes `worth-v1`, a derived integer score (basis points) from structural and loose links, recency and stability; `Worth` (also `version()`, `half_life()`), `Component`, `WorthParams`, `WORTH_MODEL`. `WorthSnapshot` and the `WorthStore` trait file a worth per (chunk, version, model); `MemoryStore` and `PersistStore` implement it (`w/<id>/<version>/<model>` keys, numbers only, not an audited write). `forget` and `purge` remove a chunk's snapshots in the same atomic batch, including against a write racing them. No read signal and no change to any chunk, link or existing key. Docs: `docs/DESIGN-WORTH-AND-TRUST.md` (worth, adaptive decay, the trust tool as generic requirements, fixture inputs for EpistemologicAnt), `docs/DESIGN-PREWARM-AND-EVICT.md` (idea, options only), ROADMAP row C1; mutation runs 8 and 9 in `docs/MUTATION.md`; CI `REGISTRY_VERSION` pin 0.3.32.
