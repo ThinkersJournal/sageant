@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.35
+
+- Docs: `docs/SURVEY-DECAY-EVICTION.md` (X2 survey, written from memory, no citations verified; board 472 hold kept) and HANDOFF. No code change.
+
 ## 0.3.34
 
 - Docs: `docs/DESIGN-PREWARM-AND-EVICT.md` rewritten after CireSnave's 2026-11-21 rulings (SageAnt is a finite cache; automatic demotion over 3/4 full and automatic forgetting at the lowest rung, by LRU; refetchability only inside worth): rungs, marks, use = a chunk returned in a query result recorded by SageAnt (`u/<id>`), worth-v2 fixed in code, trust vanishing on delete, a content-free deletion log, the recorder and tiny-model ranker dropped to ROADMAP idea row C2; ROADMAP row C1 reworded. No code change, no recorder, no deletion code.
