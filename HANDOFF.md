@@ -28,3 +28,6 @@ Done 2026-11-21: X2 prior-art survey written as docs/SURVEY-DECAY-EVICTION.md (S
 ## Licence exclusions
 Never read or copy `eidetic-engine` (excludes Anthropic and its agents), `cyberbrain-core` (FSL), `velesdb-memory`
 (custom licence).
+
+## STOPPED (2026-11-22, pm-ants TASK, EXPECTATIONS 6.32)
+No groundwork code exists: the branch holds only HANDOFF edits. No live work. Wake condition: CireSnave's ruling on board 489/472 (read of the design note, go for `u/<id>` last-use). Then Next row 1; X2 pin/budget after it. No WAITs.
