@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.36
+
+- CI only: portfolio workflow pinned to coderipper 467fd259 (0.48.1), sageant#56. No code change; not breaking.
+
 ## 0.3.35
 
 - Docs: `docs/SURVEY-DECAY-EVICTION.md` (X2 survey, written from memory, no citations verified; board 472 hold kept) and HANDOFF. No code change.
